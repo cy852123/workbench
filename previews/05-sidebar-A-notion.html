@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>侧边栏 · 变体A Notion 暖极简</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { display: flex; min-height: 100vh; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; color: #33332E; }
+  /* 侧栏 */
+  .side { width: 230px; background: #F7F6F3; padding: 18px 10px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid #EFEEE9; flex-shrink: 0; }
+  .brand { font-family: Georgia, "Songti SC", serif; font-size: 16px; font-weight: 700; padding: 4px 12px 14px; letter-spacing: .3px; }
+  .g { font-size: 11px; color: #9B9B93; letter-spacing: .6px; padding: 14px 12px 6px; }
+  .item { display: flex; align-items: center; gap: 9px; padding: 8px 12px; border-radius: 7px; font-size: 13.5px; color: #55554F; cursor: pointer; }
+  .item:hover { background: rgba(0,0,0,.04); }
+  .item.on { background: #fff; color: #202124; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .item .ic { width: 17px; text-align: center; font-size: 14px; }
+  .side .spacer { flex: 1; }
+  /* 内容占位 */
+  .main { flex: 1; background: #FBFBFA; padding: 30px; }
+  .ph { background: #fff; border: 1px dashed #E3E2DC; border-radius: 12px; height: 100%; display: flex; align-items: center; justify-content: center; color: #C5C4BC; font-size: 13px; }
+</style>
+</head>
+<body>
+  <div class="side">
+    <div class="brand">个人工作台</div>
+    <div class="g">开始</div>
+    <div class="item on"><span class="ic">☀️</span>今日</div>
+    <div class="g">我的领域</div>
+    <div class="item"><span class="ic">🎓</span>考研备考</div>
+    <div class="item"><span class="ic">📖</span>英语学习</div>
+    <div class="item"><span class="ic">🤖</span>AI 知识学习</div>
+    <div class="item"><span class="ic">📘</span>学业课程</div>
+    <div class="g">工具</div>
+    <div class="item"><span class="ic">⏱</span>专注</div>
+    <div class="item"><span class="ic">📈</span>学习记录</div>
+    <div class="item"><span class="ic">📁</span>资料库</div>
+    <div class="item"><span class="ic">📥</span>收集箱</div>
+    <div class="item"><span class="ic">⚠️</span>错题本</div>
+    <div class="item"><span class="ic">💬</span>答疑库</div>
+    <div class="item"><span class="ic">🔄</span>复盘</div>
+    <div class="item"><span class="ic">❤️</span>健康</div>
+    <div class="item"><span class="ic">📅</span>日历</div>
+    <div class="item"><span class="ic">🧠</span>AI 帮手</div>
+    <div class="spacer"></div>
+    <div class="g">系统</div>
+    <div class="item"><span class="ic">🔍</span>搜索</div>
+    <div class="item"><span class="ic">⚙️</span>设置与数据</div>
+  </div>
+  <div class="main"><div class="ph">内容区（当前页面）</div></div>
+</body>
+</html>

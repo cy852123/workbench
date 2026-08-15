@@ -1614,11 +1614,6 @@
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">记录睡眠和状态后，每周复盘会自动统计健康情况。</div>');
 
-    /* 番茄钟入口（已独立为"专注"页面） */
-    html += card(cardHead("专注计时", "已独立为单独页面", "timer"),
-      '<p style="font-size:14px;color:var(--sub);margin-bottom:12px;">番茄钟已搬到独立的「专注」页面，那里有更大的计时器和专注统计。</p>' +
-      '<button class="btn block" data-action="open-focus">' + ic("timer") + "打开专注页</button>");
-
     html += "</div>";
 
     /* 本周统计 */
@@ -1743,6 +1738,28 @@
       '<div class="card tint-pink"><div class="stat-num">' + addCount + '</div><div class="stat-label">新增记录</div></div>' +
       "</div>";
 
+    /* 本周打卡概览（7 天点条） */
+    (function () {
+      var days = [];
+      for (var i = 6; i >= 0; i--) {
+        var dt = new Date(); dt.setDate(dt.getDate() - i);
+        var ds = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+        var m = (d.studyLog || []).filter(function (x) { return x.date === ds; }).reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+        days.push({ ds: ds, m: m, label: "周" + "日一二三四五六"[dt.getDay()] });
+      }
+      var maxM = Math.max.apply(null, days.map(function (x) { return x.m; }).concat([1]));
+      html += card(cardHead("本周打卡", "近 7 天每天学习时长", "activity-week"),
+        '<div style="display:flex;gap:8px;align-items:flex-end;height:64px;padding:0 4px;">' +
+        days.map(function (x) {
+          var h = Math.round(x.m / maxM * 52);
+          return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+            '<div style="width:100%;max-width:26px;height:' + (h > 0 ? h : 3) + 'px;background:' + (x.m > 0 ? "var(--accent)" : "#EDEFEC") + ';border-radius:3px;"></div>' +
+            '<div class="li-sub" style="font-size:11px;">' + x.label + "</div></div>";
+        }).join("") +
+        "</div>" +
+        '<div class="li-sub" style="margin-top:8px;">' + days.filter(function (x) { return x.m > 0; }).length + " 天有学习记录" + (calcStreak() >= 2 ? " · 连续打卡 " + calcStreak() + " 天" : "") + "</div>");
+    })();
+
     /* 鼓励语 */
     var streak = calcStreak();
     var praise = "";
@@ -1820,6 +1837,26 @@
       '<button class="btn ghost small" data-action="edit-weekly-review">查看本周复盘</button>'
       : '<button class="btn block" data-action="ai-draft-week">' + ic("spark") + "用本周数据生成复盘草稿</button>" +
       '<div class="li-sub" style="margin-top:10px;">草稿会汇总：本周各领域学习时长、任务完成情况、打卡天数、健康情况。生成后你可以修改，确认才保存。</div>');
+
+    /* 连续复盘天数 */
+    (function () {
+      var daily = (d.reviews || []).filter(function (r) { return r.type === "daily"; }).map(function (r) { return r.date; });
+      var streak = 0;
+      var dt = new Date();
+      for (;;) {
+        var ds = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+        if (daily.indexOf(ds) >= 0) { streak++; dt.setDate(dt.getDate() - 1); }
+        else break;
+      }
+      var weekCount = (d.reviews || []).filter(function (r) { return r.date >= weekStart && r.type === "daily"; }).length;
+      if (streak >= 1 || weekCount >= 1) {
+        html += '<div class="grid grid-3" style="margin-bottom:14px;">' +
+          '<div class="card tint-yellow" style="margin-bottom:0;"><div class="stat-num">' + streak + '</div><div class="stat-label">连续复盘（天）</div></div>' +
+          '<div class="card tint-green" style="margin-bottom:0;"><div class="stat-num">' + weekCount + '</div><div class="stat-label">本周复盘次数</div></div>' +
+          '<div class="card tint-blue" style="margin-bottom:0;"><div class="stat-num">' + (d.reviews || []).length + '</div><div class="stat-label">复盘总次数</div></div>' +
+          "</div>";
+      }
+    })();
 
     var list = (d.reviews || []).slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; });
     html += card(cardHead("复盘历史", list.length + " 次记录", "review-history"),
