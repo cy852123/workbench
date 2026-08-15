@@ -769,11 +769,11 @@
     var wordItems = ["新词 80 + 复习 120"];
     var dd = (gen.dailyDone && gen.dailyDone.date === t) ? (gen.dailyDone.subjects || []) : [];
     return [
-      { key: "english", name: "英语", color: "#2980B9", count: enCount, items: enItems, action: "ky-start-english", done: dd.indexOf("english") >= 0 },
-      { key: "math", name: "数学", color: "#8E44AD", count: mathItems[0].split("：")[0], items: mathItems, action: "ky-start-math", done: dd.indexOf("math") >= 0 },
-      { key: "politics", name: "政治", color: "#E74C3C", count: "知识点 4 条", items: poItems, action: "ky-start-politics", done: dd.indexOf("politics") >= 0 },
-      { key: "major", name: "专业课", color: "#27AE60", count: "第 " + (gen.chapterIndex || 1) + " 章", items: majorItems, action: "ky-start-major", done: dd.indexOf("major") >= 0 },
-      { key: "word", name: "单词", color: "#F5B041", count: "新词 80 + 复习 120", items: wordItems, action: "ky-start-word", done: dd.indexOf("word") >= 0 }
+      { key: "english", name: "英语", color: "#2980B9", count: enCount, items: enItems, action: "go-view", view: "ky-english", done: dd.indexOf("english") >= 0 },
+      { key: "math", name: "数学", color: "#8E44AD", count: mathItems[0].split("：")[0], items: mathItems, action: "go-view", view: "ky-math", done: dd.indexOf("math") >= 0 },
+      { key: "politics", name: "政治", color: "#E74C3C", count: "知识点 4 条", items: poItems, action: "go-view", view: "ky-politics", done: dd.indexOf("politics") >= 0 },
+      { key: "major", name: "专业课", color: "#27AE60", count: "第 " + (gen.chapterIndex || 1) + " 章", items: majorItems, action: "go-view", view: "ky-major", done: dd.indexOf("major") >= 0 },
+      { key: "word", name: "单词", color: "#F5B041", count: "4 项提分工具", items: wordItems, action: "go-view", view: "ky-word", done: dd.indexOf("word") >= 0 }
     ];
   }
   function kyRingHtml(pct) {
@@ -831,7 +831,7 @@
         '<div class="ky-card-count">' + esc(c.count) + "</div>" +
         '<div class="ky-card-prog"><span class="li-sub">' + esc(kyStageName(sc.stage)) + " " + stagePct + "%</span>" +
         '<div class="progress-track"><div class="progress-fill" style="width:' + stagePct + "%;background:var(--kc);\"></div></div></div>" +
-        '<button class="ky-start" data-action="' + c.action + '">' + (c.done ? "已完成" : "开始") + "</button></div>";
+        '<button class="ky-start" data-action="go-view" data-view="' + c.view + '">' + (c.done ? "已完成" : "进入学习") + "</button></div>";
     }).join("") + "</div>";
 
     /* 底部：完成率圆环 + 连续打卡 + 本周时长 + 星级 */
@@ -861,6 +861,208 @@
   }
 
   /* ==================== 三级专区 ==================== */
+  function toolBtn(emoji, name, sub, action, view) {
+    return '<div class="tool" data-action="' + (action || "go-view") + '" data-view="' + (view || "") + '">' +
+      '<div class="tool-ic">' + emoji + "</div><div class=\"tool-name\">" + esc(name) + '</div><div class="tool-sub">' + esc(sub) + "</div></div>";
+  }
+  function recList(items, fn) {
+    if (!items || !items.length) return '<div class="li-sub" style="padding:8px 0;">暂无记录</div>';
+    return '<div class="list">' + items.map(fn).join("") + "</div>";
+  }
+  function kyAiBriefCard(gen) {
+    var b = (gen.aiBrief && gen.aiBrief.date === todayStr()) ? gen.aiBrief.text : null;
+    return card(cardHead("🤖 AI 每日简报", "根据昨日记录自动生成", "brief"),
+      '<div style="background:#EAF6F0;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#2F6B57;line-height:1.6;">' +
+      (b ? "💡 " + esc(b) : "💡 昨日没有学习记录，今天从 30 分钟开始吧。") + "</div>");
+  }
+  function kyEnglishPage(dm) {
+    var W = window.W, d = W.data;
+    var sc = kyActive(dm); if (!sc) return "";
+    var gen = sc.gen || {};
+    var t = todayStr();
+    var html = backBar("domain:kaoyan", "考研备考");
+    html += '<div class="page-head-row"><div><div class="page-title">📖 英语学科页</div>' +
+      '<div class="li-sub">目标 ' + (gen.targetEnglish || 70) + " 分 · " + esc(kyStageName(sc.stage)) + " · 距考试 " + daysDiff(kyExamDate(sc)) + " 天</div></div>" +
+      '<button class="btn small ghost" data-action="ky-goal-modal">目标分</button></div>';
+    html += kyAiBriefCard(gen);
+    var cards = kyGenTasks(sc, t);
+    var en = cards.filter(function (c) { return c.key === "english"; })[0] || { items: [], done: false };
+    html += card(cardHead("📌 今日任务", "自动生成 · 点击开始做题", "task"),
+      '<div class="list">' + en.items.map(function (it, i) {
+        return '<div class="task-item' + (en.done ? " done" : "") + '" data-action="' + (i === 0 ? "ky-start-english" : "ky-sentence-modal") + '">' +
+          '<span class="task-check">' + (en.done ? ic("check") : "") + "</span>" +
+          '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
+          '<span class="tag">' + (en.done ? "已完成" : (i === 0 ? "去做题" : "去练习")) + "</span></div>";
+      }).join("") + "</div>");
+    html += card(cardHead("🧰 学科工具箱", "英语专属工具", "tools"),
+      '<div class="grid grid-2">' +
+      toolBtn("📚", "精读库", "真题篇目 + 正确率 + 定位句分析", "", "ky-reading") +
+      toolBtn("📝", "长难句练习", "每日 5 句 · 拆解解析", "ky-sentence-modal", "") +
+      toolBtn("✍️", "作文模板库", "小/大作文高分句式 + 手动批注", "ky-essay-modal", "") +
+      toolBtn("🌐", "翻译每日一句", "生词 + 语序调整反思", "ky-trans-modal", "") +
+      "</div>");
+    /* 阅读记录（含定位句分析） */
+    var rl = gen.readingLog || [];
+    html += card(cardHead("📈 阅读复盘", rl.length ? "共 " + rl.length + " 篇 · 正确率 ≥60% 得 1⭐" : "暂无记录", "reading"),
+      rl.length ? '<div class="list">' + rl.slice().reverse().slice(0, 6).map(function (r) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(r.paper) + " ｜ 正确率 " + r.correct + "%" + (r.correct >= 60 ? ' <span class="tag state-done">+⭐</span>' : "") + "</div>" +
+          '<div class="li-sub">' + esc(r.date) + " · 用时 " + r.minutes + " 分" +
+          (r.wrongTypes && r.wrongTypes.length ? " · 错题：" + esc(r.wrongTypes.join("/")) : "") +
+          (r.locate ? " · " + esc(r.locate) : "") + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">完成精读后自动记录到这里</div>');
+    return html;
+  }
+  function kyMathPage(dm) {
+    var W = window.W, d = W.data;
+    var sc = kyActive(dm); if (!sc) return "";
+    var gen = sc.gen || {};
+    var t = todayStr();
+    var html = backBar("domain:kaoyan", "考研备考");
+    html += '<div class="page-head-row"><div><div class="page-title">📐 数学学科页</div>' +
+      '<div class="li-sub">目标 ' + (gen.targetMath || 70) + " 分 · " + esc(kyStageName(sc.stage)) + "</div></div>" +
+      '<button class="btn small ghost" data-action="ky-goal-modal">目标分</button></div>';
+    html += kyAiBriefCard(gen);
+    var cards = kyGenTasks(sc, t);
+    var ma = cards.filter(function (c) { return c.key === "math"; })[0] || { items: [], done: false };
+    html += card(cardHead("📌 今日任务", "按阶段自动生成", "task"),
+      '<div class="list">' + ma.items.map(function (it) {
+        return '<div class="task-item' + (ma.done ? " done" : "") + '" data-action="ky-start-math">' +
+          '<span class="task-check">' + (ma.done ? ic("check") : "") + "</span>" +
+          '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
+          '<span class="tag">' + (ma.done ? "已完成" : "去完成") + "</span></div>";
+      }).join("") + "</div>");
+    html += card(cardHead("🧰 学科工具箱", "数学专属工具", "tools"),
+      '<div class="grid grid-2">' +
+      toolBtn("📐", "公式卡", "高数/线代/概率常用公式", "ky-formula-modal", "") +
+      toolBtn("📋", "真题套卷专区", "各板块得分记录（选填/高数/线代/概率）", "ky-paper-modal", "") +
+      toolBtn("⚠️", "粗心账本", "跳步/正负号丢分专项记录", "ky-careless-modal", "") +
+      toolBtn("🔗", "错题与同类题", "错题联动 + 同类题编号", "go-view", "ky-mistakes-link") +
+      "</div>");
+    var pr = gen.paperRecords || [];
+    html += card(cardHead("📋 真题套卷记录", pr.length ? "共 " + pr.length + " 套" : "暂无记录", "papers"),
+      pr.length ? '<div class="list">' + pr.slice().reverse().slice(0, 6).map(function (p) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(p.paper) + " ｜ 总分 " + p.total + "</div>" +
+          '<div class="li-sub">选填 ' + p.xuan + " · 高数 " + p.gs + " · 线代 " + p.xd + " · 概率 " + p.gl + " ｜ " + esc(p.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">做真题套卷后记录各板块得分</div>');
+    var cl = gen.carelessness || [];
+    html += card(cardHead("⚠️ 粗心账本", cl.length ? "共 " + cl.length + " 次失误" : "暂无记录", "careless"),
+      cl.length ? '<div class="list">' + cl.slice().reverse().slice(0, 6).map(function (c) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(c.type) + " ｜ " + esc(c.note || "") + "</div>" +
+          '<div class="li-sub">' + esc(c.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">算错时点「粗心账本」记一笔，考前专项盯防</div>');
+    return html;
+  }
+  function kyPoliticsPage(dm) {
+    var W = window.W, d = W.data;
+    var sc = kyActive(dm); if (!sc) return "";
+    var gen = sc.gen || {};
+    var t = todayStr();
+    var html = backBar("domain:kaoyan", "考研备考");
+    html += '<div class="page-head-row"><div><div class="page-title">📜 政治学科页</div>' +
+      '<div class="li-sub">目标 ' + (gen.targetPolitics || 70) + " 分 · " + esc(kyStageName(sc.stage)) + "</div></div>" +
+      '<button class="btn small ghost" data-action="ky-goal-modal">目标分</button></div>';
+    html += kyAiBriefCard(gen);
+    var cards = kyGenTasks(sc, t);
+    var po = cards.filter(function (c) { return c.key === "politics"; })[0] || { items: [], done: false };
+    html += card(cardHead("📌 今日任务", "知识点轮播 + 1000 题", "task"),
+      '<div class="list">' + po.items.map(function (it) {
+        return '<div class="task-item' + (po.done ? " done" : "") + '" data-action="ky-start-politics">' +
+          '<span class="task-check">' + (po.done ? ic("check") : "") + "</span>" +
+          '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
+          '<span class="tag">' + (po.done ? "已完成" : "去学习") + "</span></div>";
+      }).join("") + "</div>");
+    html += card(cardHead("🧰 学科工具箱", "政治专属工具", "tools"),
+      '<div class="grid grid-2">' +
+      toolBtn("🗂", "知识点库", "马原/毛中特/史纲/思修 按章浏览", "ky-points-modal", "") +
+      toolBtn("🎩", "帽子题专项", "根本/基本/首要 对应关系刷题", "ky-hat-modal", "") +
+      toolBtn("📋", "主观题框架", "点-默-析 答题框架模板", "ky-frame-modal", "") +
+      toolBtn("📰", "时政收藏夹", "本月时政词条 + 可联系考点", "ky-affair-modal", "") +
+      "</div>");
+    var ht = gen.hatQuestions || [];
+    html += card(cardHead("🎩 帽子题记录", ht.length ? "共 " + ht.length + " 题" : "暂无记录", "hat"),
+      ht.length ? '<div class="list">' + ht.slice().reverse().slice(0, 6).map(function (h) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(h.q) + " → " + esc(h.ans) + "</div>" +
+          '<div class="li-sub">' + (h.correct ? "✓ 答对" : "✗ 答错") + " · " + esc(h.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">帽子题是选择题高分关键，刷对应关系时记录</div>');
+    var af = gen.currentAffairs || [];
+    html += card(cardHead("📰 时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs"),
+      af.length ? '<div class="list">' + af.slice().reverse().slice(0, 6).map(function (a) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(a.title) + "</div>" +
+          '<div class="li-sub">' + esc(a.examPoint || "未标注考点") + " · " + esc(a.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">粘贴本月时政词条，标注可联系考点</div>');
+    return html;
+  }
+  function kyMajorPage(dm) {
+    var W = window.W, d = W.data;
+    var sc = kyActive(dm); if (!sc) return "";
+    var gen = sc.gen || {};
+    var t = todayStr();
+    var html = backBar("domain:kaoyan", "考研备考");
+    html += '<div class="page-head-row"><div><div class="page-title">🧪 专业课学科页</div>' +
+      '<div class="li-sub">目标 ' + (gen.targetMajor || 100) + " 分 · 当前第 " + (gen.chapterIndex || 1) + " 章</div></div>" +
+      '<button class="btn small ghost" data-action="ky-goal-modal">目标分</button></div>';
+    html += kyAiBriefCard(gen);
+    var cards = kyGenTasks(sc, t);
+    var mj = cards.filter(function (c) { return c.key === "major"; })[0] || { items: [], done: false };
+    html += card(cardHead("📌 今日任务", "章节自动推进", "task"),
+      '<div class="list">' + mj.items.map(function (it) {
+        return '<div class="task-item' + (mj.done ? " done" : "") + '" data-action="ky-start-major">' +
+          '<span class="task-check">' + (mj.done ? ic("check") : "") + "</span>" +
+          '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
+          '<span class="tag">' + (mj.done ? "已完成" : "去记笔记") + "</span></div>";
+      }).join("") + "</div>");
+    html += card(cardHead("🧰 学科工具箱", "专业课专属工具", "tools"),
+      '<div class="grid grid-2">' +
+      toolBtn("📒", "笔记库", "每章笔记回看（带标签）", "ky-notes-modal", "") +
+      toolBtn("✏️", "关键词挖空", "背诵/默写双模式", "ky-fill-modal", "") +
+      toolBtn("📋", "真题题型拆解", "选择错因/名词解释/大题思路", "ky-breakdown-modal", "") +
+      toolBtn("📊", "大纲对比", "考纲要求 vs 实际掌握度", "ky-outline-modal", "") +
+      "</div>");
+    var nl = gen.noteLog || [];
+    html += card(cardHead("📒 章节笔记", nl.length ? "共 " + nl.length + " 章笔记" : "暂无记录", "notes"),
+      nl.length ? '<div class="list">' + nl.slice().reverse().slice(0, 6).map(function (n) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + n.chapter + " 章 ｜ " + esc(n.tagType) + "：" + esc(n.tag) + "</div>" +
+          '<div class="li-sub">' + esc(n.note.slice(0, 40)) + (n.note.length > 40 ? "…" : "") + " · " + esc(n.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">每章学习后记笔记（强制标签），自动推进章节</div>');
+    var fb = gen.fillBlankNotes || [];
+    html += card(cardHead("✏️ 挖空默写", fb.length ? "共 " + fb.length + " 次" : "暂无记录", "fill"),
+      fb.length ? '<div class="list">' + fb.slice().reverse().slice(0, 5).map(function (f) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + f.chapter + " 章挖空</div>" +
+          '<div class="li-sub">' + esc(f.text.slice(0, 40)) + (f.text.length > 40 ? "…" : "") + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">把重点词替换成 ____ 自测背诵</div>');
+    return html;
+  }
+  function kyWordPage(dm) {
+    var W = window.W, d = W.data;
+    var sc = kyActive(dm); if (!sc) return "";
+    var gen = sc.gen || {};
+    var t = todayStr();
+    var html = backBar("domain:kaoyan", "考研备考");
+    html += '<div class="page-head-row"><div><div class="page-title">🔤 单词学科页</div>' +
+      '<div class="li-sub">考研提分专供 4 项 + 内置查词</div></div>' +
+      '<button class="btn small ghost" data-action="ky-word-add">＋ 添加</button></div>';
+    html += kyAiBriefCard(gen);
+    var ew = gen.examWords || [];
+    var om = gen.oddMeanings || [];
+    var wr = gen.writingReplacements || [];
+    html += card(cardHead("🧰 考研提分 4 项", "手动录入 · 纸质友好", "tools"),
+      '<div class="grid grid-2">' +
+      toolBtn("📚", "真题生词本", "单词 + 年份 + 所在短句", "ky-examword-modal", "") +
+      toolBtn("🎭", "熟词僻义专项", "如 address → 处理/演讲", "ky-oddword-modal", "") +
+      toolBtn("🖊", "写作替换词库", "important → crucial", "ky-replace-modal", "") +
+      toolBtn("🔍", "内置查词", "ECDICT 8000 词 · 快捷查义", "cet-dict", "") +
+      "</div>" +
+      '<div class="li-sub" style="margin-top:10px;">生词掌握度看板：下方列表一键切换 待复习/已掌握</div>');
+    var all = ew.concat(om).concat(wr).map(function (x, i) { x._i = i; return x; });
+    html += card(cardHead("📊 生词掌握度看板", "共 " + all.length + " 条（待复习 " + all.filter(function (x) { return !x.mastered; }).length + "）", "words"),
+      all.length ? '<div class="list">' + all.slice().reverse().slice(0, 12).map(function (x) {
+        var label = x.sentence ? "真题" : (x.meaning && x.example ? "僻义" : "替换");
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(x.word) + " <span class=\"li-sub\">" + esc(label) + "</span></div>" +
+          '<div class="li-sub">' + esc((x.sentence || x.meaning || x.to || "").slice(0, 34)) + "</div></div>" +
+          '<button class="btn small ' + (x.mastered ? "plain" : "") + '" data-action="ky-word-master" data-idx="' + x._i + '">' + (x.mastered ? "已掌握" : "待复习") + "</button></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">从上方 4 项录入生词，这里统一管理掌握状态</div>');
+    return html;
+  }
   function kySubjects(dm) {
     var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
@@ -1851,6 +2053,15 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.9 学科学习页<span class="log-tag">升级</span></div>' +
+      '<p>考研 5 科卡片点进去是完整的学科学习页（不再只是计时器）：</p>' +
+      '<p>📖 英语：今日任务 + 精读库 + 长难句练习 + 作文模板库（小/大作文高分句式+手动批注）+ 翻译每日一句 + 阅读复盘（错题类型+定位句分析：没看懂句子/逻辑替换没识别）。</p>' +
+      '<p>📐 数学：公式卡（高数/线代/概率）+ 真题套卷专区（选填/高数/线代/概率分板块得分）+ 粗心账本（跳步/正负号专项）+ 错题联动。</p>' +
+      '<p>📜 政治：知识点库（按章）+ 帽子题专项（对应关系+对错记录）+ 主观题框架（点-默-析）+ 时政收藏夹（可联系考点）。</p>' +
+      '<p>🧪 专业课：笔记库 + 关键词挖空（背诵/默写）+ 真题题型拆解（选择错因/名词解释/大题思路）+ 大纲对比（考纲要求 vs 掌握度）。</p>' +
+      '<p>🔤 单词：考研提分 4 项（真题生词本/熟词僻义/写作替换词/生词掌握度看板）+ 内置查词。</p>' +
+      '<p>🤖 全局：AI 每日简报（根据昨日记录自动生成一句话建议，本地规则生成）；真题定位器（各记录均含年份/题号可回溯）。</p>' +
+      '<p>影响范围：考研备考模块。数据：自动迁移，不删旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.8 考研今日行动面板<span class="log-tag">重构</span></div>' +
       '<p>考研页全新三行固定布局：顶部状态行（距初试/阶段切换/阶段剩余）＋ 中部 5 科行动卡（英语/数学/政治/专业课/单词，桌面 5 列、手机 2 列）＋ 底部进度行（今日完成率半圆环/连续打卡/本周时长/⭐星级）。</p>' +
       '<p>今日推荐任务自动生成（无需手动添加）：英语按目标分数反推（≥70 分精读 2 篇+长难句；<60 分精读 1 篇+单词 150）；数学按阶段（基础教材/强化刷题/真题套卷/冲刺模拟）；政治每日 4 条知识点轮播（马原→毛中特→史纲→思修）+1000 题；专业课按章节自动推进；单词新词 80+复习 120。目标分数在「目标分数」按钮设置。</p>' +
@@ -1936,6 +2147,11 @@
     kyWeekly: kyWeekly,
     kyFiles: kyFiles,
     kyStats: kyStats,
+    kyEnglishPage: kyEnglishPage,
+    kyMathPage: kyMathPage,
+    kyPoliticsPage: kyPoliticsPage,
+    kyMajorPage: kyMajorPage,
+    kyWordPage: kyWordPage,
     tasksAll: tasksAll,
     cetVocab: cetVocab,
     cetWordbook: cetWordbook,
