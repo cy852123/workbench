@@ -1321,17 +1321,36 @@
     var W = window.W, d = W.data;
     var days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
     var html = "";
-    html += card(cardHead("本学期课程", "点击添加课程", "courses"),
+
+    /* 今日课程卡 */
+    var todayName = days[(new Date().getDay() + 6) % 7];
+    var todayCourses = (dm.courses || []).filter(function (c) { return c.day === todayName; })
+      .sort(function (a, b) { return (a.time || "") > (b.time || "") ? 1 : -1; });
+    html += card(cardHead("📅 今日课程", todayName + " · " + todayCourses.length + " 节", "courses-today"),
+      todayCourses.length === 0 ? '<div class="li-sub">今天没有课，可以安排考研学习。</div>' :
+      '<div class="list">' + todayCourses.map(function (c) {
+        return '<div class="list-item">' +
+          '<div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>' +
+          '<div class="li-main"><div class="li-title">' + esc(c.name) + "</div>" +
+          '<div class="li-sub">' + (c.teacher ? esc(c.teacher) + " · " : "") + (c.place || "") + (c.note ? " · 📝 有笔记" : "") + "</div></div>" +
+          '<span class="li-meta">' + esc(c.time || "") + "</span>" +
+          '<button class="icon-btn" data-action="edit-course" data-domain="' + esc(dm.id) + '" data-id="' + esc(c.id) + '">' + ic("edit") + "</button></div>";
+      }).join("") + "</div>");
+
+    html += card(cardHead("本学期课程", "点击课程可补资料链接和笔记", "courses"),
       '<button class="btn ghost small" data-action="add-course" data-domain="' + esc(dm.id) + '" style="margin-bottom:10px;">' + ic("plus") + "添加课程</button>" +
       '<div class="list">' + days.map(function (day) {
         var list = (dm.courses || []).filter(function (c) { return c.day === day; });
         if (list.length === 0) return "";
-        return '<div style="padding:8px 2px 2px;font-size:13px;color:var(--sub);font-weight:600;">' + day + "</div>" +
+        return '<div style="padding:8px 2px 2px;font-size:13px;color:var(--sub);font-weight:600;">' + day + (day === todayName ? "（今天）" : "") + "</div>" +
           list.map(function (c) {
             return '<div class="list-item"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>' +
-              '<div class="li-main"><div class="li-title">' + esc(c.name) + "</div>" +
-              '<div class="li-sub">' + (c.teacher ? esc(c.teacher) + " · " : "") + (c.place || "") + "</div></div>" +
+              '<div class="li-main"><div class="li-title">' + esc(c.name) + (c.note ? ' <span class="tag">📝 笔记</span>' : "") + "</div>" +
+              '<div class="li-sub">' + (c.teacher ? esc(c.teacher) + " · " : "") + (c.place || "") + "</div>" +
+              (c.note ? '<div class="li-sub" style="color:var(--accent);">' + esc(c.note.slice(0, 40)) + (c.note.length > 40 ? "…" : "") + "</div>" : "") +
+              "</div>" +
               '<span class="li-meta">' + esc(c.time || "") + "</span>" +
+              (c.url ? '<a class="btn small plain" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + ic("link") + "资料</a>" : "") +
               '<button class="icon-btn" data-action="edit-course" data-domain="' + esc(dm.id) + '" data-id="' + esc(c.id) + '">' + ic("edit") + "</button>" +
               '<button class="icon-btn" data-action="del-course" data-domain="' + esc(dm.id) + '" data-id="' + esc(c.id) + '">' + ic("trash") + "</button></div>";
           }).join("");
@@ -1348,7 +1367,7 @@
           '<span class="task-check">' + ic("check") + "</span>" +
           '<div class="li-main"><div class="li-title' + (a.done ? ' style="text-decoration:line-through;color:var(--sub);"' : "") + '">' + esc(a.title) + "</div>" +
           '<div class="li-sub">' + (a.type || "作业") + (dueTxt ? " · " + dueTxt : "") + "</div></div>" +
-          '<span class="li-meta">' + esc(a.due || "") + "</span>" +
+          '<span class="li-meta"' + (dd != null && dd <= 3 ? ' style="color:var(--danger);font-weight:700;"' : "") + ">" + esc(a.due || "") + "</span>" +
           '<button class="icon-btn" data-action="del-assignment" data-domain="' + esc(dm.id) + '" data-id="' + esc(a.id) + '">' + ic("trash") + "</button></div>";
       }).join("") + "</div>"));
 

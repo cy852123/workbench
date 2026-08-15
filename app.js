@@ -3295,8 +3295,10 @@
       field("课程名称", "cName", "text", "材料科学基础", c ? c.name : "") +
       field("老师", "cTeacher", "text", "", c ? c.teacher : "") +
       selField("星期", "cDay", [["周一", "周一"], ["周二", "周二"], ["周三", "周三"], ["周四", "周四"], ["周五", "周五"], ["周六", "周六"], ["周日", "周日"]], c ? c.day : "周一") +
-      field("上课时间", "cTime", "text", "8:00-9:40", c ? c.time : "") +
-      field("地点", "cPlace", "text", "A101", c ? c.place : ""),
+      field("上课时间（节次或时间都行）", "cTime", "text", "8:00-9:40 或 1-2节", c ? c.time : "") +
+      field("地点", "cPlace", "text", "A101", c ? c.place : "") +
+      field("资料链接（课件/网盘/PDF，可选）", "cUrl", "text", "https://", c ? (c.url || "") : "") +
+      area("课程笔记（期末复习用，可选）", "cNote", "重点、进度、疑惑…", c ? (c.note || "") : ""),
       cancelBtn() + '<button class="btn" data-action="submit-course" data-domain="' + esc(did) + '" data-id="' + esc(id || "") + '">' + ICONS.check + "保存</button>");
     window.__editCourseId = id || "";
   }
@@ -3305,7 +3307,7 @@
     if (!dm) return;
     var name = fval("cName").trim();
     if (!name) { toast("请填写课程名称", true); return; }
-    var obj = { name: name, teacher: fval("cTeacher").trim(), day: fval("cDay"), time: fval("cTime").trim(), place: fval("cPlace").trim() };
+    var obj = { name: name, teacher: fval("cTeacher").trim(), day: fval("cDay"), time: fval("cTime").trim(), place: fval("cPlace").trim(), url: fval("cUrl").trim(), note: fval("cNote").trim() };
     var c = (dm.courses || []).filter(function (x) { return x.id === window.__editCourseId; })[0];
     if (c) { Object.assign(c, obj); }
     else { dm.courses = dm.courses || []; obj.id = uid(); dm.courses.push(obj); }
