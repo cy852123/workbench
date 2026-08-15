@@ -1573,12 +1573,44 @@
 
     /* 对话 */
     html += card(cardHead("对话式 AI", hasKey ? "已启用" : "当前未启用", "ai-chat"),
-      '<div class="ai-chat" id="aiChat">' +
-      (hasKey ? '<div class="msg bot">你好，我是你的 AI 帮手。可以问我学习问题、让我帮你安排任务、生成复习提纲。注意：我只会修改你确认过的内容。</div>' :
-        '<div class="msg bot">对话式 AI 当前未启用。启用方法：设置与数据 → AI 配置 → 填入 API 地址、模型和密钥。未配置时，上方本地工具仍可正常使用。</div>') +
-      "</div>" +
-      (hasKey ? '<div class="ai-input"><input id="aiInput" placeholder="输入问题…"><button class="btn" data-action="ai-send">' + ic("send") + "</button></div>" : ""));
+      '<div class="ai-chat-entry">' +
+      (hasKey
+        ? '<div class="msg bot" style="max-width:100%;">你好，我是你的 AI 帮手。可以问我学习问题、让我帮你安排任务、生成复习提纲。注意：我只会修改你确认过的内容。点下方按钮进入全屏对话。</div>'
+        : '<div class="msg bot" style="max-width:100%;">对话式 AI 当前未启用。启用方法：设置与数据 → AI 配置 → 勾选「云端 AI 代理模式」，地址填 https://workbench-sync-c9e.pages.dev，密钥填同步密钥。未配置时，上方本地工具仍可正常使用。</div>') +
+      '<button class="btn block" style="margin-top:10px;" data-action="go-view" data-view="ai-chat">' + ic("send") + "进入全屏对话</button>" +
+      "</div>");
 
+    return html;
+  }
+
+  /* ==================== AI 全屏对话 ==================== */
+  function aiChat() {
+    var W = window.W, d = W.data;
+    var hasKey = !!(d.settings.apiKey && d.settings.apiBase);
+    var chat = W.ui.aiChat || [];
+    var html = backBar("ai", "AI 帮手");
+    html += '<div class="ai-chat-page">';
+    html += '<div class="ai-chat full" id="aiChat">';
+    if (!chat.length) {
+      html += '<div class="msg bot">你好，我是你的 AI 帮手。可以问我学习问题、让我帮你安排任务、生成复习提纲。注意：我只会修改你确认过的内容。</div>';
+    } else {
+      chat.forEach(function (m, i) {
+        if (m.role === "user") {
+          html += '<div class="msg user">' + esc(m.content) + "</div>";
+        } else {
+          html += '<div class="msg bot">' + esc(m.content) + "</div>";
+          /* AI 回答带「保存到工作台」（AI 接管） */
+          html += '<div class="msg bot" style="margin-top:-6px;background:none;padding:0 2px;"><button class="btn small plain" data-action="ai-save" data-id="' + i + '">' + ic("folder") + "保存到工作台</button></div>";
+        }
+      });
+    }
+    html += "</div>";
+    if (hasKey) {
+      html += '<div class="ai-input full"><input id="aiInput" placeholder="输入问题…"><button class="btn" data-action="ai-send">' + ic("send") + "发送</button></div>";
+    } else {
+      html += '<div class="ai-input full"><div class="li-sub" style="margin:0;flex:1;">对话式 AI 未启用，去设置里配置。</div><button class="btn plain" data-action="go-view" data-view="settings">去设置</button></div>';
+    }
+    html += "</div>";
     return html;
   }
 
@@ -2353,6 +2385,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · AI 全屏对话<span class="log-tag">升级</span></div>' +
+      '<p>💬 对话式 AI 改为全屏对话页：在 AI 帮手页点「进入全屏对话」打开，消息区更大、输入框固定在底部，手机端更好用。对话历史保留，AI 回答下方仍有「保存到工作台」按钮。</p>' +
+      '<p>影响范围：AI 帮手板块。数据：无影响。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · 数据自愈修复<span class="log-tag">修复</span></div>' +
       '<p>📖 修复「英语学习打不开」：个别设备上考试数据被写坏（考试列表变成纯文字），页面加载时会崩溃。现在加载时自动检测并修复，考试名称、生词本全部保留，不影响其他数据。</p>' +
       '<p>🤖 对话式 AI 可用：在「设置与数据 → AI 配置」勾选「云端 AI 代理模式」，地址填 https://workbench-sync-c9e.pages.dev，密钥填同步密钥即可（云端代理已实测可用）。</p>' +
@@ -2467,6 +2502,7 @@
     inbox: inbox,
     search: search,
     ai: ai,
+    "ai-chat": aiChat,
     accounts: accounts,
     health: health,
     focus: focus,

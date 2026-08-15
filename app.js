@@ -582,6 +582,7 @@
       accounts: { e: "👤", t: "账号", s: "管理我的平台账号" },
       search: { e: "🔍", t: "搜索", s: "一次搜遍全部内容" },
       ai: { e: "🤖", t: "AI 帮手", s: "辅助学习与整理" },
+      "ai-chat": { e: "🤖", t: "AI 对话", s: "全屏对话" },
       settings: { e: "⚙️", t: "设置与数据", s: "说明、备份、更新日志" },
       "ky-subjects": { e: "🎓", t: "科目详情", s: "科目任务统计" },
       "ky-tasks": { e: "🎓", t: "全部领域任务", s: "三类任务管理" },
@@ -708,6 +709,7 @@
     else if (view === "inbox") html = Views.inbox();
     else if (view === "search") html = Views.search();
     else if (view === "ai") html = Views.ai();
+    else if (view === "ai-chat") html = Views["ai-chat"]();
     else if (view === "accounts") html = Views.accounts();
     else if (view === "health") html = Views.health();
     else if (view === "focus") html = Views.focus();
@@ -744,6 +746,13 @@
     wrap.innerHTML = html;
     closeDrawer();
     window.scrollTo(0, 0);
+    /* 全屏对话：进入后滚动到底部 + 聚焦输入框 */
+    if (view === "ai-chat") {
+      var chatBox = $id("aiChat");
+      if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+      var aiIn = $id("aiInput");
+      if (aiIn) { try { aiIn.focus(); } catch (e) {} }
+    }
   }
 
   /* ---------- 模态 ---------- */
@@ -852,7 +861,7 @@
       "focus": "theme-focus", "activity": "theme-activity", "library": "theme-library",
       "inbox": "theme-inbox", "mistakes": "theme-mistakes", "mk-topics": "theme-mistakes", "mk-types": "theme-mistakes", "mk-list": "theme-mistakes", "qa": "theme-qa", "reviews": "theme-reviews",
       "health": "theme-health", "calendar": "theme-calendar", "accounts": "theme-accounts",
-      "search": "theme-search", "ai": "theme-ai", "settings": "theme-settings",
+      "search": "theme-search", "ai": "theme-ai", "ai-chat": "theme-ai", "settings": "theme-settings",
       "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
       "domain:paper": "theme-paper", "domain:courses": "theme-courses",
       "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan",

@@ -3,7 +3,7 @@
    - HTML 页面：优先网络（每次打开都是最新版），网络失败时用缓存（离线可用）
    - 静态资源（css/js）：先读缓存（秒开），后台拉取更新缓存
    - 发布新版本时更新 CACHE 版本号，旧缓存自动清理，一次刷新即生效 */
-var CACHE = "wb-cache-v043";
+var CACHE = "wb-cache-v044";
 var ASSETS = [
   "./",
   "./index.html",
