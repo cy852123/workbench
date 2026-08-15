@@ -283,10 +283,12 @@ h1, h2, h3, h4 { font-weight: 700; }
   font-size: 13px; width: 100%; text-align: left;
   transition: background 0.15s;
 }
-.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .75; }
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .9; }
 .nav-item:hover { background: #F0F0F0; }
 .nav-item.active { background: #2F6B57; color: #fff; font-weight: 600; }
-.nav-item.active svg { opacity: 1; }
+.nav-item.active .nav-ic { color: #fff !important; }
+.nav-ic { display: inline-flex; align-items: center; }
+.nav-ic svg { color: inherit; }
 .nav-item .nav-badge {
   margin-left: auto; font-size: 11px; background: rgba(47,107,87,0.12);
   color: #2F6B57; border-radius: 10px; padding: 1px 7px;

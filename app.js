@@ -458,26 +458,27 @@
   function navItems() {
     var items = [];
     items.push({ group: "开始" });
-    items.push({ view: "today", label: "今日", icon: "sun" });
+    items.push({ view: "today", label: "今日", icon: "sun", color: "#34495E" });
     items.push({ group: "我的领域" });
+    var domColors = { kaoyan: "#F5B041", cet: "#2980B9", ai: "#3498DB", courses: "#8E44AD" };
     data.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
-      items.push({ view: "domain:" + dm.id, label: dm.name, icon: dm.type === "courses" ? "book" : dm.type === "paper" ? "file" : dm.type === "kaoyan" ? "target" : "book", domain: true });
+      items.push({ view: "domain:" + dm.id, label: dm.name, icon: dm.type === "courses" ? "book" : dm.type === "kaoyan" ? "target" : "book", color: domColors[dm.id] || "#5B8DD9", domain: true });
     });
     items.push({ group: "工具" });
-    items.push({ view: "focus", label: "专注", icon: "timer" });
-    items.push({ view: "activity", label: "学习记录", icon: "trending" });
-    items.push({ view: "library", label: "资料库", icon: "folder" });
-    items.push({ view: "inbox", label: "收集箱", icon: "inbox", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
-    items.push({ view: "mistakes", label: "错题本", icon: "alert" });
-    items.push({ view: "qa", label: "答疑库", icon: "help" });
-    items.push({ view: "reviews", label: "复盘", icon: "refresh" });
-    items.push({ view: "health", label: "健康", icon: "heart" });
-    items.push({ view: "calendar", label: "日历", icon: "calendar" });
-    items.push({ view: "accounts", label: "账号", icon: "user" });
+    items.push({ view: "focus", label: "专注", icon: "timer", color: "#E74C3C" });
+    items.push({ view: "activity", label: "学习记录", icon: "trending", color: "#27AE60" });
+    items.push({ view: "library", label: "资料库", icon: "folder", color: "#2980B9" });
+    items.push({ view: "inbox", label: "收集箱", icon: "inbox", color: "#9B59B6", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
+    items.push({ view: "mistakes", label: "错题本", icon: "alert", color: "#F39C12" });
+    items.push({ view: "qa", label: "答疑库", icon: "help", color: "#1ABC9C" });
+    items.push({ view: "reviews", label: "复盘", icon: "refresh", color: "#34495E" });
+    items.push({ view: "health", label: "健康", icon: "heart", color: "#2ECC71" });
+    items.push({ view: "calendar", label: "日历", icon: "calendar", color: "#8E44AD" });
+    items.push({ view: "accounts", label: "账号", icon: "user", color: "#95A5A6" });
     items.push({ group: "系统" });
-    items.push({ view: "search", label: "搜索", icon: "search" });
-    items.push({ view: "ai", label: "AI 帮手", icon: "spark" });
-    items.push({ view: "settings", label: "设置与数据", icon: "settings" });
+    items.push({ view: "search", label: "搜索", icon: "search", color: "#34495E" });
+    items.push({ view: "ai", label: "AI 帮手", icon: "spark", color: "#3498DB" });
+    items.push({ view: "settings", label: "设置与数据", icon: "settings", color: "#7F8C8D" });
     return items;
   }
 
@@ -551,7 +552,7 @@
       if (it.group) { html += '<div class="nav-group"><div class="nav-group-title">' + it.group + "</div></div>"; return; }
       var active = W.ui.view === it.view ? " active" : "";
       html += '<button class="nav-item' + active + '" data-action="nav" data-view="' + it.view + '">' +
-        ICONS[it.icon] + "<span>" + it.label + "</span>" +
+        '<span class="nav-ic" style="color:' + (it.color || "#4A4A4A") + '">' + ICONS[it.icon] + "</span><span>" + it.label + "</span>" +
         (it.badge ? '<span class="nav-badge">' + it.badge + "</span>" : "") + "</button>";
     });
     nav.innerHTML = html;
@@ -579,7 +580,7 @@
       if (it.group) { dhtml += '<div class="drawer-group-title">' + it.group + "</div>"; return; }
       var active = W.ui.view === it.view ? " active" : "";
       dhtml += '<button class="drawer-item' + active + '" data-action="nav" data-view="' + it.view + '">' +
-        ICONS[it.icon] + "<span>" + it.label + "</span></button>";
+        '<span class="nav-ic" style="color:' + (it.color || "#4A4A4A") + '">' + ICONS[it.icon] + "</span><span>" + it.label + "</span></button>";
     });
     db.innerHTML = dhtml;
   }
