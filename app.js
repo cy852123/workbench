@@ -458,27 +458,27 @@
   function navItems() {
     var items = [];
     items.push({ group: "开始" });
-    items.push({ view: "today", label: "今日", icon: "sun", color: "#34495E" });
+    items.push({ view: "today", label: "今日", icon: "☀️" });
     items.push({ group: "我的领域" });
-    var domColors = { kaoyan: "#F5B041", cet: "#2980B9", ai: "#3498DB", courses: "#8E44AD" };
     data.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
-      items.push({ view: "domain:" + dm.id, label: dm.name, icon: dm.type === "courses" ? "book" : dm.type === "kaoyan" ? "target" : "book", color: domColors[dm.id] || "#5B8DD9", domain: true });
+      var ic = dm.id === "kaoyan" ? "🎓" : dm.id === "cet" ? "📖" : dm.id === "ai" ? "🧠" : dm.id === "courses" ? "📚" : "📁";
+      items.push({ view: "domain:" + dm.id, label: dm.name, icon: ic, domain: true });
     });
     items.push({ group: "工具" });
-    items.push({ view: "focus", label: "专注", icon: "timer", color: "#E74C3C" });
-    items.push({ view: "activity", label: "学习记录", icon: "trending", color: "#27AE60" });
-    items.push({ view: "library", label: "资料库", icon: "folder", color: "#2980B9" });
-    items.push({ view: "inbox", label: "收集箱", icon: "inbox", color: "#9B59B6", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
-    items.push({ view: "mistakes", label: "错题本", icon: "alert", color: "#F39C12" });
-    items.push({ view: "qa", label: "答疑库", icon: "help", color: "#1ABC9C" });
-    items.push({ view: "reviews", label: "复盘", icon: "refresh", color: "#34495E" });
-    items.push({ view: "health", label: "健康", icon: "heart", color: "#2ECC71" });
-    items.push({ view: "calendar", label: "日历", icon: "calendar", color: "#8E44AD" });
-    items.push({ view: "accounts", label: "账号", icon: "user", color: "#95A5A6" });
+    items.push({ view: "focus", label: "专注", icon: "🍅" });
+    items.push({ view: "activity", label: "学习记录", icon: "📈" });
+    items.push({ view: "library", label: "资料库", icon: "📁" });
+    items.push({ view: "inbox", label: "收集箱", icon: "📥", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
+    items.push({ view: "mistakes", label: "错题本", icon: "📕" });
+    items.push({ view: "qa", label: "答疑库", icon: "💬" });
+    items.push({ view: "reviews", label: "复盘", icon: "🔄" });
+    items.push({ view: "health", label: "健康", icon: "💪" });
+    items.push({ view: "calendar", label: "日历", icon: "📅" });
+    items.push({ view: "accounts", label: "账号", icon: "👤" });
     items.push({ group: "系统" });
-    items.push({ view: "search", label: "搜索", icon: "search", color: "#34495E" });
-    items.push({ view: "ai", label: "AI 帮手", icon: "spark", color: "#3498DB" });
-    items.push({ view: "settings", label: "设置与数据", icon: "settings", color: "#7F8C8D" });
+    items.push({ view: "search", label: "搜索", icon: "🔍" });
+    items.push({ view: "ai", label: "AI 帮手", icon: "🤖" });
+    items.push({ view: "settings", label: "设置与数据", icon: "⚙️" });
     return items;
   }
 
@@ -552,7 +552,7 @@
       if (it.group) { html += '<div class="nav-group"><div class="nav-group-title">' + it.group + "</div></div>"; return; }
       var active = W.ui.view === it.view ? " active" : "";
       html += '<button class="nav-item' + active + '" data-action="nav" data-view="' + it.view + '">' +
-        '<span class="nav-ic" style="color:' + (it.color || "#4A4A4A") + '">' + ICONS[it.icon] + "</span><span>" + it.label + "</span>" +
+        '<span class="nav-emoji">' + it.icon + "</span><span>" + it.label + "</span>" +
         (it.badge ? '<span class="nav-badge">' + it.badge + "</span>" : "") + "</button>";
     });
     nav.innerHTML = html;
@@ -562,15 +562,15 @@
     var primary = data.settings.primaryDomain || data.domains[0].id;
     var pv = "domain:" + primary;
     var bottom = [
-      { view: "today", label: "今日", icon: "sun" },
-      { view: pv, label: (data.domains.filter(function (x) { return x.id === primary; })[0] || {}).name || "领域", icon: "target" },
-      { view: "__plus", label: "添加", icon: "plus" },
-      { view: "__more", label: "更多", icon: "grid" }
+      { view: "today", label: "今日", icon: "☀️" },
+      { view: pv, label: (data.domains.filter(function (x) { return x.id === primary; })[0] || {}).name || "领域", icon: "🎓" },
+      { view: "__plus", label: "添加", icon: "➕" },
+      { view: "__more", label: "更多", icon: "☰" }
     ];
     mn.innerHTML = bottom.map(function (b) {
       var active = W.ui.view === b.view ? " active" : "";
       return '<button class="mn-item' + active + '" data-action="' + (b.view === "__plus" ? "quick-add" : b.view === "__more" ? "open-drawer" : "nav") + '" data-view="' + b.view + '">' +
-        ICONS[b.icon] + "<span>" + b.label + "</span></button>";
+        '<span class="nav-emoji">' + b.icon + "</span><span>" + b.label + "</span></button>";
     }).join("");
 
     /* 抽屉 */
@@ -580,7 +580,7 @@
       if (it.group) { dhtml += '<div class="drawer-group-title">' + it.group + "</div>"; return; }
       var active = W.ui.view === it.view ? " active" : "";
       dhtml += '<button class="drawer-item' + active + '" data-action="nav" data-view="' + it.view + '">' +
-        '<span class="nav-ic" style="color:' + (it.color || "#4A4A4A") + '">' + ICONS[it.icon] + "</span><span>" + it.label + "</span></button>";
+        '<span class="nav-emoji">' + it.icon + "</span><span>" + it.label + "</span></button>";
     });
     db.innerHTML = dhtml;
   }
