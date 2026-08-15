@@ -1496,7 +1496,7 @@
       list.length === 0 ? empty("没有符合条件的资料", "点「新建资料」添加，支持粘贴 B站/网盘/小红书/抖音等链接") :
       '<div class="list">' + list.map(function (r) {
         return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main"><div class="li-title">' + esc(r.title) + "</div>" +
+          '<div class="li-main"><div class="li-title" data-action="lib-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">' + esc(r.title) + "</div>" +
           '<div class="li-sub">' +
           (r.platform ? '<span class="tag platform">' + esc(r.platform) + "</span>" : "") +
           stateTag(r.status) +
@@ -1504,17 +1504,38 @@
           (r.domainId ? '<span class="tag">' + esc(domainName(r.domainId)) + "</span>" : "") +
           (r.tags || []).map(function (t) { return '<span class="tag">#' + esc(t) + "</span>"; }).join("") +
           (r.extractCode ? '<span class="tag">提取码 ' + esc(r.extractCode) + "</span>" : "") +
-          "</div>" +
-          (r.note ? '<div class="li-sub">' + esc(r.note) + "</div>" : "") +
+          " ｜ 点击查看详情</div>" +
           "</div>" +
           '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
           (r.url ? '<a class="btn small plain" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + ic("link") + "打开</a>" : "") +
-          '<button class="btn small plain" data-action="set-status" data-id="' + esc(r.id) + '">' + ic("refresh") + "状态</button>" +
-          '<div style="display:flex;gap:2px;">' +
-          '<button class="icon-btn" data-action="edit-resource" data-id="' + esc(r.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-resource" data-id="' + esc(r.id) + '">' + ic("trash") + "</button></div></div></div>";
+          '<span class="en-skill-arrow" data-action="lib-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">›</span></div></div>';
       }).join("") + "</div>");
 
+    return html;
+  }
+  /* 资料详情页：单开一页显示完整信息 */
+  function libraryDetail() {
+    var W = window.W, d = W.data;
+    var r = (d.resources || []).filter(function (x) { return x.id === W.ui.libId; })[0];
+    if (!r) return '<div class="card">' + esc("该资料不存在或已删除") + "</div>";
+    var html = backBar("library", "资料库");
+    html += card(cardHead(esc(r.title), stateTag(r.status) + " " + esc(r.category || "其他"), "lib-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      (r.platform ? '<span class="tag platform">' + esc(r.platform) + "</span>" : "") +
+      stateTag(r.status) +
+      '<span class="tag">' + esc(r.category || "其他") + "</span>" +
+      (r.domainId ? '<span class="tag">' + esc(domainName(r.domainId)) + "</span>" : "") +
+      (r.tags || []).map(function (t) { return '<span class="tag">#' + esc(t) + "</span>"; }).join("") +
+      (r.extractCode ? '<span class="tag">提取码 ' + esc(r.extractCode) + "</span>" : "") +
+      "</div>" +
+      (r.note ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">备注</div><div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(r.note) + "</div>" : '<div class="li-sub" style="margin-bottom:14px;">没有备注。点「编辑」补充。</div>') +
+      (r.url ? '<div class="li-sub" style="margin-bottom:10px;">链接：<a href="' + esc(r.url) + '" target="_blank" rel="noopener" style="color:var(--accent);">' + esc(r.url) + "</a></div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      (r.url ? '<a class="btn" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + ic("link") + "打开链接</a>" : "") +
+      '<button class="btn small plain" data-action="set-status" data-id="' + esc(r.id) + '">' + ic("refresh") + "切换状态</button>" +
+      '<button class="btn small ghost" data-action="edit-resource" data-id="' + esc(r.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-resource" data-id="' + esc(r.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -1532,12 +1553,14 @@
     html += card(cardHead("待分拣", pending.length + " 条，决定放哪", "inbox"),
       pending.length === 0 ? empty("收集箱是空的", "想到什么先扔进来，稍后统一整理") :
       '<div class="list">' + pending.map(function (x) {
+        var title = String(x.content || x.url || "无标题");
         return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main"><div class="li-title">' + esc(x.content || x.url || "无标题") + "</div>" +
+          '<div class="li-main"><div class="li-title" data-action="inbox-open" data-id="' + esc(x.id) + '" style="cursor:pointer;">' + esc(title.length > 40 ? title.slice(0, 40) + "…" : title) + "</div>" +
           '<div class="li-sub">' +
           (x.platform ? '<span class="tag platform">' + esc(x.platform) + "</span>" : "") +
           '<span class="tag">' + esc(x.type || "文字") + "</span>" +
-          '<span class="tag">' + esc(x.createdAt || "") + "</span></div>" +
+          '<span class="tag">' + esc(x.createdAt || "") + "</span>" +
+          '<span class="tag" style="cursor:pointer;" data-action="inbox-open" data-id="' + esc(x.id) + '">查看全文</span></div>' +
           (x.suggestion ? '<div class="li-sub" style="color:var(--accent);">AI 建议：' + esc(x.suggestion) + "</div>" : "") +
           "</div>" +
           '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
@@ -1553,6 +1576,29 @@
           '<div class="li-sub">已移动到 ' + esc(x.movedTo || "资料库") + "</div></div></div>";
       }).join("") + "</div>");
 
+    return html;
+  }
+  /* 收集箱详情页：单开一页显示全文 + 操作 */
+  function inboxDetail() {
+    var W = window.W, d = W.data;
+    var x = (d.inbox || []).filter(function (y) { return y.id === W.ui.inboxId; })[0];
+    if (!x) return '<div class="card">' + esc("该条内容不存在或已删除") + "</div>";
+    var html = backBar("inbox", "收集箱");
+    html += card(cardHead("📥 收集内容", x.status === "待分拣" ? "待分拣" : "已分拣 · " + esc(x.movedTo || "资料库"), "inbox-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      (x.platform ? '<span class="tag platform">' + esc(x.platform) + "</span>" : "") +
+      '<span class="tag">' + esc(x.type || "文字") + "</span>" +
+      '<span class="tag">' + esc(x.createdAt || "") + "</span>" +
+      "</div>" +
+      '<div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(x.content || x.url || "无标题") + "</div>" +
+      (x.url ? '<div class="li-sub" style="margin-bottom:10px;">链接：<a href="' + esc(x.url) + '" target="_blank" rel="noopener" style="color:var(--accent);">' + esc(x.url) + "</a></div>" : "") +
+      (x.suggestion ? '<div class="li-sub" style="color:var(--accent);margin-bottom:10px;">AI 建议：' + esc(x.suggestion) + "</div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      (x.status === "待分拣"
+        ? '<button class="btn" data-action="sort-inbox" data-id="' + esc(x.id) + '">' + ic("check") + "确认去向</button>"
+        : "") +
+      '<button class="btn small ghost" data-action="del-inbox" data-id="' + esc(x.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2062,17 +2108,30 @@
     html += card(cardHead("复盘历史", list.length + " 次记录", "review-history"),
       list.length === 0 ? empty("还没有复盘记录", "从今天的每日复盘开始") :
       '<div>' + list.map(function (r) {
-        return '<div class="review-item"><div class="ri-head"><span class="ri-date">' + esc(r.date) + "</span>" +
+        return '<div class="review-item" data-action="review-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">' +
+          '<div class="ri-head"><span class="ri-date">' + esc(r.date) + "</span>" +
           '<span class="ri-type">' + (r.type === "weekly" ? "周复盘" : "日复盘") + "</span>" +
-          '<span style="margin-left:auto;">' +
-          '<button class="icon-btn" data-action="edit-review" data-id="' + esc(r.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-review" data-id="' + esc(r.id) + '">' + ic("trash") + "</button></span></div>" +
-          (r.done ? '<p style="font-size:13.5px;margin-top:6px;">完成：' + esc(r.done) + "</p>" : "") +
-          (r.undone ? '<p style="font-size:13.5px;">未完成：' + esc(r.undone) + "</p>" : "") +
-          (r.adjust ? '<p style="font-size:13.5px;color:var(--accent);">调整：' + esc(r.adjust) + "</p>" : "") +
+          '<span style="margin-left:auto;color:var(--accent);">查看 →</span></div>' +
+          (r.done ? '<p style="font-size:13px;margin-top:4px;color:var(--sub);">完成：' + esc(String(r.done).slice(0, 30)) + (String(r.done).length > 30 ? "…" : "") + "</p>" : "") +
           "</div>";
       }).join("") + "</div>");
 
+    return html;
+  }
+  /* 复盘详情页：单开一页显示完整复盘 */
+  function reviewDetail() {
+    var W = window.W, d = W.data;
+    var r = (d.reviews || []).filter(function (x) { return x.id === W.ui.reviewId; })[0];
+    if (!r) return '<div class="card">' + esc("该复盘不存在或已删除") + "</div>";
+    var html = backBar("reviews", "复盘");
+    html += card(cardHead((r.type === "weekly" ? "📗 周复盘" : "📘 日复盘") + " · " + esc(r.date), esc(r.date), "review-detail"),
+      (r.done ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">完成的</div><div style="white-space:pre-wrap;line-height:1.7;margin-bottom:12px;">' + esc(r.done) + "</div>" : "") +
+      (r.undone ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">没完成 / 原因</div><div style="white-space:pre-wrap;line-height:1.7;margin-bottom:12px;">' + esc(r.undone) + "</div>" : "") +
+      (r.adjust ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">明天调整</div><div style="white-space:pre-wrap;line-height:1.7;background:#EEF0ED;border-radius:10px;padding:12px 14px;">' + esc(r.adjust) + "</div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:14px;">' +
+      '<button class="btn small ghost" data-action="edit-review" data-id="' + esc(r.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-review" data-id="' + esc(r.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2202,7 +2261,50 @@
       '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
     html += card(cardHead("📚 错题", list.length + " 道", "mk-list"),
       list.length === 0 ? empty("没有符合条件的错题", "") :
-      '<div class="list">' + list.map(function (m) { return mistakeCard(m, true); }).join("") + "</div>");
+      '<div class="list">' + list.map(function (m) {
+        return '<div class="list-item" data-action="mk-open" data-id="' + esc(m.id) + '" style="cursor:pointer;">' +
+          '<div class="li-main"><div class="li-title">' + esc(m.title) + (m.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + "</div>" +
+          '<div class="li-sub">' +
+          '<span class="tag">' + esc(m.subject || "未分类") + "</span>" +
+          (m.topic ? '<span class="tag">' + esc(m.topic) + "</span>" : "") +
+          (m.type ? '<span class="tag">' + esc(m.type) + "</span>" : "") +
+          '<span class="tag">' + esc(m.cause || "未填错因") + "</span>" +
+          (m.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+          (m.reviewCount ? '<span class="tag">复习 ' + m.reviewCount + " 次</span>" : "") +
+          (m.nextReview && !m.mastered ? (m.nextReview <= t ? '<span class="tag state-todo">待复习</span>' : '<span class="tag">下次 ' + esc(m.nextReview) + "</span>") : "") +
+          " ｜ 点击查看详情</div></div>" +
+          '<span class="en-skill-arrow">›</span></div>';
+      }).join("") + "</div>");
+    return html;
+  }
+  /* 错题详情页：单开一页显示完整错题 + 复习/掌握/编辑/删除 */
+  function mkDetail() {
+    var W = window.W, d = W.data;
+    var m = (d.mistakes || []).filter(function (x) { return x.id === W.ui.mistakeId; })[0];
+    if (!m) return '<div class="card">' + esc("该错题不存在或已删除") + "</div>";
+    var html = backBar("mk-list", "错题列表");
+    html += card(cardHead(esc(m.title), esc(m.subject || "未分类") + (m.mastered ? " ｜ 已掌握" : " ｜ 未掌握"), "mk-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      '<span class="tag">' + esc(m.subject || "未分类") + "</span>" +
+      (m.topic ? '<span class="tag">' + esc(m.topic) + "</span>" : "") +
+      (m.type ? '<span class="tag">' + esc(m.type) + "</span>" : "") +
+      '<span class="tag">' + esc(m.cause || "未填错因") + "</span>" +
+      (m.source ? '<span class="tag">' + esc(m.source) + "</span>" : "") +
+      (m.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+      (m.date ? '<span class="tag">' + esc(m.date) + "</span>" : "") +
+      "</div>" +
+      '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">错题</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(m.title) + "</div>" +
+      (m.solution ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">解法</div>' +
+        '<div style="white-space:pre-wrap;line-height:1.7;background:#EEF0ED;border-radius:10px;padding:12px 14px;">' + esc(m.solution) + "</div>"
+        : '<div class="li-sub">还没有解法。点下方「编辑」补充。</div>') +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      (m.mastered
+        ? '<button class="btn small plain" data-action="toggle-master" data-id="' + esc(m.id) + '">取消掌握</button>'
+        : '<button class="btn small" data-action="mistake-review" data-id="' + esc(m.id) + '">开始复习</button>') +
+      '<button class="btn small ghost" data-action="edit-mistake" data-id="' + esc(m.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-mistake" data-id="' + esc(m.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2266,7 +2368,7 @@
       "</div>" +
       (filtered.length === 0 ? empty("还没有答疑记录", "学习时遇到不懂的，得到解答后记到这里") :
       '<div class="list">' + filtered.map(function (q) {
-        return '<div class="list-item" style="align-items:flex-start;">' +
+        return '<div class="list-item" data-action="qa-open" data-id="' + esc(q.id) + '" style="cursor:pointer;">' +
           '<div class="li-main"><div class="li-title">' + (q.starred ? "⭐ " : "") + esc(q.question) + (q.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + "</div>" +
           '<div class="li-sub">' +
           (q.subject ? '<span class="tag">' + esc(q.subject) + "</span>" : "") +
@@ -2274,17 +2376,38 @@
           (q.source ? '<span class="tag">' + esc(q.source) + "</span>" : "") +
           (q.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
           (q.status === "待解决" ? '<span class="tag state-todo">待解决</span>' : '<span class="tag state-done">已解决</span>') +
+          " ｜ 点击查看完整解答</div>" +
           "</div>" +
-          (q.answer ? '<div class="li-sub" style="white-space:pre-wrap;margin-top:4px;">' + esc(q.answer.slice(0, 120)) + (q.answer.length > 120 ? "…" : "") + "</div>" : "") +
-          "</div>" +
-          '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">' +
-          '<button class="icon-btn" data-action="toggle-qa-star" data-id="' + esc(q.id) + '">' + (q.starred ? "⭐" : "☆") + "</button>" +
-          '<button class="btn small plain" data-action="toggle-qa-status" data-id="' + esc(q.id) + '">' + (q.status === "待解决" ? "标记已解决" : "改回待解决") + "</button>" +
-          '<button class="btn small plain" data-action="toggle-qa-master" data-id="' + esc(q.id) + '">' + (q.mastered ? "取消掌握" : "标记掌握") + "</button>" +
-          '<div style="display:flex;gap:2px;">' +
-          '<button class="icon-btn" data-action="edit-qa" data-id="' + esc(q.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-qa" data-id="' + esc(q.id) + '">' + ic("trash") + "</button></div></div></div>";
+          '<span class="en-skill-arrow">›</span></div>';
       }).join("") + "</div>"));
+    return html;
+  }
+  /* 答疑详情页：单开一页显示完整问答 */
+  function qaDetail() {
+    var W = window.W, d = W.data;
+    var q = (d.qa || []).filter(function (x) { return x.id === W.ui.qaId; })[0];
+    if (!q) return '<div class="card">' + esc("该问题不存在或已删除") + "</div>";
+    var html = backBar("qa", "答疑库");
+    html += card(cardHead((q.starred ? "⭐ " : "") + esc(q.question), esc(q.subject || "未分类") + (q.mastered ? " ｜ 已掌握" : " ｜ 未掌握") + (q.status === "待解决" ? " ｜ 待解决" : " ｜ 已解决"), "qa-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      (q.subject ? '<span class="tag">' + esc(q.subject) + "</span>" : "") +
+      (q.tags ? '<span class="tag">' + esc(q.tags) + "</span>" : "") +
+      (q.source ? '<span class="tag">' + esc(q.source) + "</span>" : "") +
+      (q.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+      (q.date ? '<span class="tag">' + esc(q.date) + "</span>" : "") +
+      "</div>" +
+      '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">问题</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(q.question) + "</div>" +
+      (q.answer ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">解答</div>' +
+        '<div style="white-space:pre-wrap;line-height:1.7;background:#EEF0ED;border-radius:10px;padding:12px 14px;">' + esc(q.answer) + "</div>"
+        : '<div class="li-sub">还没有解答。点下方「编辑」补充解答。</div>') +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      '<button class="btn small ' + (q.starred ? "plain" : "") + '" data-action="toggle-qa-star" data-id="' + esc(q.id) + '">' + (q.starred ? "⭐ 已收藏" : "☆ 收藏") + "</button>" +
+      '<button class="btn small ' + (q.status === "待解决" ? "" : "plain") + '" data-action="toggle-qa-status" data-id="' + esc(q.id) + '">' + (q.status === "待解决" ? "标记已解决" : "改回待解决") + "</button>" +
+      '<button class="btn small ' + (q.mastered ? "plain" : "") + '" data-action="toggle-qa-master" data-id="' + esc(q.id) + '">' + ic("check") + (q.mastered ? "已掌握（点此取消）" : "标记掌握") + "</button>" +
+      '<button class="btn small ghost" data-action="edit-qa" data-id="' + esc(q.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-qa" data-id="' + esc(q.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2443,6 +2566,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · 全站列表改单页详情<span class="log-tag">升级</span></div>' +
+      '<p>📄 全站列表统一改为「短列表 + 单页详情」：答疑库、错题本、复盘、收集箱、资料库的列表都只显示标题/摘要，点任意一条单开一页看完整内容（不再把所有内容摊在长页面里）。列表页都保留了快捷操作按钮。</p>' +
+      '<p>影响范围：答疑库 / 错题本 / 复盘 / 收集箱 / 资料库。数据：无影响。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · 语法知识点优化<span class="log-tag">升级</span></div>' +
       '<p>📚 语法知识点改为「列表 + 单页详情」：列表只显示标题（不拉长页面），点任意知识点单开一页看完整内容，可上一条/下一条切换。新增「导出知识点」按钮：弹窗勾选想导出的知识点（或导出全部），保存为 txt 文件。</p>' +
       '<p>影响范围：英语学习 → 语法专区。数据：无影响。你需要的操作：无。</p></div>' +
@@ -2565,7 +2691,9 @@
     englishZone: englishZone,
     aiHistory: aiHistory,
     library: library,
+    libraryDetail: libraryDetail,
     inbox: inbox,
+    inboxDetail: inboxDetail,
     search: search,
     ai: ai,
     "ai-chat": aiChat,
@@ -2574,11 +2702,14 @@
     focus: focus,
     activity: activity,
     reviews: reviews,
+    reviewDetail: reviewDetail,
     mistakes: mistakes,
     mkTopics: mkTopics,
     mkTypes: mkTypes,
     mkList: mkList,
+    mkDetail: mkDetail,
     qa: qa,
+    qaDetail: qaDetail,
     calendar: calendar,
     settings: settings
   };

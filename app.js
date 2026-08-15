@@ -542,7 +542,7 @@
     icons: ICONS,
     data: data,
     settings: null,
-    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", grammarIdx: null, aiChat: [], focusType: "pomodoro" },
+    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", mistakeId: "", grammarIdx: null, qaId: "", reviewId: "", inboxId: "", libId: "", aiChat: [], focusType: "pomodoro" },
     timer: { total: 1500, left: 1500, running: false, iv: null }
   };
   window.W = W;
@@ -584,13 +584,18 @@
     }
     var map = {
       library: { e: "📁", t: "资料库", s: "分类、标签、链接识别" },
+      "lib-detail": { e: "📁", t: "资料详情", s: "完整信息" },
       inbox: { e: "📥", t: "收集箱", s: "先收着，稍后整理" },
+      "inbox-detail": { e: "📥", t: "收集内容", s: "全文与去向" },
       mistakes: { e: "📕", t: "错题本", s: "错题是复习的宝藏" },
       "mk-topics": { e: "📕", t: "错题 · 专题", s: "科目下的专题" },
       "mk-types": { e: "📕", t: "错题 · 考点类型", s: "专题下的考点" },
       "mk-list": { e: "📕", t: "错题 · 列表", s: "该考点下的错题" },
+      "mk-detail": { e: "📕", t: "错题详情", s: "完整错题与解法" },
       qa: { e: "💬", t: "答疑库", s: "问过的题不再错" },
+      "qa-detail": { e: "💬", t: "答疑详情", s: "完整问答" },
       reviews: { e: "🔄", t: "复盘", s: "让进步发生" },
+      "review-detail": { e: "🔄", t: "复盘详情", s: "完整复盘记录" },
       health: { e: "💪", t: "健康", s: "学习的第一步" },
       focus: { e: "🍅", t: "专注", s: "番茄钟计时" },
       activity: { e: "📈", t: "学习记录", s: "自动汇总你今天干了什么" },
@@ -724,7 +729,9 @@
     if (view === "today") html = Views.today();
     else if (view.indexOf("domain:") === 0) html = Views.domainView(data.domains.filter(function (x) { return x.id === view.slice(7); })[0]);
     else if (view === "library") html = Views.library();
+    else if (view === "lib-detail") html = Views.libraryDetail();
     else if (view === "inbox") html = Views.inbox();
+    else if (view === "inbox-detail") html = Views.inboxDetail();
     else if (view === "search") html = Views.search();
     else if (view === "ai") html = Views.ai();
     else if (view === "ai-chat") html = Views["ai-chat"]();
@@ -733,11 +740,14 @@
     else if (view === "focus") html = Views.focus();
     else if (view === "activity") html = Views.activity();
     else if (view === "reviews") html = Views.reviews();
+    else if (view === "review-detail") html = Views.reviewDetail();
     else if (view === "mistakes") html = Views.mistakes();
     else if (view === "mk-topics") html = Views.mkTopics();
     else if (view === "mk-types") html = Views.mkTypes();
     else if (view === "mk-list") html = Views.mkList();
+    else if (view === "mk-detail") html = Views.mkDetail();
     else if (view === "qa") html = Views.qa();
+    else if (view === "qa-detail") html = Views.qaDetail();
     else if (view === "calendar") html = Views.calendar();
     else if (view === "settings") html = Views.settings();
     else if (view === "ky-subjects") html = Views.kySubjects(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
@@ -878,8 +888,8 @@
   /* 板块主题色 */
   function themeOf(view) {
     var map = {
-      "focus": "theme-focus", "activity": "theme-activity", "library": "theme-library",
-      "inbox": "theme-inbox", "mistakes": "theme-mistakes", "mk-topics": "theme-mistakes", "mk-types": "theme-mistakes", "mk-list": "theme-mistakes", "qa": "theme-qa", "reviews": "theme-reviews",
+      "focus": "theme-focus", "activity": "theme-activity", "library": "theme-library", "lib-detail": "theme-library",
+      "inbox": "theme-inbox", "inbox-detail": "theme-inbox", "mistakes": "theme-mistakes", "mk-topics": "theme-mistakes", "mk-types": "theme-mistakes", "mk-list": "theme-mistakes", "mk-detail": "theme-mistakes", "qa": "theme-qa", "qa-detail": "theme-qa", "reviews": "theme-reviews", "review-detail": "theme-reviews",
       "health": "theme-health", "calendar": "theme-calendar", "accounts": "theme-accounts",
       "search": "theme-search", "ai": "theme-ai", "ai-chat": "theme-ai", "settings": "theme-settings",
       "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
@@ -2671,6 +2681,7 @@
 
       /* 资料库 */
       case "lib-cat": W.ui.libraryCat = (v === "全部" ? "" : v); renderView(); break;
+      case "lib-open": W.ui.libId = id || ""; go("lib-detail"); break;
       case "lib-state": W.ui.libraryState = (v === "全部状态" ? "" : v); renderView(); break;
       case "lib-dom": W.ui.libraryDom = v; renderView(); break;
       case "lib-search": W.ui.libraryKw = (fval("libKw") || "").trim(); renderView(); break;
@@ -2706,6 +2717,7 @@
         break;
       }
       case "sort-inbox": sortModal(id); break;
+      case "inbox-open": W.ui.inboxId = id || ""; go("inbox-detail"); break;
       case "ai-sort-all": aiSortAll(); break;
 
       /* 搜索 */
@@ -2739,6 +2751,7 @@
       case "mistake-subj": W.ui.mistakeSubj = v; W.ui.mistakeTopic = ""; W.ui.mistakeType = ""; go("mk-topics"); break;
       case "mk-topic": W.ui.mistakeTopic = v; W.ui.mistakeType = ""; go("mk-types"); break;
       case "mk-type": W.ui.mistakeType = v; go("mk-list"); break;
+      case "mk-open": W.ui.mistakeId = id || ""; go("mk-detail"); break;
       case "mistake-state": W.ui.mistakeState = v; renderView(); break;
       case "mistake-cause": W.ui.mistakeCause = v; renderView(); break;
 
@@ -2771,6 +2784,7 @@
       }
       case "qa-subj": W.ui.qaSubj = v; renderView(); break;
       case "qa-status": W.ui.qaStatus = v; renderView(); break;
+      case "qa-open": W.ui.qaId = id || ""; go("qa-detail"); break;
 
       /* 复盘 */
       case "add-daily-review": dailyReviewModal(null); break;
@@ -2778,6 +2792,7 @@
       case "ai-draft-week": weeklyDraftModal(); break;
       case "edit-weekly-review": weeklyDraftModal(true); break;
       case "edit-review": editReviewModal(id); break;
+      case "review-open": W.ui.reviewId = id || ""; go("review-detail"); break;
       case "del-review": {
         var rv = data.reviews.filter(function (x) { return x.id === id; })[0];
         if (rv) {
