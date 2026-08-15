@@ -1057,7 +1057,7 @@
       toolBtn("📚", "真题生词本", "单词 + 年份 + 所在短句", "ky-examword-modal", "") +
       toolBtn("🎭", "熟词僻义专项", "如 address → 处理/演讲", "ky-oddword-modal", "") +
       toolBtn("🖊", "写作替换词库", "important → crucial", "ky-replace-modal", "") +
-      toolBtn("🔍", "内置查词", "ECDICT 8000 词 · 快捷查义", "cet-dict", "") +
+      toolBtn("🔍", "内置查词", "ECDICT 8000 词 · 快捷查义", "ky-dict-modal", "") +
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">生词掌握度看板：下方列表一键切换 待复习/已掌握</div>');
     var all = ew.concat(om).concat(wr).map(function (x, i) { x._i = i; return x; });

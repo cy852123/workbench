@@ -1896,6 +1896,37 @@
     modalClose(); refresh(); toast("自定义帽子题已保存");
   }
 
+  /* 内置查词模态（ECDICT，可加入真题生词本） */
+  function kyDictModal() {
+    modalOpen("🔍 内置查词（ECDICT 8000 词）",
+      '<div class="field"><label>输入英文单词</label><input id="kyDictInput" placeholder="如 comprehensive"></div>' +
+      '<div id="kyDictResult"></div>',
+      cancelBtn() + '<button class="btn" data-action="ky-dict-lookup">查词</button>');
+  }
+  function kyDictLookup() {
+    var word = (fval("kyDictInput") || "").trim().toLowerCase();
+    var box = $id("kyDictResult");
+    if (!word) { toast("请输入单词", true); return; }
+    var entry = (window.WB_DICT || {})[word];
+    if (!entry) {
+      box.innerHTML = '<div class="li-sub" style="margin-top:10px;">词库未收录「' + esc(word) + "」（词库为考研高频 8000 词，未收录不代表不重要，可手动加入生词本）</div>";
+      return;
+    }
+    box.innerHTML = '<div class="formula-block"><div class="formula-title">' + esc(word) + (entry.p ? "  " + esc(entry.p) : "") + "</div>" +
+      '<div class="formula-line">' + esc(entry.t || entry.d || "") + "</div>" +
+      (entry.c ? '<div class="li-sub">柯林斯星级：' + entry.c + "</div>" : "") + "</div>" +
+      '<button class="btn small" data-action="ky-dict-add" data-word="' + esc(word) + '" style="margin-top:8px;">＋ 加入真题生词本</button>';
+  }
+  function kyDictAdd(word) {
+    var gen = kyActiveScheme().gen || {};
+    word = (word || "").toLowerCase();
+    if (!word) return;
+    gen.examWords = gen.examWords || [];
+    if (gen.examWords.some(function (x) { return x.word === word; })) { toast("该词已在真题生词本中", true); return; }
+    gen.examWords.push({ word: word, year: "", sentence: "", mastered: false, date: todayStr() });
+    modalClose(); refresh(); toast("已加入真题生词本");
+  }
+
   /* ---------- AI 本地规则 ---------- */
   function suggestTarget(content) {
     var c = String(content || "").toLowerCase();
@@ -2662,6 +2693,9 @@
       case "submit-ky-formula": submitKyFormula(); break;
       case "ky-hat-add": kyHatAddModal(); break;
       case "submit-ky-hat": submitKyHat(); break;
+      case "ky-dict-modal": kyDictModal(); break;
+      case "ky-dict-lookup": kyDictLookup(); break;
+      case "ky-dict-add": kyDictAdd(el.getAttribute("data-word")); break;
       case "ky-close": modalClose(); break;
 
       /* 模态提交 */
