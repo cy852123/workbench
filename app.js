@@ -86,7 +86,8 @@
       settings: {
         apiKey: "", apiBase: "", apiModel: "",
         primaryDomain: "kaoyan",
-        kaoyanDate: "2027-12-25"
+        kaoyanDate: "2027-12-25",
+        background: "default"
       },
       domains: [
         {
@@ -527,6 +528,21 @@
     W.ui.view = view;
     W.ui.searchKw = "";
     renderAll();
+  }
+
+  /* ---------- 页面背景 ---------- */
+  var BG_LIST = [
+    { id: "default", name: "经典米白", desc: "默认背景" },
+    { id: "dots", name: "淡雅波点", desc: "圆点纹理" },
+    { id: "grid", name: "细线网格", desc: "网格纹理" },
+    { id: "waves", name: "柔和波浪", desc: "波浪纹理" },
+    { id: "gradient", name: "清新渐变", desc: "低饱和渐变" }
+  ];
+  function applyBg() {
+    var cur = (data.settings && data.settings.background) || "default";
+    var body = document.body;
+    body.className = body.className.replace(/\s*bg-\w+/g, "").trim();
+    if (cur !== "default") body.className += " bg-" + cur;
   }
 
   /* ---------- AI 本地规则 ---------- */
@@ -1053,6 +1069,13 @@
       case "save-api": saveApi(); break;
       case "clear-api": clearApi(); break;
       case "save-primary": savePrimary(); break;
+      case "set-bg": {
+        data.settings.background = v;
+        applyBg();
+        refresh();
+        toast("背景已切换");
+        break;
+      }
 
       /* AI */
       case "ai-send": {
@@ -1955,6 +1978,7 @@
   load();
   W.data = data;
   W.settings = data.settings;
+  applyBg();
   scheduleRemind();
   renderAll();
   setTimeout(function () {

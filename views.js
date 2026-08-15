@@ -1059,6 +1059,24 @@
       }).join("") + "</select></div>" +
       '<button class="btn" data-action="save-primary">' + ic("check") + "保存</button>");
 
+    /* 页面背景 */
+    var bgs = [
+      { id: "default", name: "经典米白", desc: "默认背景", css: "#F7F7F5" },
+      { id: "dots", name: "淡雅波点", desc: "圆点纹理", css: "radial-gradient(rgba(47,107,87,0.12) 1.4px, transparent 1.4px) 0 0 / 22px 22px, #F7F7F5" },
+      { id: "grid", name: "细线网格", desc: "网格纹理", css: "linear-gradient(rgba(47,107,87,0.07) 1px, transparent 1px) 0 0 / 26px 26px, linear-gradient(90deg, rgba(47,107,87,0.07) 1px, transparent 1px) 0 0 / 26px 26px, #F9FAF8" },
+      { id: "waves", name: "柔和波浪", desc: "波浪纹理", css: "linear-gradient(180deg, #FAF7F9, #F3E7F0)" },
+      { id: "gradient", name: "清新渐变", desc: "低饱和渐变", css: "linear-gradient(165deg, #F7F7F5, #EFF4EE 45%, #F4F0E8)" }
+    ];
+    var curBg = (d.settings && d.settings.background) || "default";
+    html += card(cardHead("页面背景", "点击预览切换，卡片与文字不受影响", "bg"),
+      '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;">' +
+      bgs.map(function (b) {
+        return '<div class="bg-preview' + (curBg === b.id ? " selected" : "") + '" data-action="set-bg" data-v="' + esc(b.id) + '" title="' + esc(b.desc) + '" style="background:' + b.css + ';">' +
+          (curBg === b.id ? '<span class="bp-check">' + ic("check") + "</span>" : "") +
+          '<span class="bp-name">' + esc(b.name) + "</span></div>";
+      }).join("") + "</div>" +
+      '<div class="li-sub" style="margin-top:12px;">背景为开源 CSS/SVG 图案方案（参考 GitHub：patternbolt、CSS-Pattern），零图片文件、离线可用。默认保持经典米白。若你有自己拍的背景图，可在本地替换 styles.css 中的对应样式（暂不支持上传图片）。</div>');
+
     html += card(cardHead("关于", "版本与运行信息", "about"),
       '<div style="font-size:14px;color:var(--sub);line-height:1.9;">' +
       "版本：v0.1.0（第一版，本地存储）<br>" +
@@ -1070,6 +1088,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.4 页面背景<span class="log-tag">更新</span></div>' +
+      '<p>设置页新增「页面背景」：5 款开源 CSS/SVG 图案背景（经典米白 / 淡雅波点 / 细线网格 / 柔和波浪 / 清新渐变），点击即切换，卡片与文字不受影响。</p>' +
+      '<p>影响范围：设置页、页面外观。数据：新增背景选择（默认经典米白）。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.3 专注与记录<span class="log-tag">更新</span></div>' +
       '<p>番茄钟独立为「专注」页面：圆形进度环、25/45/60 预设、今日番茄与专注统计、专注历史，完成后自动记录并弹小奖励。</p>' +
       '<p>新增「学习记录」页面：自动汇总你今天干了什么（打卡、完成任务、专注、新增资料/答疑/错题/生词、复盘），含今日时间线、最近 7 天回顾和鼓励语。</p>' +
