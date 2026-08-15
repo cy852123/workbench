@@ -305,6 +305,24 @@
         changed = true;
       }
       if (!cet.exams) { cet.exams = { "考研英语": { examDate: "2027-12-25", subjects: { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } } } }; cet.activeExam = "考研英语"; changed = true; }
+      /* 防御修复：exams 若被写坏成数组/字符串列表（旧版遗留），转回对象结构，不丢考试名 */
+      if (Array.isArray(cet.exams)) {
+        var exObj = {};
+        (cet.exams || []).forEach(function (x) {
+          var nm = typeof x === "string" ? x : (x && x.name) || "";
+          if (nm) exObj[nm] = { examDate: "", subjects: { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } } };
+        });
+        if (Object.keys(exObj).length) {
+          cet.exams = exObj;
+          cet.activeExam = cet.activeExam && exObj[cet.activeExam] ? cet.activeExam : Object.keys(exObj)[0];
+          changed = true;
+        }
+      }
+      if (typeof cet.wordbook === "string") {
+        try { cet.wordbook = JSON.parse(cet.wordbook); } catch (e) { cet.wordbook = []; }
+        if (!Array.isArray(cet.wordbook)) cet.wordbook = [];
+        changed = true;
+      }
       if (!cet.wordbook) { cet.wordbook = []; changed = true; }
       /* 迁移：旧固定日期 → 自动规则；顶层 wordbook → 当前考试独立生词本 */
       Object.keys(cet.exams).forEach(function (k) {
