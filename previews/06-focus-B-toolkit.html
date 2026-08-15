@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>专注页 · 变体B 暖极简工具台</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #F7F7F5; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; color: #202124; padding: 24px; max-width: 1000px; margin: 0 auto; }
+  /* 顶部：当前专注状态 */
+  .now { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #E8E8E5; border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; }
+  .now-ring { width: 54px; height: 54px; border-radius: 50%; background: conic-gradient(#2F6B57 0 35%, #EDEFEC 0); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .now-ring i { width: 42px; height: 42px; border-radius: 50%; background: #fff; font-style: normal; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #2F6B57; }
+  .now-info { flex: 1; }
+  .now-name { font-size: 14.5px; font-weight: 700; }
+  .now-type { font-size: 12px; color: #6F7277; margin-top: 2px; }
+  .now-actions { display: flex; gap: 8px; }
+  .btn { border: none; border-radius: 8px; padding: 8px 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; background: #2F6B57; color: #fff; }
+  .btn.ghost { background: transparent; border: 1px solid #E6E7E4; color: #555; }
+  /* 类型卡组 */
+  .types { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 16px; }
+  .tp { background: #fff; border: 1px solid #E8E8E5; border-radius: 12px; padding: 12px 6px; text-align: center; cursor: pointer; transition: all .12s; }
+  .tp:hover { border-color: #2F6B57; }
+  .tp.on { background: #2F6B57; border-color: #2F6B57; }
+  .tp-ic { font-size: 20px; }
+  .tp-name { font-size: 12px; margin-top: 4px; color: #555; }
+  .tp.on .tp-name { color: #fff; font-weight: 600; }
+  /* 开始专注卡 */
+  .start-card { display: flex; gap: 10px; background: #fff; border: 1px solid #E8E8E5; border-radius: 14px; padding: 14px 18px; margin-bottom: 16px; align-items: center; }
+  .start-card input { flex: 1; border: 1px solid #E6E7E4; border-radius: 10px; padding: 10px 14px; font-size: 14px; outline: none; }
+  .sound { display: flex; gap: 6px; }
+  .sd { border: 1px solid #E6E7E4; background: #FBFBF9; border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #555; cursor: pointer; }
+  .sd.on { background: #FCF5E5; border-color: #F3E3B8; color: #B07D0E; }
+  /* 统计 + 历史 */
+  .cols { display: grid; grid-template-columns: 240px 1fr; gap: 14px; }
+  .stats { display: flex; flex-direction: column; gap: 8px; }
+  .st { background: #fff; border: 1px solid #E8E8E5; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .st-label { font-size: 12.5px; color: #6F7277; }
+  .st-num { font-size: 17px; font-weight: 800; color: #2F6B57; }
+  .history { background: #fff; border: 1px solid #E8E8E5; border-radius: 12px; padding: 6px 16px; }
+  .his-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F2F2EF; font-size: 13px; }
+  .his-item:last-child { border: none; }
+  .his-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .his-name { flex: 1; }
+  .his-type { font-size: 11px; color: #6F7277; }
+  .his-time { color: #6F7277; font-size: 12px; }
+  @media (max-width: 768px) { .types { grid-template-columns: repeat(4, 1fr); } .cols { grid-template-columns: 1fr; } .now { flex-wrap: wrap; } .sound { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+  <div class="now">
+    <div class="now-ring"><i>35%</i></div>
+    <div class="now-info">
+      <div class="now-name">英语阅读精读 Text1</div>
+      <div class="now-type">深度工作 · 已专注 32 分 / 90 分 · 🌧 雨声中</div>
+    </div>
+    <div class="now-actions"><button class="btn ghost">暂停</button><button class="btn">结束</button></div>
+  </div>
+
+  <div class="types">
+    <div class="tp on"><div class="tp-ic">🍅</div><div class="tp-name">番茄钟</div></div>
+    <div class="tp"><div class="tp-ic">🧠</div><div class="tp-name">深度工作</div></div>
+    <div class="tp"><div class="tp-ic">⏱</div><div class="tp-name">限时冲刺</div></div>
+    <div class="tp"><div class="tp-ic">🌧</div><div class="tp-name">白噪音</div></div>
+    <div class="tp"><div class="tp-ic">🧘</div><div class="tp-name">冥想</div></div>
+    <div class="tp"><div class="tp-ic">📋</div><div class="tp-name">任务绑定</div></div>
+    <div class="tp"><div class="tp-ic">🎯</div><div class="tp-name">自定义</div></div>
+  </div>
+
+  <div class="start-card">
+    <input placeholder="这 1 小时在干嘛？如：英语阅读精读 / 数学真题">
+    <div class="sound"><span class="sd on">🌧 雨声</span><span class="sd">☕ 咖啡馆</span><span class="sd">🔇</span></div>
+    <button class="btn">开始</button>
+  </div>
+
+  <div class="cols">
+    <div class="stats">
+      <div class="st"><span class="st-label">今日专注</span><span class="st-num">2 次 · 85 分</span></div>
+      <div class="st"><span class="st-label">连续专注</span><span class="st-num">4 天</span></div>
+      <div class="st"><span class="st-label">最长一次</span><span class="st-num">64 分</span></div>
+      <div class="st"><span class="st-label">最常类型</span><span class="st-num">深度工作</span></div>
+    </div>
+    <div class="history">
+      <div class="his-item"><span class="his-dot" style="background:#2F6B57;"></span><span class="his-name">英语阅读精读 Text1</span><span class="his-type">深度工作</span><span class="his-time">60 分 · 今天 09:20</span></div>
+      <div class="his-item"><span class="his-dot" style="background:#E74C3C;"></span><span class="his-name">高数第 3 章习题</span><span class="his-type">番茄钟</span><span class="his-time">25 分 · 今天 08:30</span></div>
+      <div class="his-item"><span class="his-dot" style="background:#3498DB;"></span><span class="his-name">考研英语单词复习</span><span class="his-type">任务绑定</span><span class="his-time">25 分 · 昨天</span></div>
+    </div>
+  </div>
+</body>
+</html>

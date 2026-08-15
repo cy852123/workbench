@@ -1647,52 +1647,154 @@
     return html;
   }
 
-  /* ==================== 专注（番茄钟独立页） ==================== */
-  function focus() {
+  /* ==================== 专注（双变体：A 沉浸大圆环 / B 暖极简工具台） ==================== */
+  /* 本地副本（views 不跨文件调用 app.js 内部变量） */
+  var FOCUS_TYPES = [
+    { id: "pomodoro", name: "番茄钟", emoji: "🍅", min: 25, rest: 5, desc: "25 分钟工作 + 5 分钟休息" },
+    { id: "deep", name: "深度工作", emoji: "🧠", min: 90, rest: 10, desc: "连续无打扰，不打断" },
+    { id: "sprint", name: "限时冲刺", emoji: "⏱", min: 60, rest: 10, desc: "模拟考试限时" },
+    { id: "sound", name: "白噪音", emoji: "🌧", min: 30, rest: 5, desc: "配环境音专注" },
+    { id: "meditate", name: "冥想", emoji: "🧘", min: 10, rest: 2, desc: "静心放松" },
+    { id: "task", name: "任务绑定", emoji: "📋", min: 25, rest: 5, desc: "选任务专注，完成自动打卡" },
+    { id: "custom", name: "自定义", emoji: "🎯", min: 45, rest: 5, desc: "自由设定时长" }
+  ];
+  function focusTypeById(id) {
+    for (var i = 0; i < FOCUS_TYPES.length; i++) if (FOCUS_TYPES[i].id === id) return FOCUS_TYPES[i];
+    return FOCUS_TYPES[0];
+  }
+  function fmtTimer(sec) {
+    sec = Math.max(0, Math.round(sec || 0));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+  function focusStats() {
     var W = window.W, d = W.data;
     var t = todayStr();
-    var sessions = (d.focusSessions || []).filter(function (x) { return x.date === t; });
-    var todayMin = sessions.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
-    var totalSessions = (d.focusSessions || []).length;
+    var sessions = d.focusSessions || [];
+    var todayS = sessions.filter(function (x) { return x.date === t; });
+    var todayMin = todayS.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    var streak = 0;
+    var dt = new Date();
+    var dates = {};
+    sessions.forEach(function (x) { dates[x.date] = 1; });
+    for (;;) {
+      var ds = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+      if (dates[ds]) { streak++; dt.setDate(dt.getDate() - 1); } else break;
+    }
+    var longest = 0;
+    sessions.forEach(function (x) { if ((x.minutes || 0) > longest) longest = x.minutes; });
+    var typeCount = {};
+    sessions.forEach(function (x) { var k = x.type || "pomodoro"; typeCount[k] = (typeCount[k] || 0) + 1; });
+    var mostType = "";
+    var mostN = 0;
+    Object.keys(typeCount).forEach(function (k) { if (typeCount[k] > mostN) { mostN = typeCount[k]; mostType = k; } });
+    return { todayN: todayS.length, todayMin: todayMin, streak: streak, longest: longest, mostType: mostType };
+  }
+  function focusTypeBar(active) {
+    var W = window.W;
+    return '<div class="f-types">' + FOCUS_TYPES.map(function (ft) {
+      return '<div class="f-tp' + (active === ft.id ? " on" : "") + '" data-action="focus-type" data-v="' + ft.id + '">' +
+        '<span class="f-tp-ic">' + ft.emoji + "</span><span class=\"f-tp-name\">" + ft.name + "</span></div>";
+    }).join("") + "</div>";
+  }
+  function focusSoundBar() {
+    var W = window.W;
+    var kinds = [["rain", "🌧 雨声"], ["white", "🤍 白噪音"], ["wave", "🌊 海浪"], ["off", "🔇 静音"]];
+    return '<div class="f-sound">' + kinds.map(function (k) {
+      return '<span class="f-sd' + (W.soundKind === k[0] ? " on" : "") + '" data-action="focus-sound" data-v="' + k[0] + '">' + k[1] + "</span>";
+    }).join("") + "</div>";
+  }
+  function focusHistoryList() {
+    var W = window.W, d = W.data;
+    var recent = (d.focusSessions || []).slice().sort(function (a, b) { return (b.date + (b.ts || "")) > (a.date + (a.ts || "")) ? 1 : -1; }).slice(0, 8);
+    return recent.length === 0 ? empty("还没有完成的专注", "选个类型，命名一下，开始第一个专注") :
+      '<div class="f-history">' + recent.map(function (s) {
+        var ft = focusTypeById(s.type || "pomodoro");
+        return '<div class="f-his"><span class="f-dot" style="background:' + (s.type === "deep" ? "#2F6B57" : s.type === "sprint" ? "#E74C3C" : s.type === "meditate" ? "#8E44AD" : s.type === "task" ? "#3498DB" : "#E9A8CF") + ';"></span>' +
+          '<span class="f-his-name">' + (s.name ? esc(s.name) : ft.name) + "</span>" +
+          '<span class="f-his-type">' + ft.name + "</span>" +
+          '<span class="f-his-time">' + s.minutes + " 分 · " + esc(s.date.slice(5)) + "</span></div>";
+      }).join("") + "</div>";
+  }
+  function focus() {
+    var W = window.W, d = W.data;
+    return d.settings.focusMode === "b" ? focusB() : focusA();
+  }
+  /* 变体A：沉浸大圆环 */
+  function focusA() {
+    var W = window.W, d = W.data;
     var html = "";
-
-    /* 圆环计时器 */
+    var active = W.ui.focusType || "pomodoro";
+    var ft = focusTypeById(active);
     var r = 130, circ = 2 * Math.PI * r;
+    html += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">' +
+      '<button class="btn small plain" data-action="focus-mode-toggle">切换视图（当前：沉浸圆环）</button></div>';
     html += '<div class="card" style="text-align:center;">' +
-      '<div style="position:relative;width:300px;max-width:78vw;margin:0 auto;">' +
+      focusTypeBar(active) +
+      '<div style="position:relative;width:300px;max-width:78vw;margin:18px auto 6px;">' +
       '<svg viewBox="0 0 300 300" style="transform:rotate(-90deg);">' +
       '<circle cx="150" cy="150" r="' + r + '" fill="none" stroke="#EDEFEC" stroke-width="14"></circle>' +
       '<circle id="timerRing" cx="150" cy="150" r="' + r + '" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + circ + '" stroke-dashoffset="0"></circle>' +
       "</svg>" +
       '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
-      '<div class="timer-display" id="timerDisp" style="font-size:52px;">25:00</div>' +
-      '<div class="li-sub" id="timerState" style="margin-top:6px;">准备开始</div>' +
+      '<div class="timer-display" id="timerDisp" style="font-size:52px;">' + fmtTimer(W.timer.left) + "</div>" +
+      '<div class="li-sub" id="timerState" style="margin-top:6px;">' + ft.name + " · 待开始</div>" +
       "</div></div>" +
-      '<div class="timer-controls">' +
-      '<button class="btn small plain" data-action="timer-preset" data-min="25">25 分</button>' +
-      '<button class="btn small plain" data-action="timer-preset" data-min="45">45 分</button>' +
-      '<button class="btn small plain" data-action="timer-preset" data-min="60">60 分</button></div>' +
-      '<div class="timer-controls" style="margin-top:14px;">' +
-      '<button class="btn" data-action="timer-toggle" id="timerBtn" style="min-width:120px;">' + ic("play") + "开始</button>" +
+      '<div class="f-name-row"><input id="focusName" placeholder="这 1 小时在干嘛？如：英语阅读精读 / 数学真题">' +
+      (active === "custom" ? '<input id="focusCustomMin" type="number" min="1" max="240" value="45" style="width:70px;" title="分钟数">' : "") +
+      "</div>" +
+      '<div class="f-controls"><button class="btn" data-action="timer-toggle" id="timerBtn" style="min-width:140px;">' + ic("play") + "开始专注</button>" +
       '<button class="btn plain" data-action="timer-reset">' + ic("refresh") + "重置</button></div>" +
-      '<div class="li-sub" style="margin-top:12px;">说明：专注完成会自动记录一个番茄；页面打开时有效，手机锁屏会暂停（所有网页的共同限制）。</div></div>';
+      focusSoundBar() +
+      '<div class="li-sub" style="margin-top:12px;">' + ft.desc + " · 完成后自动休息 " + ft.rest + " 分钟</div></div>";
 
-    /* 今日统计 */
-    html += '<div class="grid grid-3">' +
-      '<div class="card tint-blue"><div class="stat-num">' + sessions.length + '</div><div class="stat-label">今日番茄</div></div>' +
-      '<div class="card tint-yellow"><div class="stat-num">' + Math.round(todayMin / 60) + '<span style="font-size:14px;"> 小时</span></div><div class="stat-label">今日专注</div></div>' +
-      '<div class="card tint-green"><div class="stat-num">' + totalSessions + '</div><div class="stat-label">累计番茄</div></div>' +
+    var st = focusStats();
+    html += '<div class="f-stats">' +
+      '<div class="f-st"><span class="f-st-num">' + st.todayN + "</span><span class=\"f-st-label\">今日专注</span></div>" +
+      '<div class="f-st"><span class="f-st-num">' + st.todayMin + ' 分</span><span class="f-st-label">今日时长</span></div>' +
+      '<div class="f-st"><span class="f-st-num">' + st.streak + " 天</span><span class=\"f-st-label\">连续专注</span></div>" +
+      '<div class="f-st"><span class="f-st-num">' + st.longest + ' 分</span><span class="f-st-label">最长一次</span></div>' +
       "</div>";
 
-    /* 历史 */
-    var recent = (d.focusSessions || []).slice().sort(function (a, b) { return b.ts > a.ts ? 1 : -1; }).slice(0, 8);
-    html += card(cardHead("专注历史", "最近完成的番茄", "focus-history"),
-      recent.length === 0 ? empty("还没有完成的专注", "从第一个 25 分钟开始") :
-      '<div class="list">' + recent.map(function (s) {
-        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">完成一次 ' + s.minutes + ' 分钟专注</div></div>' +
-          '<span class="li-meta">' + esc(s.date) + "</span></div>";
-      }).join("") + "</div>");
+    html += card(cardHead("专注历史", "命名会显示在这里", "focus-history"), focusHistoryList());
+    return html;
+  }
+  /* 变体B：暖极简工具台 */
+  function focusB() {
+    var W = window.W, d = W.data;
+    var html = "";
+    var active = W.ui.focusType || "pomodoro";
+    var ft = focusTypeById(active);
+    var running = W.timer.running;
+    var left = W.timer.left;
+    var total = W.timer.total || ft.min * 60;
+    var pct = total > 0 ? Math.round((total - left) / total * 100) : 0;
+    html += '<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">' +
+      '<button class="btn small plain" data-action="focus-mode-toggle">切换视图（当前：工具台）</button></div>';
+    /* 顶部状态条 */
+    html += '<div class="f-now">' +
+      '<div class="f-now-ring"><i>' + pct + "%</i></div>" +
+      '<div class="f-now-info"><div class="f-now-name">' + (W.timer.name ? esc(W.timer.name) : ft.name) + "</div>" +
+      '<div class="f-now-type">' + ft.name + " · " + fmtTimer(left) + " / " + fmtTimer(total) + (W.soundKind ? " · " + W.soundKind + " 中" : "") + "</div></div>" +
+      '<div class="f-now-actions"><button class="btn" data-action="timer-toggle">' + (running ? "暂停" : "开始") + "</button>" +
+      '<button class="btn ghost" data-action="timer-reset">重置</button></div></div>';
 
+    html += '<div class="card">' + focusTypeBar(active) + "</div>";
+
+    html += '<div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">' +
+      '<input id="focusName" placeholder="这 1 小时在干嘛？如：英语阅读精读 / 数学真题" style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;">' +
+      (active === "custom" ? '<input id="focusCustomMin" type="number" min="1" max="240" value="45" style="width:70px;border:1px solid var(--border);border-radius:10px;padding:10px;" title="分钟数">' : "") +
+      focusSoundBar() +
+      '<button class="btn" data-action="timer-toggle">' + ic("play") + "开始</button></div>";
+
+    var st = focusStats();
+    html += '<div class="f-cols">' +
+      '<div class="f-stats-v"><div class="f-st"><span class="f-st-label">今日专注</span><span class="f-st-num">' + st.todayN + " 次 · " + st.todayMin + " 分</span></div>" +
+      '<div class="f-st"><span class="f-st-label">连续专注</span><span class="f-st-num">' + st.streak + " 天</span></div>" +
+      '<div class="f-st"><span class="f-st-label">最长一次</span><span class="f-st-num">' + st.longest + " 分</span></div>" +
+      '<div class="f-st"><span class="f-st-label">最常类型</span><span class="f-st-num">' + (st.mostType ? focusTypeById(st.mostType).name : "暂无") + "</span></div></div>" +
+      card(cardHead("专注历史", "命名会显示在这里", "focus-history"), focusHistoryList()) +
+      "</div>";
     return html;
   }
 

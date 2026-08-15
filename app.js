@@ -449,7 +449,7 @@
     icons: ICONS,
     data: data,
     settings: null,
-    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", aiChat: [] },
+    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", aiChat: [], focusType: "pomodoro" },
     timer: { total: 1500, left: 1500, running: false, iv: null }
   };
   window.W = W;
@@ -2311,9 +2311,36 @@
       o.start(); setTimeout(function () { o.stop(); ctx.close(); }, 700);
     } catch (e) { /* 音频不可用则只提示 */ }
   }
+  /* ---------- 专注类型 ---------- */
+  var FOCUS_TYPES = [
+    { id: "pomodoro", name: "番茄钟", emoji: "🍅", min: 25, rest: 5, desc: "25 分钟工作 + 5 分钟休息" },
+    { id: "deep", name: "深度工作", emoji: "🧠", min: 90, rest: 10, desc: "连续无打扰，不打断" },
+    { id: "sprint", name: "限时冲刺", emoji: "⏱", min: 60, rest: 10, desc: "模拟考试限时" },
+    { id: "sound", name: "白噪音", emoji: "🌧", min: 30, rest: 5, desc: "配环境音专注" },
+    { id: "meditate", name: "冥想", emoji: "🧘", min: 10, rest: 2, desc: "静心放松" },
+    { id: "task", name: "任务绑定", emoji: "📋", min: 25, rest: 5, desc: "选任务专注，完成自动打卡" },
+    { id: "custom", name: "自定义", emoji: "🎯", min: 45, rest: 5, desc: "自由设定时长" }
+  ];
+  function focusTypeById(id) {
+    for (var i = 0; i < FOCUS_TYPES.length; i++) if (FOCUS_TYPES[i].id === id) return FOCUS_TYPES[i];
+    return FOCUS_TYPES[0];
+  }
   function timerStart() {
     if (W.timer.iv) clearInterval(W.timer.iv);
     W.timer.running = true;
+    /* 命名 + 类型（专注页当前选择；其他页用默认番茄） */
+    var fName = ($id("focusName") ? $id("focusName").value : "").trim();
+    var fType = W.ui.focusType || "pomodoro";
+    var ft = focusTypeById(fType);
+    if (fType === "custom") {
+      var cmin = parseInt($id("focusCustomMin") ? $id("focusCustomMin").value : "", 10);
+      if (cmin && cmin > 0 && cmin <= 240) { W.timer.total = W.timer.left = cmin * 60; }
+    } else {
+      W.timer.total = W.timer.left = ft.min * 60;
+    }
+    W.timer.name = fName;
+    W.timer.type = fType;
+    timerRender();
     W.timer.iv = setInterval(function () {
       if (!W.timer.running) return;
       W.timer.left--;
@@ -2321,21 +2348,19 @@
       if (W.timer.left <= 0) {
         clearInterval(W.timer.iv);
         W.timer.running = false;
-        /* 记录本次专注 */
+        /* 记录本次专注（含命名与类型） */
         data.focusSessions = data.focusSessions || [];
         var totalMin = W.timer.total / 60;
-        data.focusSessions.push({ id: uid(), date: todayStr(), minutes: totalMin, ts: nowStr().slice(11) });
+        data.focusSessions.push({ id: uid(), date: todayStr(), minutes: totalMin, ts: nowStr().slice(11), name: W.timer.name || "", type: W.timer.type || "pomodoro" });
         save(true);
         W.timer.left = W.timer.total;
         timerRender();
-        toast("专注完成，休息一下吧");
+        toast(ft.name + "完成，休息 " + ft.rest + " 分钟吧");
         timerBeep();
-        rewardModal("专注完成", "完成一次 " + totalMin + " 分钟专注，给自己一个肯定。", false);
-        /* 若在专注页，刷新统计 */
+        rewardModal("专注完成", "完成一次 " + totalMin + " 分钟「" + ft.name + "」" + (W.timer.name ? "（" + W.timer.name + "）" : "") + "，给自己一个肯定。", false);
         if (W.ui.view === "focus") renderView();
       }
     }, 1000);
-    timerRender();
   }
   function timerPause() { W.timer.running = false; timerRender(); }
   function timerReset() {
@@ -2343,6 +2368,41 @@
     if (W.timer.iv) clearInterval(W.timer.iv);
     W.timer.left = W.timer.total;
     timerRender();
+  }
+  /* ---------- 白噪音（Web Audio 生成，无版权文件） ---------- */
+  var soundCtx = null, soundSrc = null;
+  function soundStart(kind) {
+    try {
+      if (kind === "off" || !kind) { soundStop(); return; }
+      if (!soundCtx) soundCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (soundCtx.state === "suspended") soundCtx.resume();
+      soundStop();
+      var sr = soundCtx.sampleRate, bufLen = Math.floor(sr * 3);
+      var buf = soundCtx.createBuffer(1, bufLen, sr);
+      var d = buf.getChannelData(0);
+      var last = 0;
+      for (var i = 0; i < bufLen; i++) {
+        var white = Math.random() * 2 - 1;
+        if (kind === "rain") { last = (last + 0.02 * white) / 1.02; d[i] = last * 3.2; }
+        else if (kind === "wave") { d[i] = white * 0.45 + Math.sin(i / sr * 2 * Math.PI * 0.12) * 0.28; }
+        else { d[i] = white * 0.45; }
+      }
+      var src = soundCtx.createBufferSource();
+      src.buffer = buf; src.loop = true;
+      var g = soundCtx.createGain(); g.gain.value = 0.16;
+      src.connect(g); g.connect(soundCtx.destination);
+      src.start();
+      soundSrc = src;
+      W.soundKind = kind;
+    } catch (e) { toast("音效不可用（浏览器限制）", true); }
+  }
+  function soundStop() {
+    if (soundSrc) { try { soundSrc.stop(); } catch (e) {} soundSrc = null; }
+    W.soundKind = "";
+  }
+  function soundToggle(kind) {
+    if (W.soundKind === kind) { soundStop(); }
+    else { soundStart(kind); }
   }
 
   /* ---------- 久坐提醒 ---------- */
@@ -2588,6 +2648,19 @@
       case "timer-preset": W.timer.total = W.timer.left = parseInt(el.getAttribute("data-min"), 10) * 60; timerReset(); timerRender(); break;
       case "timer-toggle": if (W.timer.running) { timerPause(); } else { timerStart(); } break;
       case "timer-reset": timerReset(); break;
+      /* 专注升级 */
+      case "focus-type": {
+        W.ui.focusType = v;
+        var ft2 = focusTypeById(v);
+        W.timer.total = W.timer.left = ft2.min * 60;
+        timerReset(); timerRender();
+        if (W.ui.view === "focus") renderView();
+        break;
+      }
+      case "focus-sound": soundToggle(v); if (W.ui.view === "focus") renderView(); break;
+      case "focus-mode-toggle":
+        data.settings.focusMode = data.settings.focusMode === "b" ? "a" : "b";
+        save(true); renderView(); break;
 
       /* 账号 */
       case "add-account": accountModal(null); break;
