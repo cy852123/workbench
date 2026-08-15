@@ -1793,6 +1793,9 @@
         break;
       }
       case "export-words": exportWords(); break;
+      case "import-words": importWordsModal(); break;
+      case "submit-import-words": submitImportWords(); break;
+      case "import-words-ok": importWordsOk(); break;
 
       /* AI */
       case "ai-send": {
@@ -2233,6 +2236,60 @@
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
     toast("已导出「" + dm.activeExam + "」生词本");
+  }
+  /* 批量导入生词（支持"单词 释义"每行一个，缺释义自动查内置词库，去重） */
+  function importWordsModal() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    modalOpen("批量导入生词", '<div class="li-sub" style="margin-bottom:10px;">导入到「<b>' + esc(dm.activeExam) + "</b>」生词本。每行一个单词，格式：<b>单词 释义</b>（释义可选，缺省自动从内置词库补充；已有单词自动跳过）。</div>" +
+      '<textarea id="iwText" placeholder="abandon&#10;abandoned 被抛弃的&#10;abide 遵守" style="min-height:150px;width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;"></textarea>',
+      cancelBtn() + '<button class="btn" data-action="submit-import-words">' + ICONS.check + "预览并导入</button>");
+  }
+  function submitImportWords() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    if (!ex) return;
+    ex.wordbook = ex.wordbook || [];
+    var raw = fval("iwText") || "";
+    var lines = raw.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    var dict = window.WB_DICT || {};
+    var parsed = [], skipped = 0;
+    lines.forEach(function (line) {
+      line = line.trim();
+      if (!line) return;
+      var parts = line.split(/\s{2,}|[\t,，;；]/).map(function (p) { return p.trim(); }).filter(Boolean);
+      var word, meaning;
+      if (parts.length >= 2) { word = parts[0]; meaning = parts.slice(1).join(" "); }
+      else {
+        var sp = line.indexOf(" ");
+        if (sp > 0) { word = line.slice(0, sp); meaning = line.slice(sp + 1).trim(); }
+        else { word = line; meaning = ""; }
+      }
+      word = String(word).toLowerCase();
+      if (!word || word.length > 40) return;
+      if (ex.wordbook.some(function (w) { return String(w.word).toLowerCase() === word; })) { skipped++; return; }
+      var m2 = meaning || (dict[word] ? dict[word].t : "") || "";
+      parsed.push({ word: word, meaning: m2 });
+    });
+    if (!parsed.length) { modalClose(); toast(skipped ? "全部已存在（跳过 " + skipped + " 个）" : "没有可导入的单词", true); return; }
+    window.__importWords = parsed;
+    modalOpen("确认导入",
+      '将导入 <b>' + parsed.length + "</b> 个新单词到「" + esc(dm.activeExam) + "」生词本" + (skipped ? "（跳过已存在 " + skipped + " 个）" : "") + "。缺释义的已自动从内置词库补充。" +
+      '<div class="list" style="max-height:200px;overflow-y:auto;margin-top:10px;">' + parsed.slice(0, 8).map(function (w) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;font-size:14px;">' + esc(w.word) + "</div>" +
+          '<div class="li-sub">' + esc((w.meaning || "无释义").slice(0, 40)) + "</div></div></div>";
+      }).join("") + (parsed.length > 8 ? '<div class="li-sub" style="padding:6px 0;">…共 ' + parsed.length + " 个</div>" : "") + "</div>",
+      cancelBtn() + '<button class="btn" data-action="import-words-ok">' + ICONS.check + "确认导入</button>");
+  }
+  function importWordsOk() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    if (!ex) return;
+    (window.__importWords || []).forEach(function (w) {
+      ex.wordbook.push({ id: uid(), word: w.word, meaning: w.meaning, note: "批量导入", mastered: false, date: todayStr() });
+    });
+    var n = (window.__importWords || []).length;
+    window.__importWords = null;
+    modalClose(); refresh(); toast("已导入 " + n + " 个生词");
   }
   /* 考试管理 */
   function addExamModal() {

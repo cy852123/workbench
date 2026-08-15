@@ -904,7 +904,9 @@
       '<div class="li-sub" style="margin-bottom:8px;">状态：<span class="tag">' + esc(progressText(s ? s.progress : 0)) + "</span> ｜ " + esc(dm.activeExam) + "</div>" +
       '<button class="btn small plain" data-action="update-subject" data-domain="cet" data-subject="词汇">' + ic("edit") + "手动更新进度</button></div>";
     html += card(cardHead("📒 生词浏览", "当前考试：<b>" + esc(dm.activeExam) + "</b> 生词本", "wordbook"),
-      '<button class="btn ghost small" data-action="add-word" data-domain="cet" style="margin-bottom:10px;">' + ic("plus") + "添加生词</button>" +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+      '<button class="btn ghost small" data-action="add-word" data-domain="cet">' + ic("plus") + "添加生词</button>" +
+      '<button class="btn ghost small" data-action="import-words">批量导入生词</button></div>' +
       (examWordbook(dm).length === 0 ? empty("还没有生词") :
         '<div class="list">' + examWordbook(dm).slice().sort(function (a, b) { return (a.mastered ? 1 : 0) - (b.mastered ? 1 : 0); }).map(function (w) {
           return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(w.word) + (w.mastered ? ' <span class="tag state-done">已掌握</span>' : ' <span class="tag state-todo">待复习</span>') + "</div>" +
@@ -945,7 +947,9 @@
     var html = backBar("domain:cet", "英语学习");
     var wb = examWordbook(dm);
     html += card(cardHead("📒 完整生词本", "当前考试：<b>" + esc(dm.activeExam) + "</b> ｜ 待复习 " + wb.filter(function (w) { return !w.mastered; }).length + " ｜ 已掌握 " + wb.filter(function (w) { return w.mastered; }).length, "wordbook"),
-      '<button class="btn ghost small" data-action="add-word" data-domain="cet" style="margin-bottom:10px;">' + ic("plus") + "添加生词</button>" +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+      '<button class="btn ghost small" data-action="add-word" data-domain="cet">' + ic("plus") + "添加生词</button>" +
+      '<button class="btn ghost small" data-action="import-words">批量导入生词</button></div>' +
       (wb.length === 0 ? empty("还没有生词", "遇到生词就记下来") :
         '<div class="list">' + wb.slice().sort(function (a, b) { return (a.mastered ? 1 : 0) - (b.mastered ? 1 : 0); }).map(function (w) {
           return '<div class="list-item" style="align-items:flex-start;"><div class="li-main"><div class="li-title">' + esc(w.word) + (w.mastered ? ' <span class="tag state-done">已掌握</span>' : ' <span class="tag state-todo">待复习</span>') + "</div>" +
