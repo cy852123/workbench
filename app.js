@@ -590,7 +590,38 @@
     return map[view] || { t: view, s: "" };
   }
 
-  /* ---------- 渲染 ---------- */
+  /* ---------- AI 下发任务（Hermes 每天写入云端，今日页拉取展示） ---------- */
+  function aiTasksLoad() {
+    var box = $id("aiTasksBox");
+    if (!box) return;
+    var head = '<div class="c-head"><span class="c-emoji">🤖</span><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div>';
+    var sc = data.settings.sync || {};
+    if (!sc.url || !sc.key) {
+      box.innerHTML = head + '<div class="li-sub">去「设置 → 云端同步」填地址和密钥后，AI 每天早上会把任务放到这里。</div>';
+      return;
+    }
+    fetch(String(sc.url).replace(/\/+$/, "") + "/api/tasks", { headers: { "X-Sync-Key": sc.key } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var t = todayStr();
+        if (!j || !j.tasks || j.date !== t) {
+          box.innerHTML = head + '<div class="li-sub">今天的任务还没下发（每天早上 7 点 Hermes 会生成）。</div>';
+          return;
+        }
+        var doneMap = W.aiTaskDone || {};
+        box.innerHTML = head + '<div class="home-tasks">' + j.tasks.map(function (task, i) {
+          var id = "ait-" + i;
+          return '<div class="home-task" data-action="ai-task-done" data-idx="' + i + '">' +
+            '<span class="box' + (doneMap[id] ? " on" : "") + '">' + (doneMap[id] ? "✓" : "") + "</span>" +
+            '<div><div class="ht-name">' + esc(task.title) + "</div>" +
+            (task.subject ? '<div class="ht-sub">' + esc(task.subject) + (task.note ? " · " + esc(task.note) : "") + "</div>" : "") +
+            "</div></div>";
+        }).join("") + "</div>";
+      })
+      .catch(function () {
+        box.innerHTML = head + '<div class="li-sub">拉取失败：网络不通或密钥不对。</div>';
+      });
+  }
   function applyFont() {
     var fs = (data.settings && data.settings.fontSize) || "normal";
     var body = document.body;
@@ -604,6 +635,7 @@
     applyTheme();
     applyBg();
     applyFont();
+    if (W.ui.view === "today") aiTasksLoad();
   }
   function renderNav() {
     var nav = $id("sideNav");
@@ -2737,6 +2769,14 @@
         data.settings.focusMode = data.settings.focusMode === "b" ? "a" : "b";
         save(true); renderView(); break;
 
+      case "ai-task-done": {
+        var dm2 = W.aiTaskDone = W.aiTaskDone || {};
+        var did2 = "ait-" + id;
+        dm2[did2] = !dm2[did2];
+        try { localStorage.setItem("wb_ai_tasks_done", JSON.stringify(dm2)); } catch (e) { }
+        aiTasksLoad();
+        break;
+      }
       case "sync-push": syncPush(false); break;
       case "sync-pull": syncPull(); break;
       case "sync-save": {

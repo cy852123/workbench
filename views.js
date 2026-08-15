@@ -152,6 +152,9 @@
       (overDue.length ? '<span class="ht-late" style="align-self:center;">另有 ' + overDue.length + " 条逾期</span>" : "") +
       "</div></div>";
 
+    /* AI 下发任务卡（Hermes 每天早上写入云端，这里异步拉取展示） */
+    html += '<div class="card" id="aiTasksBox"><div class="c-head"><span class="c-emoji">🤖</span><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div><div class="li-sub">加载中…</div></div>';
+
     /* 学科入口 5 卡（紧凑） */
     html += '<div class="card"><div class="card-head"><h3>📚 学习领域</h3></div>' +
       '<div class="home-domains">' + d.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).map(homeDomainCard).join("") + "</div></div>";
