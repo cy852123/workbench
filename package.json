@@ -1,0 +1,13 @@
+{
+  "name": "workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "个人工作台（静态网页，浏览器本地存储）",
+  "scripts": {
+    "test": "node --check views.js && node --check app.js && node tests/test.js && node tests/test_interact.js",
+    "serve": "python -m http.server 8000"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}
