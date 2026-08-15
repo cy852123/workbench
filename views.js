@@ -1848,6 +1848,7 @@
       (m.topic ? '<span class="tag">' + esc(m.topic) + "</span>" : "") +
       (m.type ? '<span class="tag">' + esc(m.type) + "</span>" : "") +
       '<span class="tag">' + esc(m.cause || "未填错因") + "</span>" +
+      (m.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
       (m.reviewCount ? '<span class="tag">复习 ' + m.reviewCount + " 次</span>" : "") +
       (m.source ? '<span class="tag">' + esc(m.source) + "</span>" : "") +
       "</div>" +

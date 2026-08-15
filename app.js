@@ -2112,27 +2112,60 @@
     if (/材料|专业|高物|化学/.test(c)) return "专业课";
     return "未分类";
   }
+  /* AI 接管：意图识别 + 字段提取（本地规则，不耗 API） */
+  function aiStoreSuggest(question, reply) {
+    var t = (question || "") + " " + (reply || "");
+    var subject = "数学";
+    if (/英语|单词|作文|阅读|翻译|听力|语法|四六|考研英语|长难句/.test(t)) subject = "英语";
+    else if (/政治|马原|毛中特|史纲|思修|时政|帽子题/.test(t)) subject = "政治";
+    else if (/材料|晶体|相图|专业课|物理化学|金属学|热处理/.test(t)) subject = "专业课";
+    var type = "";
+    var typeMap = [["洛必达", "洛必达法则"], ["泰勒", "泰勒公式"], ["极限", "极限计算"], ["导数", "导数"], ["积分", "积分"], ["矩阵", "矩阵"], ["概率", "概率"], ["定语从句", "定语从句"], ["虚拟语气", "虚拟语气"], ["长难句", "长难句"]];
+    for (var i = 0; i < typeMap.length; i++) if (t.indexOf(typeMap[i][0]) >= 0) { type = typeMap[i][1]; break; }
+    var target = "qa";
+    if (/错|错了|不会做|算错|求导错|做错|算不出来|卡住了/.test(t)) target = "mistakes";
+    else if (/收藏|备忘|先记|链接|保存起来|待办/.test(t)) target = "inbox";
+    else if (/资料|文档|整理成|笔记内容/.test(t)) target = "resource";
+    return { target: target, subject: subject, type: type };
+  }
   function aiSaveModal(idx) {
     var m = W.ui.aiChat[idx];
     if (!m || m.role !== "assistant") return;
     var content = m.content;
-    var subj = suggestSubject(content);
+    var question = "";
+    for (var i = idx - 1; i >= 0; i--) { if (W.ui.aiChat[i].role === "user") { question = W.ui.aiChat[i].content; break; } }
+    var sug = aiStoreSuggest(question, content);
+    var subj = sug.subject;
     var cetDm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
     var hasWordbook = !!cetDm;
-    var typeOpts = '<option value="qa">答疑记录（问题+解答）</option>' +
+    var typeOpts = '<option value="mistake">错题本（自动归类）</option>' +
+      '<option value="qa">答疑记录（问题+解答）</option>' +
+      '<option value="inbox">收集箱（先收着）</option>' +
       '<option value="resource">学习资料（存入资料库）</option>' +
       (hasWordbook ? '<option value="word">生词（存入英语生词本）</option>' : "");
-    modalOpen("保存到工作台",
-      '<div class="li-sub" style="margin-bottom:10px;">内容预览：' + esc(content.slice(0, 80)) + (content.length > 80 ? "…" : "") + "</div>" +
-      '<div class="field"><label>保存为</label><select id="asType">' + typeOpts + "</select></div>" +
+    var sugTip = sug.target === "mistakes" ? "🤖 识别为一道错题，将自动填入科目/类型/题目/解法" :
+      sug.target === "inbox" ? "🤖 识别为待整理内容，适合先收进收集箱" :
+      sug.target === "resource" ? "🤖 识别为学习资料，适合存入资料库" :
+      "🤖 识别为答疑记录，适合存进答疑库";
+    modalOpen("保存到工作台（AI 接管）",
+      '<div class="ai-banner" style="margin-bottom:10px;">' + ICONS.spark + esc(sugTip) + "</div>" +
+      '<div class="field"><label>保存为（可改）</label><select id="asType">' + typeOpts + "</select></div>" +
       '<div class="field"><label>科目 / 分类（已自动推荐，可修改）</label><input id="asSubject" value="' + esc(subj) + '"></div>' +
+      '<div id="asMistakeWrap">' +
+      '<div class="field"><label>专题（如 高数·极限）</label><input id="asTopic" placeholder="可留空" value=""></div>' +
+      '<div class="field"><label>类型 / 考点（已自动识别）</label><input id="asTypeField" value="' + esc(sug.type) + '" placeholder="如 洛必达法则"></div>' +
+      '<div class="field"><label>题目</label><input id="asTitle" value="' + esc((question || content).slice(0, 60)) + '"></div>' +
+      '<div class="field"><label>正确解法（AI 回复自动带入）</label><textarea id="asSolution" style="min-height:80px;width:100%;box-sizing:border-box;">' + esc(content.slice(0, 400)) + "</textarea></div>" +
+      "</div>" +
       '<div class="field" id="asCatWrap" style="display:none;"><label>资料分类</label><select id="asCat">' +
       '<option value="考研">考研</option><option value="课程">课程</option><option value="课外">课外</option><option value="其他">其他</option></select></div>' +
       '<div class="field"><label>备注（可选）</label><input id="asNote" placeholder="来源：AI 对话"></div>',
-      cancelBtn() + '<button class="btn" data-action="submit-ai-save" data-id="' + idx + '">' + ICONS.check + "保存</button>");
+      cancelBtn() + '<button class="btn" data-action="submit-ai-save" data-id="' + idx + '">' + ICONS.check + "确认存入</button>");
     var typeSel = $id("asType");
     typeSel.addEventListener("change", function () {
-      $id("asCatWrap").style.display = typeSel.value === "resource" ? "" : "none";
+      var v = typeSel.value;
+      $id("asMistakeWrap").style.display = v === "mistake" ? "" : "none";
+      $id("asCatWrap").style.display = v === "resource" ? "" : "none";
     });
   }
   function submitAiSave(idx) {
@@ -2141,7 +2174,20 @@
     var type = fval("asType");
     var subject = fval("asSubject").trim() || "未分类";
     var note = fval("asNote").trim() || "来源：AI 对话";
-    if (type === "qa") {
+    if (type === "mistake") {
+      data.mistakes.push({
+        id: uid(), subject: fval("asSubject").trim() || "未分类",
+        topic: fval("asTopic").trim(), type: fval("asTypeField").trim(),
+        title: fval("asTitle").trim() || "AI 错题", cause: "概念不清",
+        solution: fval("asSolution").trim(), source: "AI 对话", aiMarked: true,
+        reviewed: false, reason: "概念不清", answer: fval("asSolution").trim(),
+        reviewCount: 0, nextReview: todayStr(), mastered: false, date: todayStr()
+      });
+      toast("已存入错题本（按科目/专题/类型自动归类）");
+    } else if (type === "inbox") {
+      data.inbox.push({ id: uid(), content: m.content, status: "待分拣", date: todayStr(), source: "AI 对话", suggestion: "来源：AI 对话" });
+      toast("已存入收集箱（待分拣）");
+    } else if (type === "qa") {
       data.qa.push({ id: uid(), subject: subject, question: "AI 解答（" + subject + "）", answer: m.content, date: todayStr(), status: "待解决", starred: false, mastered: false, source: "AI 对话", tags: "", aiMarked: true });
       toast("已存入答疑库（标记为 AI 回答）");
     } else if (type === "resource") {
