@@ -685,22 +685,20 @@
       '<div class="en-entry" data-action="go-view" data-view="cet-exams">🎓 考试管理<br><b style="color:var(--accent);">' + examCount + '</b> 套考试</div>' +
       "</div>";
 
-    /* AI 英语工具箱 */
-    var hasKey = !!(d.settings.apiKey);
+    /* AI 英语工具箱（已切换微信直连） */
     var tools = [
-      { id: "ai", emoji: "🧠", name: "AI 答疑", desc: "英语题目答疑" },
-      { id: "cet-writing", emoji: "✍️", name: "作文批改", desc: "粘贴作文，AI 修改打分润色" },
-      { id: "cet-speaking", emoji: "💬", name: "口语对话", desc: "AI 口语练习会话" },
-      { id: "cet-translation", emoji: "🌐", name: "翻译工具", desc: "文本翻译" }
+      { id: "ai", emoji: "🧠", name: "AI 答疑", desc: "发微信问 Hermes" },
+      { id: "cet-writing", emoji: "✍️", name: "作文批改", desc: "微信发作文批改" },
+      { id: "cet-speaking", emoji: "💬", name: "口语对话", desc: "微信练口语" },
+      { id: "cet-translation", emoji: "🌐", name: "翻译工具", desc: "微信发句翻译" }
     ];
-    html += card(cardHead("🧰 AI 英语工具箱", hasKey ? "AI 已启用" : "配置 AI 密钥后启用", "ai-tools"),
+    html += card(cardHead("🧰 AI 英语工具箱", "微信直连 Hermes", "ai-tools"),
       '<div class="grid grid-4">' + tools.map(function (t) {
-        return '<div class="card" style="margin-bottom:0;' + (hasKey ? "" : "opacity:0.55;") + '"><div class="card-head"><h3 style="font-size:15px;">' + t.emoji + " " + esc(t.name) + '</h3></div>' +
+        return '<div class="card" style="margin-bottom:0;"><div class="card-head"><h3 style="font-size:15px;">' + t.emoji + " " + esc(t.name) + '</h3></div>' +
           '<div class="li-sub" style="margin-bottom:10px;">' + esc(t.desc) + "</div>" +
-          (hasKey ? '<button class="btn small block" data-action="go-view" data-view="' + t.id + '">使用</button>'
-            : '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看（未启用）</button>') + "</div>";
+          '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看说明</button></div>';
       }).join("") + "</div>" +
-      (!hasKey ? '<div class="li-sub" style="margin-top:10px;">未配置 API 密钥，AI 功能置灰。到「设置与数据 → AI 配置」填入密钥后启用；基础打卡、生词功能不受影响。</div>' : ""));
+      '<div class="li-sub" style="margin-top:10px;">以上功能已统一改为微信直连（见「AI 帮手」页说明）。网页不再内置 AI 对话。</div>');
 
     /* 关联资料 */
     var cetRes = (d.resources || []).filter(function (r) { return r.domainId === "cet"; });
@@ -1347,34 +1345,21 @@
     return html;
   }
   function zoneWriting(dm) {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
-    return card(cardHead("✍️ AI 作文批改", hasKey ? "AI 已启用" : "当前未启用（需配置 AI 密钥）", "ai-writing"),
-      '<div class="field"><label>粘贴你的作文</label><textarea id="aiEssay" placeholder="把作文粘贴到这里…" style="min-height:120px;"></textarea></div>' +
-      (hasKey ? '<button class="btn block" data-action="ai-essay">提交批改（AI 修改、打分、润色）</button>'
-        : '<div class="li-sub">配置 AI 密钥后，这里会调用模型做修改、打分、润色。到「设置与数据 → AI 配置」启用。</div>') +
-      '<div class="ai-chat" id="essayResult" style="margin-top:12px;"></div>');
+    return card(cardHead("✍️ 作文批改", "已改用微信 AI", "ai-writing"),
+      '<div class="li-sub">网页内置批改已停用。把作文发到微信「Hermes」，会帮你修改、打分、润色，批改结果可保存到答疑库。</div>');
   }
   /* 阅读专区 */
   function zoneReading(dm) {
     return '<div class="li-sub" style="padding:8px 0;">阅读专区：记录阅读打卡与学习时长。</div>';
   }
   function zoneSpeaking(dm) {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
-    return card(cardHead("🗣️ AI 口语对话", hasKey ? "AI 已启用" : "当前未启用（需配置 AI 密钥）", "ai-speaking"),
-      hasKey ? '<div class="ai-chat" id="speakChat"><div class="msg bot">开始口语练习吧，用英文和我对话，我会帮你纠正表达。</div></div>' +
-        '<div class="ai-input"><input id="speakInput" placeholder="用英语说点什么…"><button class="btn" data-action="ai-speak">' + ic("send") + "发送</button></div>"
-        : '<div class="li-sub">配置 AI 密钥后可开启口语对话练习。到「设置与数据 → AI 配置」启用。</div>');
+    return card(cardHead("🗣️ 口语练习", "已改用微信 AI", "ai-speaking"),
+      '<div class="li-sub">网页内置口语对话已停用。在微信「Hermes」里用英文说话（可发语音或文字），会陪你练口语并纠正表达。</div>');
   }
   function zoneTranslation(dm) {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
-    return card(cardHead("🌐 翻译工具", hasKey ? "AI 已启用" : "当前未启用（需配置 AI 密钥）", "ai-translate"),
-      '<div class="field"><label>输入要翻译的文本</label><textarea id="trText" placeholder="中译英 / 英译中…" style="min-height:80px;"></textarea></div>' +
-      (hasKey ? '<button class="btn block" data-action="ai-translate">翻译</button><div class="ai-chat" id="trResult" style="margin-top:12px;"></div>'
-        : '<div class="li-sub">配置 AI 密钥后可用。到「设置与数据 → AI 配置」启用。</div>') +
-      '<div class="li-sub" style="margin-top:10px;">翻译练习建议：先自己翻，再对比 AI 译文，把好句式记到答疑库。</div>');
+    return card(cardHead("🌐 翻译工具", "已改用微信 AI", "ai-translate"),
+      '<div class="li-sub">网页内置翻译已停用。把要翻的句子发到微信「Hermes」即可。</div>' +
+      '<div class="li-sub" style="margin-top:10px;">翻译练习建议：先自己翻，再让 AI 对比译文，把好句式记到答疑库。</div>');
   }
 
   /* ==================== 学业课程 ==================== */
@@ -1662,12 +1647,21 @@
   /* ==================== AI 帮手 ==================== */
   function ai() {
     var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
     var html = "";
     html += '<div class="ai-banner">' + ic("spark") +
-      "<span><b>AI 帮手状态</b>：本地规则能力（收集箱建议 / 周复盘草稿 / 学习摘要）已启用，免费。<br>" +
-      (hasKey ? "对话式 AI：已配置 API，可以答疑和生成复习资料。<br>" : "对话式 AI：<b>当前未启用</b>——在「设置」中配置 API 密钥后启用（密钥只存本机浏览器）。<br>") +
-      "<b>AI 接管</b>：对话式 AI 的每条回答下方有「保存到工作台」按钮——可存入错题本 / 答疑库 / 今日任务 / 复盘 / 日历 / 收集箱 / 资料库 / 生词本（自动识别归类，确认后才会写入）。</span></div>";
+      "<span><b>AI 帮手状态</b>：网页内置对话已停用。<br>" +
+      "所有 AI 功能（答疑、拍照分析、计划调整、复盘、写作批改）改由 <b>Hermes 微信助手（daily agent）</b> 直接处理——打开微信给「Hermes」发消息即可，支持发照片、发文字、提问。分析结果会自动写回工作台（错题本 / 答疑库 / 复盘 / 任务）。</span></div>";
+
+    /* 微信直连引导 */
+    html += card(cardHead("📱 用微信直接找 AI", "比网页更准确、更灵活", "ai-wechat"),
+      '<div style="font-size:14.5px;line-height:1.8;color:var(--text);">' +
+      "<b>怎么用：</b>手机微信 → 找到「Hermes」联系人 → 像聊天一样发消息。<br>" +
+      "<b>能做什么：</b><br>" +
+      "· 发纸质书照片 → 拍照分析、讲题、标注重点<br>" +
+      "· 问不会的题 → 详细解答（可存入错题本 / 答疑库）<br>" +
+      "· 汇报今天学了什么 → 帮你复盘、调整明日计划<br>" +
+      "· 发作文 / 题目截图 → 批改、点评<br><br>" +
+      "<b>前提：</b>电脑（Hermes 所在设备）需联网并开机。寝室没网时微信 AI 不可用，记录功能（任务、打卡、笔记）不受影响。</div>");
 
     /* 本地工具 */
     html += card(cardHead("本地工具", "免费可用，不依赖外部 API", "ai-local"), '<div style="display:flex;flex-direction:column;gap:10px;">' +
@@ -1675,46 +1669,6 @@
       '<button class="btn plain block" data-action="ai-draft-week">' + ic("refresh") + "生成本周复盘草稿（汇总学习数据）</button>" +
       '<button class="btn plain block" data-action="ai-summary">' + ic("trending") + "生成学习情况摘要（本月各领域时长）</button></div>");
 
-    /* 对话 */
-    html += card(cardHead("对话式 AI", hasKey ? "已启用" : "当前未启用", "ai-chat"),
-      '<div class="ai-chat-entry">' +
-      (hasKey
-        ? '<div class="msg bot" style="max-width:100%;">你好，我是你的 AI 帮手。可以问我学习问题、让我帮你安排任务、生成复习提纲。注意：我只会修改你确认过的内容。点下方按钮进入全屏对话。</div>'
-        : '<div class="msg bot" style="max-width:100%;">对话式 AI 当前未启用。启用方法：设置与数据 → AI 配置 → 勾选「云端 AI 代理模式」，地址填 https://workbench-sync-c9e.pages.dev，密钥填同步密钥。未配置时，上方本地工具仍可正常使用。</div>') +
-      '<button class="btn block" style="margin-top:10px;" data-action="go-view" data-view="ai-chat">' + ic("send") + "进入全屏对话</button>" +
-      "</div>");
-
-    return html;
-  }
-
-  /* ==================== AI 全屏对话 ==================== */
-  function aiChat() {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey && d.settings.apiBase);
-    var chat = W.ui.aiChat || [];
-    var html = backBar("ai", "AI 帮手");
-    html += '<div class="ai-chat-page">';
-    html += '<div class="ai-chat full" id="aiChat">';
-    if (!chat.length) {
-      html += '<div class="msg bot">你好，我是你的 AI 帮手。可以问我学习问题、让我帮你安排任务、生成复习提纲。注意：我只会修改你确认过的内容。</div>';
-    } else {
-      chat.forEach(function (m, i) {
-        if (m.role === "user") {
-          html += '<div class="msg user">' + esc(m.content) + "</div>";
-        } else {
-          html += '<div class="msg bot">' + esc(m.content) + "</div>";
-          /* AI 回答带「保存到工作台」（AI 接管） */
-          html += '<div class="msg bot" style="margin-top:-6px;background:none;padding:0 2px;"><button class="btn small plain" data-action="ai-save" data-id="' + i + '">' + ic("folder") + "保存到工作台</button></div>";
-        }
-      });
-    }
-    html += "</div>";
-    if (hasKey) {
-      html += '<div class="ai-input full"><input id="aiInput" placeholder="输入问题…"><button class="btn" data-action="ai-send">' + ic("send") + "发送</button></div>";
-    } else {
-      html += '<div class="ai-input full"><div class="li-sub" style="margin:0;flex:1;">对话式 AI 未启用，去设置里配置。</div><button class="btn plain" data-action="go-view" data-view="settings">去设置</button></div>';
-    }
-    html += "</div>";
     return html;
   }
 
@@ -2462,8 +2416,8 @@
       "<b style=\"color:var(--text);\">怎么备份</b>：本页下方「导出数据」会下载一个 JSON 文件，存好它=备份。换设备或清浏览器前先导出。<br>" +
       "<b style=\"color:var(--text);\">各模块怎么用</b>：每个页面右上角有圆圈问号「?」，鼠标悬停（电脑）或点击（手机）看该页说明。<br>" +
       "<b style=\"color:var(--text);\">删除的东西</b>：删除的内容先进回收站，可在本页恢复，不会直接消失。<br>" +
-      "<b style=\"color:var(--text);\">AI</b>：本地规则功能（收集箱建议、周复盘草稿、学习摘要）免费可用；对话式 AI 需要在「AI 配置」填入你自己的 API 密钥才启用。<br>" +
-      "<b style=\"color:var(--text);\">费用</b>：工作台本身免费。对话式 AI 用你的 API 按量计费，密钥由你自己提供。</div>");
+      "<b style=\"color:var(--text);\">AI</b>：网页内置 AI 对话已停用，所有 AI 功能（答疑、拍照分析、计划调整、复盘、批改）通过微信直连 Hermes 助手处理（见「AI 帮手」页说明）。本地规则工具（收集箱建议、周复盘草稿、学习摘要）仍免费可用。<br>" +
+      "<b style=\"color:var(--text);\">费用</b>：工作台本身免费。</div>");
 
     html += card(cardHead("云端同步", "电脑手机数据互通（Cloudflare 免费）", "sync"),
       '<div class="li-sub" style="margin-bottom:10px;">把数据存到云端，另一台设备（手机/电脑）填同样的地址和密钥就能同步。自动同步开启后，每次改动会在 30 秒后上传（每天最多 50 次）。</div>' +
@@ -2478,18 +2432,14 @@
       '<button class="btn plain" data-action="sync-pull">↓ 从云端下载（覆盖本地）</button></div>' +
       '<div class="li-sub" style="margin-top:10px;">最近上传：' + esc((d.settings.sync || {}).lastPush || "无") + " ｜ 最近下载：" + esc((d.settings.sync || {}).lastPull || "无") + "</div>");
 
-    html += card(cardHead("AI 配置", "对话式 AI 的密钥不落网页代码", "api"),
-      '<label class="checkline"><input type="checkbox" id="aiProxy"' + (d.settings.aiProxy ? " checked" : "") + '> <b>云端 AI 代理模式（推荐）</b></label>' +
-      '<div class="li-sub" style="margin-bottom:10px;">开启后：地址填 <b>https://workbench-sync-c9e.pages.dev</b>，密钥填<b>同步密钥</b>——AI 请求走云端服务，DeepSeek 密钥只存在服务端，网页里不保存真实密钥，别人也无法调用你的额度（有同步密钥校验）。</div>' +
-      '<div class="field"><label>API 地址</label>' +
-      '<input id="apiBase" placeholder="云端代理：https://workbench-sync-c9e.pages.dev" value="' + esc(d.settings.apiBase || "") + '"></div>' +
-      '<div class="field"><label>模型名称</label>' +
-      '<input id="apiModel" placeholder="如 deepseek-chat" value="' + esc(d.settings.apiModel || "") + '"></div>' +
-      '<div class="field"><label>密钥（' + (d.settings.apiKey ? "已配置（" + String(d.settings.apiKey).slice(0, 6) + "…）" : "未配置") + "）</label>" +
-      '<input id="apiKey" type="password" placeholder="代理模式填同步密钥；直接模式填 API 密钥"><div class="li-sub" style="margin-top:4px;">直接模式（不勾代理）：密钥保存在你浏览器的本地存储里，不会上传到任何公开仓库或服务器。</div></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-      '<button class="btn" data-action="save-api">' + ic("check") + "保存配置</button>" +
-      (d.settings.apiKey ? '<button class="btn danger" data-action="clear-api">清除密钥</button>' : "") + "</div>");
+    html += card(cardHead("🤖 AI 助手", "已切换到微信直连", "api"),
+      '<div class="li-sub" style="margin-bottom:10px;">网页内置 AI 对话已停用（准确率和灵活性不足）。现在所有 AI 功能通过微信直连 Hermes 助手：</div>' +
+      '<div style="font-size:14px;line-height:1.9;color:var(--text);">' +
+      "· 发纸质书照片 → 拍照分析、讲题<br>" +
+      "· 问不会的题 → 详细解答（可自动存入错题本 / 答疑库）<br>" +
+      "· 汇报学习情况 → 帮你复盘、调整明日计划<br>" +
+      "· 发作文 / 截图 → 批改、点评<br><br>" +
+      "<b>前提：</b>电脑（Hermes 所在设备）联网并开机。寝室没网时微信 AI 不可用，工作台记录功能不受影响。</div>");
 
     html += card(cardHead("数据管理", "导出 / 导入 / 备份", "data"),
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
@@ -2566,6 +2516,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · AI 切换微信直连<span class="log-tag">升级</span></div>' +
+      '<p>🤖 网页内置 AI 对话已停用（准确率和灵活性不足）。所有 AI 功能改由微信直连 Hermes 助手：发纸质书照片可拍照分析讲题、问不会的题可存入错题本/答疑库、汇报学习可复盘调计划、发作文可批改点评。网页保留本地规则工具（收集箱建议/复盘草稿/学习摘要）。</p>' +
+      '<p>影响范围：AI 帮手 / 设置 / 英语专区 AI 工具。数据：无影响。你需要的操作：电脑联网并开机，微信找到「Hermes」发消息。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · AI 个性化学习包<span class="log-tag">升级</span></div>' +
       '<p>🤖 AI 知识学习升级：每天早上 7 点 Hermes 会读取你的学习数据（错题本、答疑库、进度），针对薄弱点生成一份个性化学习包（约 30 分钟），自动推送到 AI 知识学习板块（带「Hermes 个性化」标记）。没推送时仍可用「生成今日学习包」按钮用内置模板。</p>' +
       '<p>影响范围：AI 知识学习板块。数据：新增云端推送，不删旧数据。你需要的操作：无。</p></div>' +
@@ -2699,7 +2652,6 @@
     inboxDetail: inboxDetail,
     search: search,
     ai: ai,
-    "ai-chat": aiChat,
     accounts: accounts,
     health: health,
     focus: focus,

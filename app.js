@@ -542,7 +542,7 @@
     icons: ICONS,
     data: data,
     settings: null,
-    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", mistakeId: "", grammarIdx: null, qaId: "", reviewId: "", inboxId: "", libId: "", aiChat: [], focusType: "pomodoro" },
+    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", mistakeId: "", grammarIdx: null, qaId: "", reviewId: "", inboxId: "", libId: "", focusType: "pomodoro" },
     timer: { total: 1500, left: 1500, running: false, iv: null }
   };
   window.W = W;
@@ -603,7 +603,6 @@
       accounts: { e: "👤", t: "账号", s: "管理我的平台账号" },
       search: { e: "🔍", t: "搜索", s: "一次搜遍全部内容" },
       ai: { e: "🤖", t: "AI 帮手", s: "辅助学习与整理" },
-      "ai-chat": { e: "🤖", t: "AI 对话", s: "全屏对话" },
       settings: { e: "⚙️", t: "设置与数据", s: "说明、备份、更新日志" },
       "ky-subjects": { e: "🎓", t: "科目详情", s: "科目任务统计" },
       "ky-tasks": { e: "🎓", t: "全部领域任务", s: "三类任务管理" },
@@ -757,7 +756,6 @@
     else if (view === "inbox-detail") html = Views.inboxDetail();
     else if (view === "search") html = Views.search();
     else if (view === "ai") html = Views.ai();
-    else if (view === "ai-chat") html = Views["ai-chat"]();
     else if (view === "accounts") html = Views.accounts();
     else if (view === "health") html = Views.health();
     else if (view === "focus") html = Views.focus();
@@ -799,13 +797,6 @@
     wrap.innerHTML = html;
     closeDrawer();
     window.scrollTo(0, 0);
-    /* 全屏对话：进入后滚动到底部 + 聚焦输入框 */
-    if (view === "ai-chat") {
-      var chatBox = $id("aiChat");
-      if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
-      var aiIn = $id("aiInput");
-      if (aiIn) { try { aiIn.focus(); } catch (e) {} }
-    }
   }
 
   /* ---------- 模态 ---------- */
@@ -914,7 +905,7 @@
       "focus": "theme-focus", "activity": "theme-activity", "library": "theme-library", "lib-detail": "theme-library",
       "inbox": "theme-inbox", "inbox-detail": "theme-inbox", "mistakes": "theme-mistakes", "mk-topics": "theme-mistakes", "mk-types": "theme-mistakes", "mk-list": "theme-mistakes", "mk-detail": "theme-mistakes", "qa": "theme-qa", "qa-detail": "theme-qa", "reviews": "theme-reviews", "review-detail": "theme-reviews",
       "health": "theme-health", "calendar": "theme-calendar", "accounts": "theme-accounts",
-      "search": "theme-search", "ai": "theme-ai", "ai-chat": "theme-ai", "settings": "theme-settings",
+      "search": "theme-search", "ai": "theme-ai", "settings": "theme-settings",
       "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
       "domain:paper": "theme-paper", "domain:courses": "theme-courses",
       "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan",
@@ -2166,250 +2157,6 @@
   }
 
   /* ---------- AI 对话（需配置 API） ---------- */
-  function callAI(messages, cb) {
-    var s = data.settings;
-    if (!s.apiKey || !s.apiBase) { cb("对话式 AI 未启用：请先在「设置与数据 → AI 配置」填入 API 地址、模型和密钥。"); return; }
-    if (s.aiProxy || String(s.apiBase).indexOf("workbench-sync-c9e.pages.dev") >= 0) {
-      /* 云端代理模式：请求发到部署好的代理（/api/ai），密钥用同步密钥 */
-      fetch(String(s.apiBase).replace(/\/+$/, "") + "/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Sync-Key": s.apiKey },
-        body: JSON.stringify({ messages: messages })
-      }).then(function (r) { return r.json(); }).then(function (j) {
-        if (j.error) { cb("AI 服务异常：" + j.error); return; }
-        cb(j.content || "AI 返回了空结果。");
-      }).catch(function () {
-        cb("请求失败：网络不通或代理地址错误。");
-      });
-      return;
-    }
-    var url = String(s.apiBase).replace(/\/+$/, "") + "/chat/completions";
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.apiKey },
-      body: JSON.stringify({ model: s.apiModel || "deepseek-chat", messages: messages, temperature: 0.6 })
-    }).then(function (r) { return r.json(); }).then(function (j) {
-      var reply = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-      cb(reply || "AI 返回了空结果，可能密钥或地址配置有误。");
-    }).catch(function () {
-      cb("请求失败：网络不通或 API 地址错误。请检查配置后重试。");
-    });
-  }
-  function aiSend(text) {
-    var s = data.settings;
-    var chat = $id("aiChat");
-    var mk = function (cls, txt, saveIdx) {
-      var div = document.createElement("div");
-      div.className = "msg " + cls;
-      div.textContent = txt;
-      if (saveIdx != null) {
-        var bar = document.createElement("div");
-        bar.style.cssText = "margin-top:8px;display:flex;gap:8px;";
-        bar.innerHTML = '<button class="btn small plain" data-action="ai-save" data-id="' + saveIdx + '">' + ICONS.folder + "保存到工作台</button>";
-        div.appendChild(bar);
-      }
-      return div;
-    };
-    chat.appendChild(mk("user", text));
-    if (!s.apiKey || !s.apiBase) {
-      chat.appendChild(mk("bot", "对话式 AI 未启用：请先在「设置与数据 → AI 配置」填入 API 地址、模型和密钥。"));
-      chat.scrollTop = chat.scrollHeight;
-      return;
-    }
-    chat.appendChild(mk("bot", "思考中…"));
-    chat.scrollTop = chat.scrollHeight;
-    callAI(W.ui.aiChat.concat([{ role: "user", content: text }]), function (reply) {
-      chat.removeChild(chat.lastChild);
-      W.ui.aiChat.push({ role: "user", content: text });
-      W.ui.aiChat.push({ role: "assistant", content: reply });
-      var idx = W.ui.aiChat.length - 1;
-      chat.appendChild(mk("bot", reply, idx));
-      if (W.ui.aiChat.length > 20) W.ui.aiChat = W.ui.aiChat.slice(-20);
-      chat.scrollTop = chat.scrollHeight;
-    });
-  }
-  /* AI 英语专区功能 */
-  function aiEssay() {
-    var txt = fval("aiEssay").trim();
-    if (!txt) { toast("请先粘贴作文", true); return; }
-    var box = $id("essayResult");
-    var m = document.createElement("div");
-    m.className = "msg bot";
-    m.textContent = "批改中…";
-    box.appendChild(m);
-    callAI([
-      { role: "system", content: "你是英语作文批改老师。请用中文回复，给出：1. 总体评价（2-3句）2. 评分（满分100）3. 3-5条具体修改建议 4. 润色后的完整版本。" },
-      { role: "user", content: txt }
-    ], function (reply) {
-      box.innerHTML = "";
-      var d = document.createElement("div");
-      d.className = "msg bot";
-      d.style.whiteSpace = "pre-wrap";
-      d.textContent = reply;
-      box.appendChild(d);
-      var bar = document.createElement("div");
-      bar.style.cssText = "margin-top:8px;";
-      bar.innerHTML = '<button class="btn small plain" data-action="ai-save-qa" data-txt="' + esc(reply.slice(0, 120)) + '">' + ICONS.folder + "保存批改到答疑库</button>";
-      box.appendChild(bar);
-    });
-  }
-  function aiSpeak() {
-    var txt = fval("speakInput").trim();
-    if (!txt) { return; }
-    var box = $id("speakChat");
-    var mk = function (cls, t) {
-      var d = document.createElement("div");
-      d.className = "msg " + cls;
-      d.textContent = t;
-      box.appendChild(d);
-      box.scrollTop = box.scrollHeight;
-    };
-    mk("user", txt);
-    $id("speakInput").value = "";
-    W.ui.speakChat = W.ui.speakChat || [];
-    W.ui.speakChat.push({ role: "user", content: txt });
-    callAI([{ role: "system", content: "你是英语口语陪练。请用英文与你对话，句子简短自然；每次对话后用简短中文指出 1-2 处表达可以改进的地方。" }].concat(W.ui.speakChat.slice(-10)), function (reply) {
-      mk("bot", reply);
-      W.ui.speakChat.push({ role: "assistant", content: reply });
-    });
-  }
-  function aiTranslate() {
-    var txt = fval("trText").trim();
-    if (!txt) { toast("请输入要翻译的文本", true); return; }
-    var box = $id("trResult");
-    box.innerHTML = '<div class="msg bot">翻译中…</div>';
-    callAI([
-      { role: "system", content: "你是专业翻译。根据源语言自动判断，提供准确自然的中英互译。回复格式：译文（另起一行）+ 关键句式解析 1-2 条。" },
-      { role: "user", content: txt }
-    ], function (reply) {
-      box.innerHTML = "";
-      var d = document.createElement("div");
-      d.className = "msg bot";
-      d.style.whiteSpace = "pre-wrap";
-      d.textContent = reply;
-      box.appendChild(d);
-    });
-  }
-  /* AI 回答 → 保存到工作台（分类存放） */
-  function suggestSubject(txt) {
-    var c = String(txt || "").toLowerCase();
-    if (/英语|单词|词汇|语法|作文|听力|阅读|翻译|四六|六级|四级/.test(c)) return "英语";
-    if (/数学|高数|线代|概率/.test(c)) return "数学";
-    if (/政治|马原|毛概|思修/.test(c)) return "政治";
-    if (/材料|专业|高物|化学/.test(c)) return "专业课";
-    return "未分类";
-  }
-  /* AI 接管：意图识别 + 字段提取（本地规则，不耗 API） */
-  function aiStoreSuggest(question, reply) {
-    var t = (question || "") + " " + (reply || "");
-    var subject = "数学";
-    if (/英语|单词|作文|阅读|翻译|听力|语法|四六|考研英语|长难句/.test(t)) subject = "英语";
-    else if (/政治|马原|毛中特|史纲|思修|时政|帽子题/.test(t)) subject = "政治";
-    else if (/材料|晶体|相图|专业课|物理化学|金属学|热处理/.test(t)) subject = "专业课";
-    var type = "";
-    var typeMap = [["洛必达", "洛必达法则"], ["泰勒", "泰勒公式"], ["极限", "极限计算"], ["导数", "导数"], ["积分", "积分"], ["矩阵", "矩阵"], ["概率", "概率"], ["定语从句", "定语从句"], ["虚拟语气", "虚拟语气"], ["长难句", "长难句"]];
-    for (var i = 0; i < typeMap.length; i++) if (t.indexOf(typeMap[i][0]) >= 0) { type = typeMap[i][1]; break; }
-    var target = "qa";
-    if (/错|错了|不会做|算错|求导错|做错|算不出来|卡住了/.test(t)) target = "mistakes";
-    else if (/收藏|备忘|先记|链接|保存起来|待办/.test(t)) target = "inbox";
-    else if (/资料|文档|整理成|笔记内容/.test(t)) target = "resource";
-    return { target: target, subject: subject, type: type };
-  }
-  function aiSaveModal(idx) {
-    var m = W.ui.aiChat[idx];
-    if (!m || m.role !== "assistant") return;
-    var content = m.content;
-    var question = "";
-    for (var i = idx - 1; i >= 0; i--) { if (W.ui.aiChat[i].role === "user") { question = W.ui.aiChat[i].content; break; } }
-    var sug = aiStoreSuggest(question, content);
-    var subj = sug.subject;
-    var cetDm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
-    var hasWordbook = !!cetDm;
-    var typeOpts = '<option value="mistake">错题本（自动归类）</option>' +
-      '<option value="qa">答疑记录（问题+解答）</option>' +
-      '<option value="task">今日任务（AI 建议要做的事）</option>' +
-      '<option value="review">复盘记录（AI 帮做的复盘）</option>' +
-      '<option value="calendar">日历事件（AI 安排的日程）</option>' +
-      '<option value="inbox">收集箱（先收着）</option>' +
-      '<option value="resource">学习资料（存入资料库）</option>' +
-      (hasWordbook ? '<option value="word">生词（存入英语生词本）</option>' : "");
-    var sugTip = sug.target === "mistakes" ? "🤖 识别为一道错题，将自动填入科目/类型/题目/解法" :
-      sug.target === "inbox" ? "🤖 识别为待整理内容，适合先收进收集箱" :
-      sug.target === "resource" ? "🤖 识别为学习资料，适合存入资料库" :
-      "🤖 识别为答疑记录，适合存进答疑库";
-    modalOpen("保存到工作台（AI 接管）",
-      '<div class="ai-banner" style="margin-bottom:10px;">' + ICONS.spark + esc(sugTip) + "</div>" +
-      '<div class="field"><label>保存为（可改）</label><select id="asType">' + typeOpts + "</select></div>" +
-      '<div class="field"><label>科目 / 分类（已自动推荐，可修改）</label><input id="asSubject" value="' + esc(subj) + '"></div>' +
-      '<div id="asMistakeWrap">' +
-      '<div class="field"><label>专题（如 高数·极限）</label><input id="asTopic" placeholder="可留空" value=""></div>' +
-      '<div class="field"><label>类型 / 考点（已自动识别）</label><input id="asTypeField" value="' + esc(sug.type) + '" placeholder="如 洛必达法则"></div>' +
-      '<div class="field"><label>题目</label><input id="asTitle" value="' + esc((question || content).slice(0, 60)) + '"></div>' +
-      '<div class="field"><label>正确解法（AI 回复自动带入）</label><textarea id="asSolution" style="min-height:80px;width:100%;box-sizing:border-box;">' + esc(content.slice(0, 400)) + "</textarea></div>" +
-      "</div>" +
-      '<div class="field" id="asCatWrap" style="display:none;"><label>资料分类</label><select id="asCat">' +
-      '<option value="考研">考研</option><option value="课程">课程</option><option value="课外">课外</option><option value="其他">其他</option></select></div>' +
-      '<div class="field" id="asCalWrap" style="display:none;"><label>日期（日历事件）</label><input id="asCalDate" value="' + todayStr() + '" placeholder="年-月-日">' +
-      '<div class="li-sub" style="margin-top:4px;">AI 安排的日程存到日历，可改日期。</div></div>' +
-      '<div class="field"><label>备注（可选）</label><input id="asNote" placeholder="来源：AI 对话"></div>',
-      cancelBtn() + '<button class="btn" data-action="submit-ai-save" data-id="' + idx + '">' + ICONS.check + "确认存入</button>");
-    var typeSel = $id("asType");
-    typeSel.addEventListener("change", function () {
-      var v = typeSel.value;
-      $id("asMistakeWrap").style.display = v === "mistake" ? "" : "none";
-      $id("asCatWrap").style.display = v === "resource" ? "" : "none";
-      $id("asCalWrap").style.display = v === "calendar" ? "" : "none";
-    });
-  }
-  function submitAiSave(idx) {
-    var m = W.ui.aiChat[idx];
-    if (!m) return;
-    var type = fval("asType");
-    var subject = fval("asSubject").trim() || "未分类";
-    var note = fval("asNote").trim() || "来源：AI 对话";
-    if (type === "mistake") {
-      data.mistakes.push({
-        id: uid(), subject: fval("asSubject").trim() || "未分类",
-        topic: fval("asTopic").trim(), type: fval("asTypeField").trim(),
-        title: fval("asTitle").trim() || "AI 错题", cause: "概念不清",
-        solution: fval("asSolution").trim(), source: "AI 对话", aiMarked: true,
-        reviewed: false, reason: "概念不清", answer: fval("asSolution").trim(),
-        reviewCount: 0, nextReview: todayStr(), mastered: false, date: todayStr()
-      });
-      toast("已存入错题本（按科目/专题/类型自动归类）");
-    } else if (type === "inbox") {
-      data.inbox.push({ id: uid(), content: m.content, status: "待分拣", date: todayStr(), source: "AI 对话", suggestion: "来源：AI 对话" });
-      toast("已存入收集箱（待分拣）");
-    } else if (type === "task") {
-      data.tasks.push({ id: uid(), title: m.content.slice(0, 50), domainId: data.settings.primaryDomain || "kaoyan", date: todayStr(), due: "", done: false, note: "AI 生成", createdAt: nowStr() });
-      toast("已存入今日任务");
-    } else if (type === "review") {
-      data.reviews.push({ id: uid(), date: todayStr(), type: "daily", done: m.content.slice(0, 200), undone: "", adjust: "（AI 生成）" });
-      toast("已存入今日复盘");
-    } else if (type === "calendar") {
-      var cdate = fval("asCalDate").trim() || todayStr();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(cdate)) { toast("日期格式应为 年-月-日", true); return; }
-      data.calendar.push({ id: uid(), date: cdate, title: m.content.slice(0, 30), type: "其他", note: m.content.slice(0, 100), source: "AI 对话" });
-      toast("已存入日历");
-    } else if (type === "qa") {
-      data.qa.push({ id: uid(), subject: subject, question: "AI 解答（" + subject + "）", answer: m.content, date: todayStr(), status: "待解决", starred: false, mastered: false, source: "AI 对话", tags: "", aiMarked: true });
-      toast("已存入答疑库（标记为 AI 回答）");
-    } else if (type === "resource") {
-      data.resources.push({ id: uid(), title: m.content.slice(0, 40), category: fval("asCat"), tags: [subject], url: "", platform: "", extractCode: "", status: "未看", domainId: "", note: m.content, createdAt: nowStr(), updatedAt: nowStr() });
-      toast("已存入资料库");
-    } else if (type === "word") {
-      var cetDm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
-      var cetEx = cetDm && cetDm.exams && cetDm.exams[cetDm.activeExam];
-      if (cetEx) {
-        cetEx.wordbook = cetEx.wordbook || [];
-        cetEx.wordbook.push({ id: uid(), word: m.content.split(/[\s，。,.；;]/)[0].slice(0, 30), meaning: m.content.slice(0, 60), note: note, mastered: false, date: todayStr() });
-        toast("已存入「" + cetDm.activeExam + "」生词本");
-      }
-    }
-    modalClose();
-    refresh();
-  }
-
   /* ---------- 导出 / 导入 ---------- */
   function exportData() {
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -2969,26 +2716,6 @@
       case "submit-grammar-export": submitGrammarExport(); break;
       case "grammar-export-all": grammarExportAll(); break;
 
-      /* AI */
-      case "ai-send": {
-        var txt = (fval("aiInput") || "").trim();
-        if (txt) { aiSend(txt); $id("aiInput").value = ""; }
-        break;
-      }
-      case "ai-save": aiSaveModal(parseInt(id, 10)); break;
-      case "submit-ai-save": submitAiSave(parseInt(id, 10)); break;
-      case "ai-essay": aiEssay(); break;
-      case "ai-speak": aiSpeak(); break;
-      case "ai-translate": aiTranslate(); break;
-      case "ai-save-qa": {
-        var txt = el.getAttribute("data-txt");
-        if (txt) {
-          data.qa.push({ id: uid(), subject: "英语", question: "AI 作文批改", answer: txt, date: todayStr() });
-          refresh();
-          toast("已存入答疑库");
-        }
-        break;
-      }
       /* AI 学习 */
       case "gen-ai-today": genAiToday(); break;
       case "ai-note-save": aiNoteSave(); break;
@@ -3143,14 +2870,6 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
       if (e.target && e.target.id === "searchInput") { W.ui.searchKw = e.target.value.trim(); renderView(); }
-      if (e.target && e.target.id === "aiInput") {
-        var txt = e.target.value.trim();
-        if (txt) { aiSend(txt); e.target.value = ""; }
-      }
-      if (e.target && e.target.id === "speakInput") {
-        var st = e.target.value.trim();
-        if (st) { aiSpeak(); }
-      }
     }
     if (e.key === "Escape") { modalClose(); closeHelp(); closeDrawer(); }
   });
