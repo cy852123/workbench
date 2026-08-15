@@ -195,7 +195,7 @@
       }).join("") + "</div>";
 
     html += '<div class="card tint-green"><div style="font-size:20px;font-weight:800;">' + greeting + "，今天也要加油</div>" +
-      '<div style="color:var(--sub);font-size:13px;margin-top:4px;">' + dateCN(todayStr()) + " " + weekCN() + " · 距 2027 年考研还有 " +
+      '<div style="color:var(--sub);font-size:13px;margin-top:4px;">' + dateCN(todayStr()) + " " + weekCN() + " · 距 2028 考研还有 " +
       '<b style="color:var(--accent-dark);">' + daysDiff(W.settings.kaoyanDate) + "</b> 天</div></div>";
 
     html += '<div class="today-grid">' +
@@ -238,6 +238,24 @@
         '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
         (curIdx >= 0 && dm.stages[curIdx].goal ? '<span class="tag">本阶段目标：' + esc(dm.stages[curIdx].goal) + "</span>" : "") +
         '<button class="btn small plain" data-action="edit-domain" data-id="' + esc(dm.id) + '">' + ic("edit") + "编辑阶段</button></div>");
+    }
+
+    /* 专项（如英语学习里的四六级） */
+    if (dm.subGroups && dm.subGroups.length) {
+      html += dm.subGroups.map(function (sg) {
+        var sd = sg.examDate ? daysDiff(sg.examDate) : null;
+        return card(cardHead(sg.name + " 专项", sd != null ? "还有 " + sd + " 天 · " + sg.examDate : "专项进度", "subgroups"),
+          (sd != null ? '<div class="countdown" style="margin-bottom:12px;"><span class="cd-num">' + sd + '</span><span class="cd-label">天 · 考试日期 ' + esc(sg.examDate) + "</span></div>" : "") +
+          '<div class="list">' + (sg.subjects || []).map(function (s) {
+            return '<div class="list-item"><div class="li-main">' +
+              '<div style="display:flex;align-items:center;gap:10px;">' +
+              '<div class="li-title" style="flex:1;">' + esc(s.name) + "</div>" +
+              '<span style="font-size:13px;color:var(--sub);">' + (s.progress || 0) + "%</span></div>" +
+              '<div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:' + (s.progress || 0) + '%;"></div></div>' +
+              (s.note ? '<div class="li-sub" style="margin-top:4px;">' + esc(s.note) + "</div>" : "") + "</div>" +
+              '<button class="btn small plain" data-action="update-subject" data-domain="' + esc(dm.id) + '" data-subject="' + esc(s.id) + '">' + ic("edit") + "</button></div>";
+          }).join("") + "</div>");
+      }).join("");
     }
 
     /* 科目进度 */
@@ -323,6 +341,35 @@
         '<div class="heatmap">' + hmDays.join("") + "</div>" +
         '<div class="hm-legend"><span>少</span><span class="hm-cell l1"></span><span class="hm-cell l2"></span><span class="hm-cell l3"></span><span class="hm-cell l4"></span><span>多</span></div>' +
         '<button class="btn block" data-action="punch" data-domain="' + esc(dm.id) + '" style="margin-top:12px;">' + ic("plus") + "打卡学习</button>");
+    }
+
+    /* 生词本（英语学习等领域） */
+    if (dm.wordbook) {
+      var wb = dm.wordbook || [];
+      var wPending = wb.filter(function (w) { return !w.mastered; });
+      var wMastered = wb.filter(function (w) { return w.mastered; });
+      html += card(cardHead("生词本", wPending.length + " 待复习 · " + wMastered.length + " 已掌握", "wordbook"),
+        '<button class="btn ghost small" data-action="add-word" data-domain="' + esc(dm.id) + '" style="margin-bottom:10px;">' + ic("plus") + "添加生词</button>" +
+        (wb.length === 0 ? empty("还没有生词", "遇到生词就记下来，定期复习才会变成自己的词") :
+        '<div class="list">' + wb.slice().sort(function (a, b) { return (a.mastered ? 1 : 0) - (b.mastered ? 1 : 0); }).map(function (w) {
+          return '<div class="list-item" style="align-items:flex-start;">' +
+            '<div class="li-main"><div class="li-title">' + esc(w.word) +
+            (w.mastered ? ' <span class="tag state-done">已掌握</span>' : ' <span class="tag state-todo">待复习</span>') + "</div>" +
+            '<div class="li-sub">' + esc(w.meaning || "") + (w.note ? " · " + esc(w.note) : "") + "</div></div>" +
+            '<button class="btn small ' + (w.mastered ? "plain" : "") + '" data-action="toggle-word" data-domain="' + esc(dm.id) + '" data-id="' + esc(w.id) + '">' + ic("check") + (w.mastered ? "已掌握" : "标记掌握") + "</button>" +
+            '<button class="icon-btn" data-action="del-word" data-domain="' + esc(dm.id) + '" data-id="' + esc(w.id) + '">' + ic("trash") + "</button></div>";
+        }).join("") + "</div>") +
+        '<div class="li-sub" style="margin-top:10px;">复习建议：当天记住 → 3 天后复习 → 1 周后再复习 → 掌握后隔几周回顾，比一次记很多更有效。</div>');
+    }
+
+    /* 英语学习相关功能快捷入口 */
+    if (dm.id === "cet") {
+      html += card(cardHead("英语配套功能", "搭配使用效果更好", "english-tools"),
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<button class="btn plain small" data-action="open-qa">' + ic("help") + "答疑库</button>" +
+        '<button class="btn plain small" data-action="open-mistakes">' + ic("alert") + "错题本</button>" +
+        '<button class="btn plain small" data-action="open-ai">' + ic("spark") + "AI 英语帮手</button></div>" +
+        '<div class="li-sub" style="margin-top:10px;">提示：AI 帮手配置 API 密钥后可以做英语答疑、翻译、作文批改、口语对话练习。未配置时（当前未启用），本地工具照常可用。生词本、打卡、错题、答疑都可以配合英语学习使用。</div>');
     }
 
     /* 领域资料 */
@@ -880,6 +927,12 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.1 体验优化<span class="log-tag">更新</span></div>' +
+      '<p>手机端「更多」抽屉改为从左侧滑出，分组更清晰（开始 / 我的领域 / 工具 / 系统）。</p>' +
+      '<p>考研日期更正为 2028 考研（初试 2027 年 12 月 25 日），倒计时与日历同步。</p>' +
+      '<p>「四六级」领域升级为「英语学习」（长期技能：词汇/听力/口语/阅读/写作），四六级作为内部专项（含考试倒计时与听力/阅读/写作/翻译进度）。</p>' +
+      '<p>英语学习新增：生词本（记录生词、标记掌握、复习提醒）、英语配套功能快捷入口（答疑库 / 错题本 / AI 帮手）。</p>' +
+      '<p>影响范围：手机导航、考研备考、英语学习领域、设置。数据：自动迁移旧数据（不删除）。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.0 第一版<span class="log-tag">新增</span></div>' +
       '<p>工作台第一版上线：今日聚合、领域模块（考研备考 / 四六级 / AI 学习 / 学业课程 / 论文写作，可增删）、资料库（链接自动识别平台）、收集箱（AI 建议去向）、跨模块搜索、错题本、答疑库、复盘（每日 / 每周 AI 草稿）、健康（睡眠 / 运动 / 状态 / 番茄钟）、账号管理、重要日期日历、设置与数据（导出 / 导入 / 回收站）。</p>' +
       '<p>影响范围：全部模块。数据：本地新建。你需要的操作：无。</p></div>' +

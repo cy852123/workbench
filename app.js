@@ -86,7 +86,7 @@
       settings: {
         apiKey: "", apiBase: "", apiModel: "",
         primaryDomain: "kaoyan",
-        kaoyanDate: "2026-12-26"
+        kaoyanDate: "2027-12-25"
       },
       domains: [
         {
@@ -113,12 +113,27 @@
           }
         },
         {
-          id: "cet", type: "generic", name: "四六级", color: "blue", order: 1, examDate: "2026-12-12",
+          id: "cet", type: "generic", name: "英语学习", color: "blue", order: 1,
+          subGroups: [
+            {
+              name: "四六级", examDate: "2027-12-12",
+              subjects: [
+                { id: "cet-l1", name: "听力", progress: 30, note: "" },
+                { id: "cet-l2", name: "阅读", progress: 40, note: "" },
+                { id: "cet-l3", name: "写作", progress: 20, note: "" },
+                { id: "cet-l4", name: "翻译", progress: 25, note: "" }
+              ]
+            }
+          ],
           subjects: [
-            { id: "c1", name: "听力", progress: 30, note: "" },
-            { id: "c2", name: "阅读", progress: 40, note: "" },
-            { id: "c3", name: "写作", progress: 20, note: "" },
-            { id: "c4", name: "翻译", progress: 25, note: "" }
+            { id: "cet-s1", name: "词汇", progress: 25, note: "长期积累" },
+            { id: "cet-s2", name: "听力", progress: 20, note: "" },
+            { id: "cet-s3", name: "口语", progress: 10, note: "" },
+            { id: "cet-s4", name: "阅读", progress: 30, note: "" },
+            { id: "cet-s5", name: "写作", progress: 15, note: "" }
+          ],
+          wordbook: [
+            { id: "w1", word: "comprehensive", meaning: "adj. 全面的，综合的", note: "考研高频词", mastered: false, date: "2026-08-14" }
           ]
         },
         {
@@ -189,8 +204,8 @@
         { id: "ac2", platform: "小红书", name: "我的账号", note: "记录学习日常" }
       ],
       calendar: [
-        { id: "cal1", date: "2026-12-26", title: "2027 考研初试", type: "考试", note: "" },
-        { id: "cal2", date: "2026-12-12", title: "英语六级考试", type: "考试", note: "" },
+        { id: "cal1", date: "2027-12-25", title: "2028 考研初试", type: "考试", note: "" },
+        { id: "cal2", date: "2027-12-12", title: "英语六级考试", type: "考试", note: "" },
         { id: "cal3", date: "2026-08-20", title: "材料作业 3 截止", type: "作业", note: "" }
       ],
       deleted: []
@@ -199,12 +214,41 @@
 
   /* ---------- 数据读写 ---------- */
   var data;
+  function migrate() {
+    /* 旧数据 → 新结构的一次性迁移（不删除任何数据） */
+    var changed = false;
+    if (data.settings && data.settings.kaoyanDate === "2026-12-26") {
+      data.settings.kaoyanDate = "2027-12-25";
+      changed = true;
+    }
+    var cet = (data.domains || []).filter(function (x) { return x.id === "cet"; })[0];
+    if (cet) {
+      if (cet.name === "四六级") { cet.name = "英语学习"; changed = true; }
+      if (!cet.subGroups && cet.subjects && cet.subjects.length) {
+        cet.subGroups = [{ name: "四六级", examDate: "2027-12-12", subjects: cet.subjects }];
+        cet.subjects = [
+          { id: "cet-s1", name: "词汇", progress: 25, note: "长期积累" },
+          { id: "cet-s2", name: "听力", progress: 20, note: "" },
+          { id: "cet-s3", name: "口语", progress: 10, note: "" },
+          { id: "cet-s4", name: "阅读", progress: 30, note: "" },
+          { id: "cet-s5", name: "写作", progress: 15, note: "" }
+        ];
+        changed = true;
+      }
+      if (!cet.wordbook) { cet.wordbook = []; changed = true; }
+    }
+    (data.calendar || []).forEach(function (c) {
+      if (c.date === "2026-12-26" && c.title.indexOf("考研") >= 0) { c.date = "2027-12-25"; c.title = "2028 考研初试"; changed = true; }
+      if (c.date === "2026-12-12" && c.title.indexOf("六级") >= 0) { c.date = "2027-12-12"; changed = true; }
+    });
+    return changed;
+  }
   function load() {
     try {
       var raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         var d = JSON.parse(raw);
-        if (d && d.v === 1) { data = d; return; }
+        if (d && d.v === 1) { data = d; if (migrate()) save(true); return; }
       }
     } catch (e) { /* 损坏则重建，先保留旧数据 */ }
     data = defaultData();
@@ -277,6 +321,7 @@
   /* ---------- 导航结构 ---------- */
   function navItems() {
     var items = [];
+    items.push({ group: "开始" });
     items.push({ view: "today", label: "今日", icon: "sun" });
     items.push({ group: "我的领域" });
     data.domains.slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
@@ -450,7 +495,10 @@
     "api": { t: "AI 配置", c: ["填入 OpenAI 兼容的 API 地址、模型名和密钥，对话式 AI 即启用。", "密钥只存你浏览器的本地存储，不上传公开仓库。", "费用：由你的 API 服务按量计费，与工作台无关。", "不配置时，本地规则功能（收集箱建议、周复盘草稿、学习摘要）照常可用。"] },
     "data": { t: "数据管理", c: ["导出：下载 JSON 文件，妥善保存即备份。", "导入：选择备份文件恢复，导入前自动备份当前数据。", "清空示例：只删除预置示例，你自己的数据不动。", "换电脑或清浏览器前先导出。"] },
     "trash": { t: "回收站", c: ["删除的内容先进这里，可恢复。", "清空回收站后不可恢复，请谨慎。"] },
-    "domains": { t: "领域管理", c: ["你的学习领域可增删：考研、四六级、AI 学习、课程、论文。", "新建领域：输入名称、选择类型（通用/课程/论文）。", "手机底部导航第二个入口可设置为你最常用的领域。", "删除领域：领域下关联的资料不会删除，仍留在资料库。"] },
+    "domains": { t: "领域管理", c: ["你的学习领域可增删：考研、英语学习、AI 学习、课程、论文。", "新建领域：输入名称、选择类型（通用/课程/论文）。", "手机底部导航第二个入口可设置为你最常用的领域。", "删除领域：领域下关联的资料不会删除，仍留在资料库。"] },
+    "subgroups": { t: "专项", c: ["领域里单独划出的专项，如英语学习里的四六级。", "专项有自己的考试倒计时和科目进度（听力/阅读/写作/翻译）。", "点科目右侧按钮更新进度，与主领域互不影响。", "示例：英语学习（长期）→ 四六级（专项）+ 词汇/口语等长期技能。"] },
+    "wordbook": { t: "生词本", c: ["记录英语生词：单词、释义、备注。", "点「标记掌握」进入已掌握列表，未掌握的一直显示待复习。", "复习节奏建议：当天记 → 3 天后复习 → 1 周后复习 → 掌握后隔几周回顾。", "删除进回收站可恢复。", "未来可接入开源词典数据做自动释义（升级功能，当前未启用）。"] },
+    "english-tools": { t: "英语配套功能", c: ["英语学习领域专属的快捷入口。", "答疑库：记录英语问题与解答；错题本：记录英语错题；AI 帮手：配置 API 后可做翻译、作文批改、口语对话（当前未配置时不可用，本地工具不受影响）。"] },
     "changelog": { t: "更新日志", c: ["每次更新记录：日期、版本、修改内容、影响范围、是否需要你操作。"] }
   };
   function showHelp(key) {
@@ -688,6 +736,7 @@
       case "open-reviews": go("reviews"); break;
       case "open-qa": go("qa"); break;
       case "open-mistakes": go("mistakes"); break;
+      case "open-ai": go("ai"); break;
 
       /* 任务 */
       case "toggle-task": {
@@ -719,6 +768,11 @@
       case "add-weekly": addWeeklyModal(domain, day); break;
       case "del-weekly": delWeekly(domain, day, id); break;
       case "punch": punchModal(domain); break;
+
+      /* 生词本 */
+      case "add-word": addWordModal(domain); break;
+      case "toggle-word": toggleWord(domain, id); break;
+      case "del-word": delWord(domain, id); break;
 
       /* 课程 */
       case "add-course": courseModal(null, domain); break;
@@ -893,6 +947,7 @@
       case "submit-resource": submitResource(id); break;
       case "submit-inbox": submitInbox(); break;
       case "submit-sort": submitSort(id); break;
+      case "submit-word": submitWord(domain); break;
       case "submit-mistake": submitMistake(id); break;
       case "submit-qa": submitQa(id); break;
       case "submit-daily-review": submitDailyReview(); break;
@@ -1063,7 +1118,11 @@
 
   function subjectModal(did, sid) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
-    var s = dm && dm.subjects.filter(function (x) { return x.id === sid; })[0];
+    var s = null;
+    if (dm) {
+      (dm.subjects || []).forEach(function (x) { if (x.id === sid) s = x; });
+      if (!s && dm.subGroups) dm.subGroups.forEach(function (sg) { (sg.subjects || []).forEach(function (x) { if (x.id === sid) s = x; }); });
+    }
     if (!s) return;
     modalOpen("更新进度：" + s.name,
       '<div class="field"><label>进度（0-100%）</label><input id="sProg" type="number" min="0" max="100" value="' + (s.progress || 0) + '"></div>' +
@@ -1072,7 +1131,11 @@
   }
   function submitSubject(did, sid) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
-    var s = dm && dm.subjects.filter(function (x) { return x.id === sid; })[0];
+    var s = null;
+    if (dm) {
+      (dm.subjects || []).forEach(function (x) { if (x.id === sid) s = x; });
+      if (!s && dm.subGroups) dm.subGroups.forEach(function (sg) { (sg.subjects || []).forEach(function (x) { if (x.id === sid) s = x; }); });
+    }
     if (!s) return;
     s.progress = Math.max(0, Math.min(100, parseInt(fval("sProg"), 10) || 0));
     s.note = fval("sNote").trim();
@@ -1129,6 +1192,40 @@
     if (min <= 0) { toast("请填写有效时长", true); return; }
     data.studyLog.push({ date: todayStr(), domainId: fval("pDomain"), subject: fval("pSubject"), minutes: min });
     modalClose(); refresh(); toast("打卡成功");
+  }
+
+  /* ---------- 生词本 ---------- */
+  function addWordModal(did) {
+    modalOpen("添加生词", "遇到生词就记下来，标记掌握后进入已掌握列表，定期复习。" +
+      field("单词", "wdWord", "text", "vocabulary") +
+      field("释义", "wdMeaning", "text", "n. 词汇，词汇量") +
+      field("备注（可选）", "wdNote", "text", "考研高频词"),
+      cancelBtn() + '<button class="btn" data-action="submit-word" data-domain="' + esc(did) + '">' + ICONS.check + "保存</button>");
+  }
+  function submitWord(did) {
+    var dm = data.domains.filter(function (x) { return x.id === did; })[0];
+    if (!dm) return;
+    var word = fval("wdWord").trim();
+    if (!word) { toast("请填写单词", true); return; }
+    dm.wordbook = dm.wordbook || [];
+    dm.wordbook.push({ id: uid(), word: word, meaning: fval("wdMeaning").trim(), note: fval("wdNote").trim(), mastered: false, date: todayStr() });
+    modalClose(); refresh(); toast("生词已添加");
+  }
+  function toggleWord(did, id) {
+    var dm = data.domains.filter(function (x) { return x.id === did; })[0];
+    var w = dm && (dm.wordbook || []).filter(function (x) { return x.id === id; })[0];
+    if (!w) return;
+    w.mastered = !w.mastered;
+    refresh();
+    toast(w.mastered ? "已标记掌握，记得隔几天复习一次" : "已恢复为待复习");
+  }
+  function delWord(did, id) {
+    var dm = data.domains.filter(function (x) { return x.id === did; })[0];
+    var w = dm && (dm.wordbook || []).filter(function (x) { return x.id === id; })[0];
+    if (!w) return;
+    dm.wordbook = dm.wordbook.filter(function (x) { return x.id !== id; });
+    data.deleted.push({ id: id, kind: "生词", title: w.word, deletedAt: nowStr() });
+    refresh(); toast("生词已删除，可在回收站恢复");
   }
 
   function courseModal(id, did) {
