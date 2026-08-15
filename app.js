@@ -1494,11 +1494,16 @@
     "当代": "点：时政主题 → 默：我国立场与主张 → 析：材料印证"
   };
   function kyFormulaModal() {
-    modalOpen("📐 数学公式卡", '<div class="li-sub" style="margin-bottom:10px;">考研数学常用公式（按章浏览）</div>' +
-      Object.keys(KY_FORMULAS).map(function (k) {
-        return '<div class="formula-block"><div class="formula-title">' + esc(k) + "</div>" +
-          KY_FORMULAS[k].map(function (f) { return '<div class="formula-line">' + esc(f) + "</div>"; }).join("") + "</div>";
-      }).join(""), okBtn("ky-close"));
+    var gen = kyActiveScheme().gen || {};
+    var custom = gen.customFormulas || {};
+    var cats = Object.keys(KY_FORMULAS).concat(Object.keys(custom));
+    modalOpen("📐 数学公式卡", '<div class="li-sub" style="margin-bottom:10px;">考研数学常用公式（内置 + 自定义）</div>' +
+      cats.map(function (k) {
+        var items = (KY_FORMULAS[k] || []).concat(custom[k] || []);
+        return '<div class="formula-block"><div class="formula-title">' + esc(k) + (custom[k] && custom[k].length ? ' <span class="tag">自定义</span>' : "") + "</div>" +
+          items.map(function (f) { return '<div class="formula-line">' + esc(f) + "</div>"; }).join("") + "</div>";
+      }).join(""),
+      cancelBtn() + '<button class="btn" data-action="ky-formula-add">＋ 添加公式</button>');
   }
   function kyPaperModal() {
     modalOpen("📋 真题套卷记录", '<div class="li-sub" style="margin-bottom:10px;">记录每套真题各板块得分（百分制），薄弱章节一目了然</div>' +
@@ -1598,26 +1603,34 @@
     modalClose(); refresh(); toast("翻译反思已保存");
   }
   function kyPointsModal() {
-    modalOpen("🗂 政治知识点库", '<div class="li-sub" style="margin-bottom:10px;">按章浏览 · 今日轮播科目加粗</div>' +
-      Object.keys(KY_POL_POINTS).map(function (k) {
-        return '<div class="formula-block"><div class="formula-title">' + esc(k) + "</div>" +
-          KY_POL_POINTS[k].map(function (p) { return '<div class="formula-line">· ' + esc(p) + "</div>"; }).join("") + "</div>";
-      }).join(""), okBtn("ky-close"));
+    var gen = kyActiveScheme().gen || {};
+    var custom = gen.customPoints || {};
+    var cats = Object.keys(KY_POL_POINTS).concat(Object.keys(custom));
+    modalOpen("🗂 政治知识点库", '<div class="li-sub" style="margin-bottom:10px;">按章浏览（内置 + 自定义）</div>' +
+      cats.map(function (k) {
+        var items = (KY_POL_POINTS[k] || []).concat(custom[k] || []);
+        return '<div class="formula-block"><div class="formula-title">' + esc(k) + (custom[k] && custom[k].length ? ' <span class="tag">自定义</span>' : "") + "</div>" +
+          items.map(function (p) { return '<div class="formula-line">· ' + esc(p) + "</div>"; }).join("") + "</div>";
+      }).join(""),
+      cancelBtn() + '<button class="btn" data-action="ky-point-add">＋ 添加知识点</button>');
   }
   function kyHatModal() {
+    var gen = kyActiveScheme().gen || {};
+    var hats = KY_HAT_QUESTIONS.concat(gen.customHats || []);
     modalOpen("🎩 帽子题专项", '<div class="li-sub" style="margin-bottom:10px;">先答再看答案，记录对错</div>' +
-      KY_HAT_QUESTIONS.map(function (h, i) {
+      hats.map(function (h, i) {
         return '<div class="formula-block"><div class="formula-title">' + (i + 1) + ". " + esc(h.q) + "</div>" +
           '<div class="li-sub">答案：' + esc(h.a) + "</div>" +
           '<div style="display:flex;gap:8px;margin-top:6px;">' +
           '<button class="btn small" data-action="ky-hat-ok" data-idx="' + i + '">答对了</button>' +
           '<button class="btn small ghost" data-action="ky-hat-no" data-idx="' + i + '">答错了</button></div></div>';
       }).join(""),
-      cancelBtn() + '<button class="btn" data-action="ky-close">关闭</button>');
+      cancelBtn() + '<button class="btn" data-action="ky-hat-add">＋ 添加帽子题</button>');
   }
   function kyHatRecord(idx, correct) {
     var gen = kyActiveScheme().gen || {};
-    var h = KY_HAT_QUESTIONS[idx];
+    var hats = KY_HAT_QUESTIONS.concat(gen.customHats || []);
+    var h = hats[idx];
     if (!h) return;
     gen.hatQuestions = gen.hatQuestions || [];
     gen.hatQuestions.push({ date: todayStr(), q: h.q, ans: h.a, correct: correct });
@@ -1798,6 +1811,89 @@
       kyGenBrief(sc);
       save();
     }
+  }
+
+  /* 直接记录阅读（不经计时器） */
+  function kyReadingRecordModal() {
+    var papers = [];
+    for (var y = 2010; y <= 2019; y++) for (var i = 1; i <= 4; i++) papers.push(y + " Text" + i);
+    modalOpen("＋ 记录阅读",
+      '<div class="field"><label>篇目</label><select id="kyRRPaper">' + papers.map(function (p) { return "<option>" + p + "</option>"; }).join("") + "</select></div>" +
+      field("正确率（%）", "kyRRC", "number", "70", "") +
+      field("用时（分钟）", "kyRRM", "number", "30", "") +
+      '<div class="field"><label>错题类型（多选）</label>' +
+      '<label class="checkline"><input type="checkbox" value="主旨"> 主旨</label>' +
+      '<label class="checkline"><input type="checkbox" value="细节"> 细节</label>' +
+      '<label class="checkline"><input type="checkbox" value="推理"> 推理</label>' +
+      '<label class="checkline"><input type="checkbox" value="词汇"> 词汇</label></div>' +
+      '<div class="field"><label>定位句分析（错因）</label>' +
+      '<label class="checkline"><input type="radio" name="kyLoc2" value="没看懂句子"> 没看懂句子</label>' +
+      '<label class="checkline"><input type="radio" name="kyLoc2" value="逻辑替换没识别"> 逻辑替换没识别</label>' +
+      '<label class="checkline"><input type="radio" name="kyLoc2" value="两者都有"> 两者都有</label>' +
+      '<label class="checkline"><input type="radio" name="kyLoc2" value="没有错题"> 没有错题</label></div>' +
+      '<div class="li-sub">正确率 ≥60% 得 1 颗 ⭐</div>',
+      cancelBtn() + '<button class="btn" data-action="submit-ky-reading-record">' + ICONS.check + "保存记录</button>");
+  }
+  function submitKyReadingRecord() {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    var correct = parseInt(fval("kyRRC"), 10) || 0;
+    var wrongTypes = [];
+    var cbs = document.querySelectorAll('#modalBody input[type="checkbox"]:checked');
+    for (var i = 0; i < cbs.length; i++) wrongTypes.push(cbs[i].value);
+    var loc = document.querySelector('input[name="kyLoc2"]:checked');
+    gen.readingLog = gen.readingLog || [];
+    gen.readingLog.push({ date: todayStr(), paper: fval("kyRRPaper") || "2010 Text1", correct: correct, wrongTypes: wrongTypes, locate: loc ? loc.value : "", minutes: parseInt(fval("kyRRM"), 10) || 30 });
+    gen.stars = (gen.stars || 0) + (correct >= 60 ? 1 : 0);
+    kyMarkDone(sc, "english");
+    modalClose(); refresh();
+    toast(correct >= 60 ? "已记录，正确率 " + correct + "% +1 ⭐" : "已记录（正确率 <60%，未得星）");
+  }
+  /* 素材自定义（用户自己上传/添加） */
+  function kyPointAddModal() {
+    modalOpen("＋ 添加自定义知识点", '<div class="li-sub" style="margin-bottom:10px;">添加你自己的知识点（按科目）</div>' +
+      selField("科目", "cpCat", [["马原", "马原"], ["毛中特", "毛中特"], ["史纲", "史纲"], ["思修", "思修"], ["其他", "其他"]], "其他") +
+      area("知识点内容", "cpText", "每条一行，如：\n实践是认识的来源\n矛盾分析法：…"),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-point">' + ICONS.check + "保存</button>");
+  }
+  function submitKyPoint() {
+    var gen = kyActiveScheme().gen || {};
+    var text = fval("cpText").trim();
+    if (!text) { toast("请填写知识点内容", true); return; }
+    gen.customPoints = gen.customPoints || {};
+    var cat = fval("cpCat");
+    gen.customPoints[cat] = gen.customPoints[cat] || [];
+    text.split(/\r?\n/).forEach(function (l) { if (l.trim()) gen.customPoints[cat].push(l.trim()); });
+    modalClose(); refresh(); toast("自定义知识点已保存");
+  }
+  function kyFormulaAddModal() {
+    modalOpen("＋ 添加自定义公式", '<div class="li-sub" style="margin-bottom:10px;">添加你自己的公式/结论</div>' +
+      field("分类", "cfCat", "text", "如 高数·极限 / 线代·矩阵", "") +
+      area("公式内容", "cfText", "每条一行，如：\nlim(x→0) sinx/x = 1", ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-formula">' + ICONS.check + "保存</button>");
+  }
+  function submitKyFormula() {
+    var gen = kyActiveScheme().gen || {};
+    var cat = fval("cfCat").trim();
+    var text = fval("cfText").trim();
+    if (!cat || !text) { toast("请填写分类和内容", true); return; }
+    gen.customFormulas = gen.customFormulas || {};
+    gen.customFormulas[cat] = gen.customFormulas[cat] || [];
+    text.split(/\r?\n/).forEach(function (l) { if (l.trim()) gen.customFormulas[cat].push(l.trim()); });
+    modalClose(); refresh(); toast("自定义公式已保存");
+  }
+  function kyHatAddModal() {
+    modalOpen("＋ 添加自定义帽子题", '<div class="li-sub" style="margin-bottom:10px;">添加你自己的对应关系题</div>' +
+      field("题目", "chQ", "text", "如 新时代的社会主要矛盾是（ ）", "") +
+      field("答案", "chA", "text", "如 人民日益增长的美好生活需要和不平衡不充分的发展之间的矛盾", ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-hat">' + ICONS.check + "保存</button>");
+  }
+  function submitKyHat() {
+    var gen = kyActiveScheme().gen || {};
+    var q = fval("chQ").trim(), a = fval("chA").trim();
+    if (!q || !a) { toast("请填写题目和答案", true); return; }
+    gen.customHats = gen.customHats || [];
+    gen.customHats.push({ q: q, a: a });
+    modalClose(); refresh(); toast("自定义帽子题已保存");
   }
 
   /* ---------- AI 本地规则 ---------- */
@@ -2558,6 +2654,14 @@
       case "submit-ky-replace": submitKyReplace(); break;
       case "ky-word-add": kyWordAddModal(); break;
       case "ky-word-master": kyWordMaster(parseInt(el.getAttribute("data-idx"), 10)); break;
+      case "ky-reading-record": kyReadingRecordModal(); break;
+      case "submit-ky-reading-record": submitKyReadingRecord(); break;
+      case "ky-point-add": kyPointAddModal(); break;
+      case "submit-ky-point": submitKyPoint(); break;
+      case "ky-formula-add": kyFormulaAddModal(); break;
+      case "submit-ky-formula": submitKyFormula(); break;
+      case "ky-hat-add": kyHatAddModal(); break;
+      case "submit-ky-hat": submitKyHat(); break;
       case "ky-close": modalClose(); break;
 
       /* 模态提交 */
@@ -2809,11 +2913,24 @@
     refresh();
   }
 
+  function punchSubjects(dm) {
+    if (!dm) return [];
+    if (dm.type === "kaoyan") {
+      var kySc = dm.schemes ? (dm.schemes.list.filter(function (s) { return s.id === dm.schemes.activeId; })[0] || dm.schemes.list[0]) : null;
+      return (kySc && kySc.subjects ? kySc.subjects : []).map(function (x) { return x.name; });
+    }
+    if (dm.type === "english") {
+      var ex = dm.exams && dm.exams[dm.activeExam];
+      return ex && ex.subjects ? Object.keys(ex.subjects) : [];
+    }
+    if (dm.type === "ailearn") return ["AI 学习"];
+    return ["通用"];
+  }
   function punchModal(did) {
     var dm = did ? data.domains.filter(function (x) { return x.id === did; })[0] : null;
-    var doms = data.domains.filter(function (x) { return x.subjects && x.subjects.length; });
-    if (doms.length === 0) { toast("没有可打卡的领域（需先设置科目进度）", true); return; }
-    var sel = dm && dm.subjects && dm.subjects.length ? dm : doms[0];
+    var doms = data.domains.filter(function (x) { return punchSubjects(x).length > 0; });
+    if (doms.length === 0) { toast("没有可打卡的领域", true); return; }
+    var sel = dm && punchSubjects(dm).length ? dm : doms[0];
     modalOpen("打卡学习", "记录今天学了什么、学了多久。" +
       selField("领域", "pDomain", data.domains.map(function (x) { return [x.id, x.name]; }), sel.id) +
       '<div class="field"><label>科目</label><select id="pSubject"></select></div>' +
@@ -2823,7 +2940,7 @@
     var ps = $id("pSubject");
     function fill() {
       var dm2 = data.domains.filter(function (x) { return x.id === pd.value; })[0];
-      ps.innerHTML = (dm2 && dm2.subjects ? dm2.subjects : []).map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + "</option>"; }).join("");
+      ps.innerHTML = punchSubjects(dm2).map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + "</option>"; }).join("");
     }
     fill();
     pd.addEventListener("change", fill);

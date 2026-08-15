@@ -903,7 +903,8 @@
       "</div>");
     /* 阅读记录（含定位句分析） */
     var rl = gen.readingLog || [];
-    html += card(cardHead("📈 阅读复盘", rl.length ? "共 " + rl.length + " 篇 · 正确率 ≥60% 得 1⭐" : "暂无记录", "reading"),
+    html += card(cardHead("📈 阅读复盘", rl.length ? "共 " + rl.length + " 篇 · 正确率 ≥60% 得 1⭐" : "暂无记录", "reading") +
+      '<button class="btn small ghost" data-action="ky-reading-record">＋ 记录阅读</button>',
       rl.length ? '<div class="list">' + rl.slice().reverse().slice(0, 6).map(function (r) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(r.paper) + " ｜ 正确率 " + r.correct + "%" + (r.correct >= 60 ? ' <span class="tag state-done">+⭐</span>' : "") + "</div>" +
           '<div class="li-sub">' + esc(r.date) + " · 用时 " + r.minutes + " 分" +
@@ -939,13 +940,15 @@
       toolBtn("🔗", "错题与同类题", "错题联动 + 同类题编号", "go-view", "ky-mistakes-link") +
       "</div>");
     var pr = gen.paperRecords || [];
-    html += card(cardHead("📋 真题套卷记录", pr.length ? "共 " + pr.length + " 套" : "暂无记录", "papers"),
+    html += card(cardHead("📋 真题套卷记录", pr.length ? "共 " + pr.length + " 套" : "暂无记录", "papers") +
+      '<button class="btn small ghost" data-action="ky-paper-modal">＋ 记录套卷</button>',
       pr.length ? '<div class="list">' + pr.slice().reverse().slice(0, 6).map(function (p) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(p.paper) + " ｜ 总分 " + p.total + "</div>" +
           '<div class="li-sub">选填 ' + p.xuan + " · 高数 " + p.gs + " · 线代 " + p.xd + " · 概率 " + p.gl + " ｜ " + esc(p.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">做真题套卷后记录各板块得分</div>');
     var cl = gen.carelessness || [];
-    html += card(cardHead("⚠️ 粗心账本", cl.length ? "共 " + cl.length + " 次失误" : "暂无记录", "careless"),
+    html += card(cardHead("⚠️ 粗心账本", cl.length ? "共 " + cl.length + " 次失误" : "暂无记录", "careless") +
+      '<button class="btn small ghost" data-action="ky-careless-modal">＋ 记一笔</button>',
       cl.length ? '<div class="list">' + cl.slice().reverse().slice(0, 6).map(function (c) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(c.type) + " ｜ " + esc(c.note || "") + "</div>" +
           '<div class="li-sub">' + esc(c.date) + "</div></div></div>";
@@ -979,13 +982,15 @@
       toolBtn("📰", "时政收藏夹", "本月时政词条 + 可联系考点", "ky-affair-modal", "") +
       "</div>");
     var ht = gen.hatQuestions || [];
-    html += card(cardHead("🎩 帽子题记录", ht.length ? "共 " + ht.length + " 题" : "暂无记录", "hat"),
+    html += card(cardHead("🎩 帽子题记录", ht.length ? "共 " + ht.length + " 题" : "暂无记录", "hat") +
+      '<button class="btn small ghost" data-action="ky-hat-modal">＋ 刷帽子题</button>',
       ht.length ? '<div class="list">' + ht.slice().reverse().slice(0, 6).map(function (h) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(h.q) + " → " + esc(h.ans) + "</div>" +
           '<div class="li-sub">' + (h.correct ? "✓ 答对" : "✗ 答错") + " · " + esc(h.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">帽子题是选择题高分关键，刷对应关系时记录</div>');
     var af = gen.currentAffairs || [];
-    html += card(cardHead("📰 时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs"),
+    html += card(cardHead("📰 时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs") +
+      '<button class="btn small ghost" data-action="ky-affair-modal">＋ 收藏时政</button>',
       af.length ? '<div class="list">' + af.slice().reverse().slice(0, 6).map(function (a) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(a.title) + "</div>" +
           '<div class="li-sub">' + esc(a.examPoint || "未标注考点") + " · " + esc(a.date) + "</div></div></div>";
@@ -1019,13 +1024,15 @@
       toolBtn("📊", "大纲对比", "考纲要求 vs 实际掌握度", "ky-outline-modal", "") +
       "</div>");
     var nl = gen.noteLog || [];
-    html += card(cardHead("📒 章节笔记", nl.length ? "共 " + nl.length + " 章笔记" : "暂无记录", "notes"),
+    html += card(cardHead("📒 章节笔记", nl.length ? "共 " + nl.length + " 章笔记" : "暂无记录", "notes") +
+      '<button class="btn small ghost" data-action="ky-start-major">＋ 记笔记</button>',
       nl.length ? '<div class="list">' + nl.slice().reverse().slice(0, 6).map(function (n) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + n.chapter + " 章 ｜ " + esc(n.tagType) + "：" + esc(n.tag) + "</div>" +
           '<div class="li-sub">' + esc(n.note.slice(0, 40)) + (n.note.length > 40 ? "…" : "") + " · " + esc(n.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">每章学习后记笔记（强制标签），自动推进章节</div>');
     var fb = gen.fillBlankNotes || [];
-    html += card(cardHead("✏️ 挖空默写", fb.length ? "共 " + fb.length + " 次" : "暂无记录", "fill"),
+    html += card(cardHead("✏️ 挖空默写", fb.length ? "共 " + fb.length + " 次" : "暂无记录", "fill") +
+      '<button class="btn small ghost" data-action="ky-fill-modal">＋ 添加挖空</button>',
       fb.length ? '<div class="list">' + fb.slice().reverse().slice(0, 5).map(function (f) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + f.chapter + " 章挖空</div>" +
           '<div class="li-sub">' + esc(f.text.slice(0, 40)) + (f.text.length > 40 ? "…" : "") + "</div></div></div>";
@@ -1054,7 +1061,8 @@
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">生词掌握度看板：下方列表一键切换 待复习/已掌握</div>');
     var all = ew.concat(om).concat(wr).map(function (x, i) { x._i = i; return x; });
-    html += card(cardHead("📊 生词掌握度看板", "共 " + all.length + " 条（待复习 " + all.filter(function (x) { return !x.mastered; }).length + "）", "words"),
+    html += card(cardHead("📊 生词掌握度看板", "共 " + all.length + " 条（待复习 " + all.filter(function (x) { return !x.mastered; }).length + "）", "words") +
+      '<button class="btn small ghost" data-action="ky-word-add">＋ 添加</button>',
       all.length ? '<div class="list">' + all.slice().reverse().slice(0, 12).map(function (x) {
         var label = x.sentence ? "真题" : (x.meaning && x.example ? "僻义" : "替换");
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(x.word) + " <span class=\"li-sub\">" + esc(label) + "</span></div>" +
