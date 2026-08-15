@@ -1,8 +1,8 @@
 {
   "v": 1,
   "meta": {
-    "created": "2026-08-16 04:33",
-    "updated": "2026-08-16 04:33"
+    "created": "2026-08-16 04:45",
+    "updated": "2026-08-16 04:45"
   },
   "settings": {
     "apiKey": "",
@@ -60,7 +60,7 @@
                 "done": false,
                 "costMinutes": 60,
                 "date": "",
-                "createTime": "2026-08-16 04:33",
+                "createTime": "2026-08-16 04:45",
                 "finishTime": ""
               },
               {
@@ -71,7 +71,7 @@
                 "done": false,
                 "costMinutes": 30,
                 "date": "",
-                "createTime": "2026-08-16 04:33",
+                "createTime": "2026-08-16 04:45",
                 "finishTime": ""
               },
               {
@@ -82,7 +82,7 @@
                 "done": false,
                 "costMinutes": 60,
                 "date": "",
-                "createTime": "2026-08-16 04:33",
+                "createTime": "2026-08-16 04:45",
                 "finishTime": ""
               },
               {
@@ -93,7 +93,7 @@
                 "done": false,
                 "costMinutes": 60,
                 "date": "",
-                "createTime": "2026-08-16 04:33",
+                "createTime": "2026-08-16 04:45",
                 "finishTime": ""
               }
             ],
@@ -354,8 +354,8 @@
       "due": "",
       "done": true,
       "note": "",
-      "createdAt": "2026-08-16 04:33",
-      "doneAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45",
+      "doneAt": "2026-08-16 04:45"
     },
     {
       "id": "t2",
@@ -365,7 +365,7 @@
       "due": "",
       "done": false,
       "note": "",
-      "createdAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45"
     },
     {
       "id": "t3",
@@ -375,7 +375,7 @@
       "due": "",
       "done": false,
       "note": "",
-      "createdAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45"
     },
     {
       "title": "交互测试任务：复习高数第三章",
@@ -384,8 +384,8 @@
       "due": "",
       "done": false,
       "note": "",
-      "createdAt": "2026-08-16 04:33",
-      "id": "idmsuu2gyvoe3ck"
+      "createdAt": "2026-08-16 04:45",
+      "id": "idmsuui7ajiyohb"
     }
   ],
   "studyLog": [
@@ -418,7 +418,7 @@
       "domainId": "kaoyan",
       "subject": "数学",
       "minutes": 4560,
-      "ts": "04:33"
+      "ts": "04:45"
     }
   ],
   "focusSessions": [],
@@ -470,8 +470,8 @@
       "status": "在看",
       "note": "跟着第 3 章，配合习题",
       "domainId": "kaoyan",
-      "createdAt": "2026-08-16 04:33",
-      "updatedAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45",
+      "updatedAt": "2026-08-16 04:45"
     },
     {
       "id": "r2",
@@ -486,8 +486,8 @@
       "status": "未看",
       "note": "",
       "domainId": "courses",
-      "createdAt": "2026-08-16 04:33",
-      "updatedAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45",
+      "updatedAt": "2026-08-16 04:45"
     },
     {
       "id": "r3",
@@ -502,8 +502,8 @@
       "status": "未看",
       "note": "",
       "domainId": "ai",
-      "createdAt": "2026-08-16 04:33",
-      "updatedAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45",
+      "updatedAt": "2026-08-16 04:45"
     },
     {
       "title": "测试资料标题",
@@ -515,12 +515,12 @@
       "domainId": "",
       "tags": [],
       "note": "",
-      "updatedAt": "2026-08-16 04:33",
-      "id": "idmsuu2kqhr93un",
-      "createdAt": "2026-08-16 04:33"
+      "updatedAt": "2026-08-16 04:45",
+      "id": "idmsuuib34mmzph",
+      "createdAt": "2026-08-16 04:45"
     },
     {
-      "id": "idmsuu2mjxxfvmi",
+      "id": "idmsuuicwbkxmy7",
       "title": "https://www.bilibili.com/video/BV1GJ411x7h7",
       "url": "https://www.bilibili.com/video/BV1GJ411x7h7",
       "platform": "哔哩哔哩",
@@ -530,8 +530,8 @@
       "domainId": "",
       "tags": [],
       "note": "",
-      "createdAt": "2026-08-16 04:33",
-      "updatedAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45",
+      "updatedAt": "2026-08-16 04:45"
     }
   ],
   "inbox": [
@@ -543,7 +543,7 @@
       "platform": "哔哩哔哩",
       "status": "已分拣",
       "suggestion": "看起来是学习视频，建议放入「考研备考」或资料库",
-      "createdAt": "2026-08-16 04:33",
+      "createdAt": "2026-08-16 04:45",
       "movedTo": "资料库"
     },
     {
@@ -554,17 +554,17 @@
       "platform": "",
       "status": "待分拣",
       "suggestion": "文字笔记，建议放入资料库（课外分类）",
-      "createdAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45"
     },
     {
-      "id": "idmsuu2ly7cdh3z",
+      "id": "idmsuuicae6tpv0",
       "type": "text",
       "content": "https://pan.baidu.com/s/abcdefg123 提取码: x9y8",
       "url": "https://pan.baidu.com/s/abcdefg123 提取码: x9y8",
       "platform": "百度网盘",
       "status": "待分拣",
       "suggestion": "建议放入：AI 知识学习",
-      "createdAt": "2026-08-16 04:33"
+      "createdAt": "2026-08-16 04:45"
     }
   ],
   "reviews": [

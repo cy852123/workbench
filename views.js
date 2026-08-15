@@ -1609,19 +1609,15 @@
 
     html += '<div class="today-grid">';
 
-    html += card(cardHead("今日健康", "记录当天状态", "health"),
-      '<div class="list">' +
-      '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">睡眠</div>' +
-      '<div class="li-sub">' + (sleep ? "睡了 " + fmtMin(sleep.minutes) + "（" + sleep.bed + " → " + sleep.wake + "）" : "还没记录") + "</div></div>" +
-      '<button class="btn small plain" data-action="log-sleep">' + ic("moon") + (sleep ? "修改" : "记录") + "</button></div>" +
-      '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">运动</div>' +
-      '<div class="li-sub">' + (sport ? "已运动：" + esc(sport.type) : "还没记录") + "</div></div>" +
-      '<button class="btn small plain" data-action="log-sport">' + ic("activity") + (sport ? "修改" : "记录") + "</button></div>" +
-      '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">今日状态</div>' +
-      '<div class="li-sub">' + (state ? "精力：" + esc(state.level) : "还没记录") + "</div></div>" +
-      '<button class="btn small plain" data-action="log-state">' + ic("sun") + (state ? "修改" : "记录") + "</button></div>" +
+    html += '<div class="health3">' +
+      '<div class="h3"><div class="h3-emoji">🌙</div><div class="h3-label">睡眠</div><div class="h3-val">' + (sleep ? fmtMin(sleep.minutes) + "（" + sleep.bed + "→" + sleep.wake + "）" : "还没记录") + "</div>" +
+      '<button class="h3-btn" data-action="log-sleep">' + (sleep ? "修改" : "记录") + "</button></div>" +
+      '<div class="h3"><div class="h3-emoji">🏃</div><div class="h3-label">运动</div><div class="h3-val">' + (sport ? esc(sport.type) : "还没记录") + "</div>" +
+      '<button class="h3-btn" data-action="log-sport">' + (sport ? "修改" : "记录") + "</button></div>" +
+      '<div class="h3"><div class="h3-emoji">⚡</div><div class="h3-label">今日状态</div><div class="h3-val">' + (state ? "精力：" + esc(state.level) : "还没记录") + "</div>" +
+      '<button class="h3-btn" data-action="log-state">' + (state ? "修改" : "记录") + "</button></div>" +
       "</div>" +
-      '<div class="li-sub" style="margin-top:10px;">记录睡眠和状态后，每周复盘会自动统计健康情况。</div>');
+      '<div class="li-sub" style="margin-top:10px;">记录睡眠和状态后，每周复盘会自动统计健康情况。</div>';
 
     html += "</div>";
 
@@ -1630,10 +1626,10 @@
     var weekSport = (h.sport || []).slice(-7);
     var sleepAvg = weekSleep.length ? Math.round(weekSleep.reduce(function (s, x) { return s + (x.minutes || 0); }, 0) / weekSleep.length) : 0;
     html += card(cardHead("本周健康概览", "最近 7 天记录", "health-stats"),
-      '<div class="grid grid-3">' +
-      '<div><div class="stat-num">' + (sleepAvg > 0 ? fmtMin(sleepAvg) : "暂无") + "</div><div class=\"stat-label\">平均睡眠（近 " + (weekSleep.length ? weekSleep.length + " 条" : "无记录") + "）</div></div>" +
-      '<div><div class="stat-num">' + weekSport.length + "</div><div class=\"stat-label\">近 7 天运动天数</div></div>" +
-      '<div><div class="stat-num">' + (h.state || []).length + "</div><div class=\"stat-label\">状态记录总次数</div></div>" +
+      '<div class="stats3">' +
+      '<div class="st3"><div class="st3-emoji">🌙</div><div class="st3-num">' + (sleepAvg > 0 ? fmtMin(sleepAvg) : "暂无") + "</div><div class=\"st3-label\">平均睡眠</div></div>" +
+      '<div class="st3"><div class="st3-emoji">🏃</div><div class="st3-num">' + weekSport.length + " 天</div><div class=\"st3-label\">运动天数</div></div>" +
+      '<div class="st3"><div class="st3-emoji">⚡</div><div class="st3-num">' + (h.state || []).length + " 次</div><div class=\"st3-label\">状态记录</div></div>" +
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">健康建议：睡眠不足会影响记忆巩固，长期备考请优先保证睡眠；久坐每小时起来活动 5 分钟。</div>');
 
@@ -1841,12 +1837,12 @@
     var taskDone = entries.filter(function (e) { return e.type === "任务"; }).length;
     var addCount = entries.filter(function (e) { return ["资料", "答疑", "错题", "生词"].indexOf(e.type) >= 0; }).length;
 
-    /* 统计卡 */
-    html += '<div class="grid grid-4">' +
-      '<div class="card tint-green"><div class="stat-num">' + Math.round(todayMin / 60) + '<span style="font-size:13px;"> 小时</span></div><div class="stat-label">今日学习时长</div></div>' +
-      '<div class="card tint-blue"><div class="stat-num">' + taskDone + '</div><div class="stat-label">完成任务</div></div>' +
-      '<div class="card tint-yellow"><div class="stat-num">' + entries.filter(function (e) { return e.type === "专注"; }).length + '</div><div class="stat-label">专注番茄</div></div>' +
-      '<div class="card tint-pink"><div class="stat-num">' + addCount + '</div><div class="stat-label">新增记录</div></div>' +
+    /* 统计卡（emoji 风格） */
+    html += '<div class="stats4">' +
+      '<div class="st4"><div class="st4-emoji">⏱️</div><div class="st4-num">' + Math.round(todayMin / 60) + '<span style="font-size:13px;"> 小时</span></div><div class="st4-label">今日学习</div></div>' +
+      '<div class="st4"><div class="st4-emoji">✅</div><div class="st4-num">' + taskDone + "</div><div class=\"st4-label\">完成任务</div></div>" +
+      '<div class="st4"><div class="st4-emoji">🍅</div><div class="st4-num">' + entries.filter(function (e) { return e.type === "专注"; }).length + "</div><div class=\"st4-label\">专注番茄</div></div>" +
+      '<div class="st4"><div class="st4-emoji">📝</div><div class="st4-num">' + addCount + "</div><div class=\"st4-label\">新增记录</div></div>" +
       "</div>";
 
     /* 本周打卡概览（7 天点条） */

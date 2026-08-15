@@ -483,49 +483,50 @@
   }
 
   function viewTitle(view) {
-    if (view === "today") return { t: "今日", s: "每天从这里开始" };
+    if (view === "today") return { e: "☀️", t: "今日", s: "每天从这里开始" };
     if (view.indexOf("domain:") === 0) {
       var dm = data.domains.filter(function (x) { return x.id === view.slice(7); })[0];
-      return dm ? { t: dm.name, s: dm.type === "courses" ? "课程与作业" : dm.type === "paper" ? "论文进度" : "领域概览" } : { t: "领域", s: "" };
+      var e = dm && dm.id === "kaoyan" ? "🎓" : dm && dm.id === "cet" ? "📖" : dm && dm.id === "ai" ? "🧠" : dm && dm.id === "courses" ? "📚" : "📁";
+      return dm ? { e: e, t: dm.name, s: dm.type === "courses" ? "课程与作业" : dm.type === "paper" ? "论文进度" : "领域概览" } : { e: "📁", t: "领域", s: "" };
     }
     var map = {
-      library: { t: "资料库", s: "分类、标签、链接识别" },
-      inbox: { t: "收集箱", s: "先收着，稍后整理" },
-      mistakes: { t: "错题本", s: "错题是复习的宝藏" },
-      "mk-topics": { t: "错题 · 专题", s: "科目下的专题" },
-      "mk-types": { t: "错题 · 考点类型", s: "专题下的考点" },
-      "mk-list": { t: "错题 · 列表", s: "该考点下的错题" },
-      qa: { t: "答疑库", s: "问过的题不再错" },
-      reviews: { t: "复盘", s: "让进步发生" },
-      health: { t: "健康", s: "学习的第一步" },
-      focus: { t: "专注", s: "番茄钟计时" },
-      activity: { t: "学习记录", s: "自动汇总你今天干了什么" },
-      calendar: { t: "日历", s: "重要日期一目了然" },
-      accounts: { t: "账号", s: "管理我的平台账号" },
-      search: { t: "搜索", s: "一次搜遍全部内容" },
-      ai: { t: "AI 帮手", s: "辅助学习与整理" },
-      settings: { t: "设置与数据", s: "说明、备份、更新日志" },
-      "ky-subjects": { t: "科目详情", s: "科目任务统计" },
-      "ky-tasks": { t: "全部领域任务", s: "三类任务管理" },
-      "ky-weekly": { t: "本周计划", s: "周计划管理" },
-      "ky-files": { t: "备考资料库", s: "关联资料" },
-      "ky-english": { t: "英语学科页", s: "精读/作文/翻译" },
-      "ky-math": { t: "数学学科页", s: "公式/套卷/粗心账本" },
-      "ky-politics": { t: "政治学科页", s: "知识点/帽子题/时政" },
-      "ky-major": { t: "专业课学科页", s: "笔记/挖空/大纲" },
-      "ky-word": { t: "单词学科页", s: "真题生词/僻义/替换词" },
-      "ky-stats": { t: "统计仪表盘", s: "所有图表与进度" },
-      "tasks-all": { t: "任务管理专区", s: "全部任务" },
-      "cet-vocab": { t: "词汇专区", s: "生词本与记忆复习" },
-      "cet-listening": { t: "听力专区", s: "真题听力与精听" },
-      "cet-reading": { t: "阅读专区", s: "真题阅读与长难句" },
-      "cet-writing": { t: "写作专区", s: "范文模板与 AI 批改" },
-      "cet-translation": { t: "翻译专区", s: "翻译练习与句式积累" },
-      "cet-speaking": { t: "口语专区", s: "AI 口语对话练习" },
-      "cet-wordbook": { t: "生词本", s: "完整生词管理" },
-      "cet-exams": { t: "考试管理", s: "新增/归档/删除考试" },
-      "cet-stats": { t: "英语统计", s: "学习数据" },
-      "ai-history": { t: "AI 学习历史", s: "历史学习资料库" }
+      library: { e: "📁", t: "资料库", s: "分类、标签、链接识别" },
+      inbox: { e: "📥", t: "收集箱", s: "先收着，稍后整理" },
+      mistakes: { e: "📕", t: "错题本", s: "错题是复习的宝藏" },
+      "mk-topics": { e: "📕", t: "错题 · 专题", s: "科目下的专题" },
+      "mk-types": { e: "📕", t: "错题 · 考点类型", s: "专题下的考点" },
+      "mk-list": { e: "📕", t: "错题 · 列表", s: "该考点下的错题" },
+      qa: { e: "💬", t: "答疑库", s: "问过的题不再错" },
+      reviews: { e: "🔄", t: "复盘", s: "让进步发生" },
+      health: { e: "💪", t: "健康", s: "学习的第一步" },
+      focus: { e: "🍅", t: "专注", s: "番茄钟计时" },
+      activity: { e: "📈", t: "学习记录", s: "自动汇总你今天干了什么" },
+      calendar: { e: "📅", t: "日历", s: "重要日期一目了然" },
+      accounts: { e: "👤", t: "账号", s: "管理我的平台账号" },
+      search: { e: "🔍", t: "搜索", s: "一次搜遍全部内容" },
+      ai: { e: "🤖", t: "AI 帮手", s: "辅助学习与整理" },
+      settings: { e: "⚙️", t: "设置与数据", s: "说明、备份、更新日志" },
+      "ky-subjects": { e: "🎓", t: "科目详情", s: "科目任务统计" },
+      "ky-tasks": { e: "🎓", t: "全部领域任务", s: "三类任务管理" },
+      "ky-weekly": { e: "🎓", t: "本周计划", s: "周计划管理" },
+      "ky-files": { e: "🎓", t: "备考资料库", s: "关联资料" },
+      "ky-english": { e: "📖", t: "英语学科页", s: "精读/作文/翻译" },
+      "ky-math": { e: "🎓", t: "数学学科页", s: "公式/套卷/粗心账本" },
+      "ky-politics": { e: "🎓", t: "政治学科页", s: "知识点/帽子题/时政" },
+      "ky-major": { e: "🎓", t: "专业课学科页", s: "笔记/挖空/大纲" },
+      "ky-word": { e: "📖", t: "单词学科页", s: "真题生词/僻义/替换词" },
+      "ky-stats": { e: "🎓", t: "统计仪表盘", s: "所有图表与进度" },
+      "tasks-all": { e: "📋", t: "任务管理专区", s: "全部任务" },
+      "cet-vocab": { e: "📖", t: "词汇专区", s: "生词本与记忆复习" },
+      "cet-listening": { e: "🎧", t: "听力专区", s: "真题听力与精听" },
+      "cet-reading": { e: "📖", t: "阅读专区", s: "真题阅读与长难句" },
+      "cet-writing": { e: "✍️", t: "写作专区", s: "范文模板与 AI 批改" },
+      "cet-translation": { e: "🌐", t: "翻译专区", s: "翻译练习与句式积累" },
+      "cet-speaking": { e: "🗣️", t: "口语专区", s: "AI 口语对话练习" },
+      "cet-wordbook": { e: "📖", t: "生词本", s: "完整生词管理" },
+      "cet-exams": { e: "🎓", t: "考试管理", s: "新增/归档/删除考试" },
+      "cet-stats": { e: "📖", t: "英语统计", s: "学习数据" },
+      "ai-history": { e: "🤖", t: "AI 学习历史", s: "历史学习资料库" }
     };
     return map[view] || { t: view, s: "" };
   }
@@ -588,7 +589,7 @@
     var wrap = $id("viewWrap");
     var view = W.ui.view;
     var v = viewTitle(view);
-    $id("topbar").innerHTML = "<h1>" + v.t + '</h1><span class="topbar-sub">' + v.s + "</span>" +
+    $id("topbar").innerHTML = '<span class="ph-emoji">' + (v.e || "") + '</span><div class="ph-txt"><h1>' + v.t + '</h1><span class="topbar-sub">' + v.s + "</span></div>" +
       '<span class="topbar-help"><button class="icon-btn lg" data-action="help" data-help="' + view + '" title="帮助">' + ICONS.help + "</button></span>";
 
     var html = "";

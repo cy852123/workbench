@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>板块视觉升级预览（emoji 图标 + 暖极简）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #F7F7F5; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; color: #202124; padding: 22px; max-width: 860px; margin: 0 auto; }
+  .sec-label { font-size: 12px; color: #9B9B93; margin: 26px 0 10px; display: flex; align-items: center; gap: 8px; }
+  .sec-label::before { content: ""; width: 14px; height: 14px; border-radius: 4px; background: #2F6B57; }
+  /* 页面头 */
+  .page-head { display: flex; align-items: center; gap: 12px; padding: 4px 2px 16px; }
+  .ph-back { width: 30px; height: 30px; border-radius: 8px; background: #fff; border: 1px solid #E6E7E4; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #555; }
+  .ph-emoji { font-size: 30px; line-height: 1; }
+  .ph-txt { flex: 1; }
+  .ph-title { font-size: 20px; font-weight: 800; }
+  .ph-sub { font-size: 12.5px; color: #6F7277; margin-top: 2px; }
+  .ph-right { display: flex; gap: 8px; }
+  .chip { background: #fff; border: 1px solid #E6E7E4; border-radius: 999px; padding: 5px 12px; font-size: 12px; color: #555; }
+  /* 统计卡 */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .st { background: #fff; border: 1px solid #E6E7E4; border-radius: 14px; padding: 14px 12px; }
+  .st-emoji { font-size: 20px; }
+  .st-num { font-size: 22px; font-weight: 900; margin-top: 6px; }
+  .st-label { font-size: 11.5px; color: #6F7277; margin-top: 2px; }
+  /* 通用卡 */
+  .card { background: #fff; border: 1px solid #E6E7E4; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.03); }
+  .c-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .c-emoji { font-size: 18px; }
+  .c-title { font-size: 14.5px; font-weight: 700; }
+  .c-sub { font-size: 11.5px; color: #6F7277; }
+  .c-btn { margin-left: auto; border: 1px solid #E6E7E4; border-radius: 8px; padding: 5px 10px; font-size: 12px; color: #2F6B57; background: #fff; cursor: pointer; }
+  /* 行 */
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid #F2F2EF; }
+  .row:last-child { border: none; }
+  .row-emoji { width: 32px; height: 32px; border-radius: 9px; background: #F4F7F5; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .row-main { flex: 1; }
+  .row-title { font-size: 13.5px; font-weight: 600; }
+  .row-sub { font-size: 11.5px; color: #6F7277; margin-top: 1px; }
+  .row-meta { font-size: 12px; color: #6F7277; }
+  /* 周条 */
+  .week { display: flex; gap: 6px; align-items: flex-end; height: 56px; padding: 0 2px; }
+  .wk { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .wk-bar { width: 100%; max-width: 26px; border-radius: 3px; }
+  .wk-label { font-size: 10.5px; color: #9B9B93; }
+  /* 健康今日卡 */
+  .health3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .h3 { background: #fff; border: 1px solid #E6E7E4; border-radius: 14px; padding: 14px; text-align: center; }
+  .h3-emoji { font-size: 24px; }
+  .h3-label { font-size: 12px; color: #6F7277; margin-top: 6px; }
+  .h3-val { font-size: 14px; font-weight: 700; margin-top: 3px; }
+  .h3-btn { margin-top: 8px; border: 1px solid #E6E7E4; background: #fff; border-radius: 8px; padding: 4px 12px; font-size: 11.5px; color: #2F6B57; cursor: pointer; }
+  /* 设置 */
+  .set-group { margin-bottom: 12px; }
+  .sg-title { font-size: 12px; color: #9B9B93; margin-bottom: 6px; padding-left: 2px; }
+  .sg-card { background: #fff; border: 1px solid #E6E7E4; border-radius: 14px; padding: 4px 16px; }
+  .sg-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #F2F2EF; }
+  .sg-row:last-child { border: none; }
+  .sg-emoji { font-size: 17px; }
+  .sg-name { font-size: 13.5px; }
+  .sg-desc { font-size: 11px; color: #9B9B93; }
+  .sg-val { margin-left: auto; font-size: 12px; color: #6F7277; }
+  @media (max-width: 768px) { .stats { grid-template-columns: repeat(2, 1fr); } .health3 { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+  <div class="sec-label">板块一 · 学习记录</div>
+  <div class="page-head">
+    <div class="ph-back">←</div>
+    <div class="ph-emoji">📈</div>
+    <div class="ph-txt"><div class="ph-title">学习记录</div><div class="ph-sub">今天也进步了一点点</div></div>
+    <div class="ph-right"><span class="chip">🔥 连续 4 天</span></div>
+  </div>
+  <div class="stats">
+    <div class="st"><div class="st-emoji">⏱️</div><div class="st-num">2.5h</div><div class="st-label">今日学习</div></div>
+    <div class="st"><div class="st-emoji">✅</div><div class="st-num">6</div><div class="st-label">完成任务</div></div>
+    <div class="st"><div class="st-emoji">🍅</div><div class="st-num">3</div><div class="st-label">专注番茄</div></div>
+    <div class="st"><div class="st-emoji">📝</div><div class="st-num">12</div><div class="st-label">新增记录</div></div>
+  </div>
+  <div class="card">
+    <div class="c-head"><span class="c-emoji">📊</span><span class="c-title">本周打卡</span><span class="c-sub">近 7 天每天学习时长</span></div>
+    <div class="week">
+      <div class="wk"><div class="wk-bar" style="height:34px;background:#2F6B57;"></div><div class="wk-label">一</div></div>
+      <div class="wk"><div class="wk-bar" style="height:52px;background:#2F6B57;"></div><div class="wk-label">二</div></div>
+      <div class="wk"><div class="wk-bar" style="height:18px;background:#EDEFEC;"></div><div class="wk-label">三</div></div>
+      <div class="wk"><div class="wk-bar" style="height:40px;background:#2F6B57;"></div><div class="wk-label">四</div></div>
+      <div class="wk"><div class="wk-bar" style="height:26px;background:#2F6B57;"></div><div class="wk-label">五</div></div>
+      <div class="wk"><div class="wk-bar" style="height:10px;background:#2F6B57;"></div><div class="wk-label">六</div></div>
+      <div class="wk"><div class="wk-bar" style="height:3px;background:#EDEFEC;"></div><div class="wk-label">日</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="c-head"><span class="c-emoji">🕘</span><span class="c-title">今日时间线</span><span class="c-sub">8 条记录</span></div>
+    <div class="row"><div class="row-emoji">📖</div><div class="row-main"><div class="row-title">英语阅读精读</div><div class="row-sub">考研备考 · 60 分钟</div></div><span class="row-meta">09:20</span></div>
+    <div class="row"><div class="row-emoji">🍅</div><div class="row-main"><div class="row-title">高数第 3 章习题</div><div class="row-sub">专注 · 25 分钟</div></div><span class="row-meta">08:30</span></div>
+    <div class="row"><div class="row-emoji">📕</div><div class="row-main"><div class="row-title">记录错题：极限计算</div><div class="row-sub">错题本</div></div><span class="row-meta">昨天</span></div>
+  </div>
+
+  <div class="sec-label">板块二 · 健康</div>
+  <div class="page-head">
+    <div class="ph-back">←</div>
+    <div class="ph-emoji">💪</div>
+    <div class="ph-txt"><div class="ph-title">健康</div><div class="ph-sub">健康是学习的第一步</div></div>
+    <div class="ph-right"><span class="chip">💤 7.5h 昨晚</span></div>
+  </div>
+  <div class="health3">
+    <div class="h3"><div class="h3-emoji">🌙</div><div class="h3-label">睡眠</div><div class="h3-val">7.5 小时</div><button class="h3-btn">记录</button></div>
+    <div class="h3"><div class="h3-emoji">🏃</div><div class="h3-label">运动</div><div class="h3-val">跳绳 30 分</div><button class="h3-btn">修改</button></div>
+    <div class="h3"><div class="h3-emoji">⚡</div><div class="h3-label">今日状态</div><div class="h3-val">精力充沛</div><button class="h3-btn">修改</button></div>
+  </div>
+  <div class="card">
+    <div class="c-head"><span class="c-emoji">📋</span><span class="c-title">本周健康概览</span><span class="c-sub">最近 7 天记录</span></div>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr);margin:0;">
+      <div class="st"><div class="st-emoji">🌙</div><div class="st-num">7.2h</div><div class="st-label">平均睡眠</div></div>
+      <div class="st"><div class="st-emoji">🏃</div><div class="st-num">4 天</div><div class="st-label">运动天数</div></div>
+      <div class="st"><div class="st-emoji">⚡</div><div class="st-num">12 次</div><div class="st-label">状态记录</div></div>
+    </div>
+  </div>
+
+  <div class="sec-label">板块三 · 设置与数据</div>
+  <div class="set-group">
+    <div class="sg-title">外观</div>
+    <div class="sg-card">
+      <div class="sg-row"><span class="sg-emoji">🔤</span><span class="sg-name">字体大小</span><span class="sg-val">标准 ›</span></div>
+      <div class="sg-row"><span class="sg-emoji">🎨</span><span class="sg-name">页面背景</span><span class="sg-val">默认 ›</span></div>
+      <div class="sg-row"><span class="sg-emoji">🌓</span><span class="sg-name">主题色</span><span class="sg-val">默认 ›</span></div>
+    </div>
+  </div>
+  <div class="set-group">
+    <div class="sg-title">数据</div>
+    <div class="sg-card">
+      <div class="sg-row"><span class="sg-emoji">💾</span><span class="sg-name">数据备份 / 导出</span><span class="sg-val">›</span></div>
+      <div class="sg-row"><span class="sg-emoji">📥</span><span class="sg-name">导入备份</span><span class="sg-val">›</span></div>
+      <div class="sg-row"><span class="sg-emoji">🗑️</span><span class="sg-name">清空所有数据</span><span class="sg-val">›</span></div>
+    </div>
+  </div>
+</body>
+</html>

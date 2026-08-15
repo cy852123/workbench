@@ -302,9 +302,30 @@ h1, h2, h3, h4 { font-weight: 700; }
   display: flex; align-items: center; gap: 12px;
   padding: 18px 28px 6px;
 }
-.topbar h1 { font-size: 22px; }
-.topbar-sub { font-size: 13px; color: var(--sub); }
+.ph-emoji { font-size: 27px; line-height: 1; flex-shrink: 0; }
+.ph-txt { flex: 1; min-width: 0; }
+.ph-txt h1 { font-size: 19px; }
+.topbar-sub { display: block; font-size: 12.5px; color: var(--sub); margin-top: 2px; }
 .topbar-help { margin-left: auto; }
+
+/* ===== 健康三卡 + 统计卡（emoji 风格） ===== */
+.health3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.h3 { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; }
+.h3-emoji { font-size: 24px; }
+.h3-label { font-size: 12px; color: var(--sub); margin-top: 6px; }
+.h3-val { font-size: 13.5px; font-weight: 700; margin-top: 3px; line-height: 1.4; }
+.h3-btn { margin-top: 8px; border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 4px 14px; font-size: 11.5px; color: var(--accent); cursor: pointer; }
+.stats3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.st3 { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 12px; text-align: center; }
+.st3-emoji { font-size: 18px; }
+.st3-num { font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px; }
+.st3-label { font-size: 11.5px; color: var(--sub); margin-top: 2px; }
+.stats4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+.st4 { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 14px 12px; }
+.st4-emoji { font-size: 20px; }
+.st4-num { font-size: 20px; font-weight: 900; margin-top: 5px; }
+.st4-label { font-size: 11.5px; color: var(--sub); margin-top: 2px; }
+@media (max-width: 768px) { .stats4 { grid-template-columns: repeat(2, 1fr); } .health3 { grid-template-columns: repeat(3, 1fr); } .stats3 { grid-template-columns: repeat(3, 1fr); } }
 
 .view-wrap { padding: 10px 28px 40px; flex: 1; }
 
