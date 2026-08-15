@@ -486,6 +486,52 @@
     var s = ex && ex.subjects && ex.subjects[name];
     return s ? s : null;
   }
+  /* 考试日期：手动设置优先；否则按官方规则自动计算 */
+  function thirdSaturday(y, m) {
+    var d = new Date(y, m, 1);
+    var firstSat = 1 + (6 - d.getDay() + 7) % 7;
+    return new Date(y, m, firstSat + 14);
+  }
+  function lastButOneSaturday(y, m) {
+    var d = new Date(y, m + 1, 0);
+    var lastDay = d.getDate();
+    var dow = d.getDay();
+    var lastSat = lastDay - ((dow + 1) % 7);
+    return new Date(y, m, lastSat - 7);
+  }
+  function examDateOf(ex) {
+    if (!ex) return null;
+    if (ex.examDate) return ex.examDate;
+    if (!ex.auto || ex.auto === "custom") return null;
+    var now = new Date();
+    var y = now.getFullYear();
+    var cands = [];
+    if (ex.auto === "cet4" || ex.auto === "cet6") {
+      cands.push(thirdSaturday(y, 5));
+      cands.push(thirdSaturday(y, 11));
+    } else if (ex.auto === "kaoyan") {
+      cands.push(lastButOneSaturday(y, 11));
+    }
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var future = cands.filter(function (c) { return c >= today; }).sort(function (a, b) { return a - b; });
+    var chosen = future[0] || (cands.length ? new Date(cands[0].getFullYear() + 1, cands[0].getMonth(), cands[0].getDate()) : null);
+    if (!chosen) return null;
+    return chosen.getFullYear() + "-" + String(chosen.getMonth() + 1).padStart(2, "0") + "-" + String(chosen.getDate()).padStart(2, "0");
+  }
+  function examWordbook(dm) {
+    var ex = dm.exams && dm.exams[dm.activeExam];
+    return (ex && ex.wordbook) || [];
+  }
+  /* 进度 → 文字摘要（概览页不用进度条/百分比） */
+  function progressText(p) {
+    p = p || 0;
+    if (p <= 0) return "尚未开始";
+    if (p < 30) return "刚开始";
+    if (p < 60) return "进行中";
+    if (p < 90) return "已过大半";
+    if (p < 100) return "接近完成";
+    return "已完成";
+  }
   function heatmap28(filterFn) {
     var W = window.W, d = W.data;
     var hm = (d.studyLog || []).filter(filterFn).reduce(function (o, x) { o[x.date] = (o[x.date] || 0) + (x.minutes || 0); return o; }, {});
@@ -524,18 +570,32 @@
     var W = window.W, d = W.data;
     var html = "";
     var ex = dm.exams && dm.exams[dm.activeExam];
-    var exd = ex && ex.examDate ? daysDiff(ex.examDate) : null;
+    var exdStr = examDateOf(ex);
+    var exd = exdStr ? daysDiff(exdStr) : null;
+    var exNames = Object.keys(dm.exams || {}).filter(function (k) { return !dm.exams[k].archived; });
 
-    /* 区块1：顶部总览栏（倒计时 + 考试切换） */
+    /* 区块1：顶部总览栏（倒计时卡可点击改时间 + 考试切换/新增） */
+    var countdownHtml;
+    if (exd == null) {
+      countdownHtml = '<div class="li-sub">未设置考试时间</div><button class="btn small plain" data-action="set-exam-date" style="margin-top:8px;">设置考试时间</button>';
+    } else if (exd < 0) {
+      countdownHtml = '<div class="li-sub" style="color:var(--danger);">该考试已结束</div><button class="btn small plain" data-action="set-exam-date" style="margin-top:8px;">修改时间</button>';
+    } else {
+      countdownHtml = '<div class="countdown"><span class="cd-num">' + exd + '</span><span class="cd-label">天 · ' + esc(exdStr) + "</span></div>" +
+        (exd <= 30 ? '<div class="li-sub" style="color:var(--danger);margin-top:6px;">距离考试不足 30 天，进入冲刺阶段</div>' : "") +
+        '<button class="btn small plain" data-action="set-exam-date" style="margin-top:8px;">修改考试时间</button>';
+    }
     html += '<div class="grid grid-2" style="grid-template-columns:1.4fr 1fr;align-items:stretch;">' +
-      '<div class="card tint-blue"><div class="card-head"><h3>📅 ' + esc(dm.activeExam || "考研英语") + ' 倒计时</h3></div>' +
-      (exd != null ? '<div class="countdown"><span class="cd-num">' + exd + '</span><span class="cd-label">天 · 考试日期 ' + esc(ex.examDate) + "</span></div>" : '<div class="li-sub">未设置考试日期</div>') + "</div>" +
+      '<div class="card tint-blue"><div class="card-head"><h3>📅 ' + esc(dm.activeExam || "考研英语") + ' 倒计时</h3></div>' + countdownHtml + "</div>" +
       '<div class="card"><div class="card-head"><h3>🎯 切换考试</h3></div>' +
       '<select id="examSwitch" data-action="set-exam" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;">' +
-      Object.keys(dm.exams || {}).map(function (k) { return '<option value="' + esc(k) + '"' + ((dm.activeExam || "") === k ? " selected" : "") + ">" + esc(k) + "</option>"; }).join("") +
-      '</select><div class="li-sub" style="margin-top:6px;">切换不会删除历史数据，各考试进度独立</div></div></div>';
+      exNames.map(function (k) { return '<option value="' + esc(k) + '"' + ((dm.activeExam || "") === k ? " selected" : "") + ">" + esc(k) + "</option>"; }).join("") +
+      '</select>' +
+      '<button class="btn small plain" data-action="add-exam" style="margin-top:8px;width:100%;">＋ 新增考试（专四/专八/雅思…）</button>' +
+      '<button class="btn small ghost" data-action="go-view" data-view="cet-exams" style="margin-top:6px;width:100%;">🗂 考试管理（归档/删除）</button>' +
+      '<div class="li-sub" style="margin-top:6px;">切换不会删除历史数据，各考试进度与生词本独立</div></div></div>';
 
-    /* 区块2：专项导航面板 */
+    /* 区块2：专项导航面板（文字状态，无进度条） */
     var zones = [
       { id: "cet-vocab", emoji: "📖", name: "词汇", desc: "考研核心词汇、遗忘复习、生词本" },
       { id: "cet-listening", emoji: "🎧", name: "听力", desc: "真题听力、精听训练、听力素材" },
@@ -547,39 +607,46 @@
     html += '<div class="card"><div class="card-head"><h3>🧩 专项导航</h3><span class="hint">点击卡片进入对应专区</span></div>' +
       '<div class="grid grid-3">' + zones.map(function (z) {
         var s = examSubj(dm, z.name);
-        return '<div class="card" style="margin-bottom:0;"><div class="card-head"><h3 style="font-size:15px;">' + z.emoji + " " + esc(z.name) + ' 模块</h3></div>' +
+        return '<div class="card" style="margin-bottom:0;border-left:3px solid var(--accent);"><div class="card-head"><h3 style="font-size:15px;">' + z.emoji + " " + esc(z.name) + ' 模块</h3></div>' +
           '<div class="li-sub" style="margin-bottom:8px;">' + esc(z.desc) + "</div>" +
-          '<div class="li-sub" style="margin-bottom:10px;">进度：<span class="tag">' + (s ? (s.progress || 0) : 0) + '%</span>' + (s && s.note ? " <span class=\"tag\">" + esc(s.note.slice(0, 10)) + "</span>" : "") + "</div>" +
+          '<div class="li-sub" style="margin-bottom:10px;">状态：<span class="tag">' + esc(progressText(s ? s.progress : 0)) + "</span></div>" +
           '<button class="btn small block" data-action="go-view" data-view="' + z.id + '">打开' + esc(z.name) + "专区</button></div>";
       }).join("") + "</div></div>";
 
-    /* 区块3：打卡统计 */
+    /* 区块3：学习状态（极简文字摘要，无图表） */
     var weekLog = (d.studyLog || []).filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6 && x.domainId === "cet"; });
     var weekMin = weekLog.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
     html += '<div class="grid grid-2">' +
-      card(cardHead("⏱ 本周学习统计", "打卡与时长", "stats"),
-        '<div class="grid grid-2">' +
-        '<div><div class="stat-num">' + fmtMin(weekMin).replace(" 分钟", "") + '</div><div class="stat-label">本周累计时长</div></div>' +
-        '<div><div class="stat-num">' + weekLog.length + '</div><div class="stat-label">本周打卡次数</div></div></div>' +
-        '<button class="btn block" data-action="punch" data-domain="cet" style="margin-top:12px;">⏱ 打卡学习</button>' +
-        '<div class="li-sub" style="margin-top:8px;">打卡时选择学习内容标签（词汇/阅读/听力等），对应科目进度会自动小幅累加。</div>') +
-      card(cardHead("🔥 28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "cet"; })) +
+      card(cardHead("⏱ 本周学习", "文字摘要", "stats"),
+        '<div class="li-sub" style="margin-bottom:8px;">本周累计学习 ' + fmtMin(weekMin) + "，打卡 " + weekLog.length + " 天</div>" +
+        '<button class="btn small block" data-action="punch" data-domain="cet">⏱ 打卡学习</button>' +
+        '<div class="li-sub" style="margin-top:8px;">打卡时选择学习内容标签，对应科目进度自动小幅累加。</div>' +
+        '<button class="btn small ghost" data-action="go-view" data-view="cet-stats" style="margin-top:8px;">📈 查看统计回顾（热力图/图表）</button>') +
+      card(cardHead("📒 生词本", "与当前考试独立存储", "wordbook"),
+        (function () {
+          var wb = examWordbook(dm);
+          var wP = wb.filter(function (w) { return !w.mastered; }).length;
+          var wM = wb.filter(function (w) { return w.mastered; }).length;
+          var wRecent = wb.slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; }).slice(0, 3);
+          return '<div class="li-sub" style="margin-bottom:8px;">待复习 ' + wP + " ｜ 已掌握 " + wM + "</div>" +
+            (wRecent.length === 0 ? '<div class="li-sub" style="margin-bottom:8px;">还没有生词</div>' :
+              '<div class="list" style="margin-bottom:8px;">' + wRecent.map(function (w) {
+                return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(w.word) + "</div>" +
+                  '<div class="li-sub">' + esc((w.meaning || "").slice(0, 30)) + "</div></div></div>";
+              }).join("") + "</div>") +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button class="btn small" data-action="go-view" data-view="cet-wordbook">前往完整生词本</button>' +
+            '<button class="btn small plain" data-action="add-word" data-domain="cet">快速添加生词</button></div>';
+        })()) +
       "</div>";
 
-    /* 区块4：生词本预览 */
-    var wb = dm.wordbook || [];
-    var wP = wb.filter(function (w) { return !w.mastered; }).length;
-    var wM = wb.filter(function (w) { return w.mastered; }).length;
-    var wRecent = wb.slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; }).slice(0, 3);
-    html += card(cardHead("📒 生词本", "待复习 " + wP + " ｜ 已掌握 " + wM, "wordbook"),
-      (wRecent.length === 0 ? empty("还没有生词", "遇到生词点下方快速添加") :
-        '<div class="list">' + wRecent.map(function (w) {
-          return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(w.word) + (w.mastered ? ' <span class="tag state-done">已掌握</span>' : ' <span class="tag state-todo">待复习</span>') + "</div>" +
-            '<div class="li-sub">' + esc(w.meaning || "") + "</div></div></div>";
-        }).join("") + "</div>") +
-      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
-      '<button class="btn small" data-action="go-view" data-view="cet-wordbook">前往完整生词本</button>' +
-      '<button class="btn small plain" data-action="add-word" data-domain="cet">快速添加生词</button></div>');
+    /* 区块4：内置查词插件 */
+    html += card(cardHead("🔍 单词查询", "内置词库，离线可用，可一键加入生词本", "dict"),
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+      '<input id="dictInput" placeholder="输入英文单词或短语…" style="flex:1;min-width:180px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;">' +
+      '<button class="btn" data-action="lookup-word">查询</button></div>' +
+      '<div id="dictResult" style="margin-top:10px;"></div>' +
+      '<div class="li-sub" style="margin-top:8px;">词库来源：ECDICT 开源词典（GitHub 免费项目）高频词精简版；查询后可将单词一键加入当前考试的独立生词本。</div>');
 
     /* 区块5：AI 英语工具箱 */
     var hasKey = !!(d.settings.apiKey);
@@ -596,7 +663,7 @@
           (hasKey ? '<button class="btn small block" data-action="go-view" data-view="' + t.id + '">使用</button>'
             : '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看（未启用）</button>') + "</div>";
       }).join("") + "</div>" +
-      (!hasKey ? '<div class="li-sub" style="margin-top:10px;">未配置 API 密钥，AI 功能置灰。到「设置与数据 → AI 配置」填入密钥后启用；基础打卡、生词功能不受影响。</div>' : ""));
+      (!hasKey ? '<div class="li-sub" style="margin-top:10px;">未配置 API 密钥，AI 功能置灰。到「设置与数据 → AI 配置」填入密钥后启用；基础打卡、生词、查词功能不受影响。</div>' : ""));
 
     /* 区块6：关联资料 */
     var cetRes = (d.resources || []).filter(function (r) { return r.domainId === "cet"; });
@@ -726,12 +793,12 @@
     var html = backBar("domain:cet", "英语学习");
     var s = examSubj(dm, "词汇");
     html += '<div class="card tint-blue"><div class="card-head"><h3>📖 词汇专区</h3></div>' +
-      '<div class="li-sub" style="margin-bottom:8px;">进度：<span class="tag">' + (s ? (s.progress || 0) : 0) + "%</span> ｜ " + esc(dm.activeExam) + "</div>" +
+      '<div class="li-sub" style="margin-bottom:8px;">状态：<span class="tag">' + esc(progressText(s ? s.progress : 0)) + "</span> ｜ " + esc(dm.activeExam) + "</div>" +
       '<button class="btn small plain" data-action="update-subject" data-domain="cet" data-subject="词汇">' + ic("edit") + "手动更新进度</button></div>";
-    html += card(cardHead("📒 生词浏览", "生词本完整列表", "wordbook"),
+    html += card(cardHead("📒 生词浏览", "当前考试：<b>" + esc(dm.activeExam) + "</b> 生词本", "wordbook"),
       '<button class="btn ghost small" data-action="add-word" data-domain="cet" style="margin-bottom:10px;">' + ic("plus") + "添加生词</button>" +
-      ((dm.wordbook || []).length === 0 ? empty("还没有生词") :
-        '<div class="list">' + dm.wordbook.slice().sort(function (a, b) { return (a.mastered ? 1 : 0) - (b.mastered ? 1 : 0); }).map(function (w) {
+      (examWordbook(dm).length === 0 ? empty("还没有生词") :
+        '<div class="list">' + examWordbook(dm).slice().sort(function (a, b) { return (a.mastered ? 1 : 0) - (b.mastered ? 1 : 0); }).map(function (w) {
           return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(w.word) + (w.mastered ? ' <span class="tag state-done">已掌握</span>' : ' <span class="tag state-todo">待复习</span>') + "</div>" +
             '<div class="li-sub">' + esc(w.meaning || "") + (w.note ? " · " + esc(w.note) : "") + "</div></div>" +
             '<button class="btn small ' + (w.mastered ? "plain" : "") + '" data-action="toggle-word" data-domain="cet" data-id="' + esc(w.id) + '">' + ic("check") + (w.mastered ? "已掌握" : "标记掌握") + "</button>" +
@@ -768,8 +835,8 @@
   }
   function cetWordbook(dm) {
     var html = backBar("domain:cet", "英语学习");
-    var wb = dm.wordbook || [];
-    html += card(cardHead("📒 完整生词本", "待复习 " + wb.filter(function (w) { return !w.mastered; }).length + " ｜ 已掌握 " + wb.filter(function (w) { return w.mastered; }).length, "wordbook"),
+    var wb = examWordbook(dm);
+    html += card(cardHead("📒 完整生词本", "当前考试：<b>" + esc(dm.activeExam) + "</b> ｜ 待复习 " + wb.filter(function (w) { return !w.mastered; }).length + " ｜ 已掌握 " + wb.filter(function (w) { return w.mastered; }).length, "wordbook"),
       '<button class="btn ghost small" data-action="add-word" data-domain="cet" style="margin-bottom:10px;">' + ic("plus") + "添加生词</button>" +
       (wb.length === 0 ? empty("还没有生词", "遇到生词就记下来") :
         '<div class="list">' + wb.slice().sort(function (a, b) { return (a.mastered ? 1 : 0) - (b.mastered ? 1 : 0); }).map(function (w) {
@@ -777,7 +844,40 @@
             '<div class="li-sub">' + esc(w.meaning || "") + (w.note ? " · " + esc(w.note) : "") + "</div></div>" +
             '<button class="btn small ' + (w.mastered ? "plain" : "") + '" data-action="toggle-word" data-domain="cet" data-id="' + esc(w.id) + '">' + ic("check") + (w.mastered ? "已掌握" : "标记掌握") + "</button>" +
             '<button class="icon-btn" data-action="del-word" data-domain="cet" data-id="' + esc(w.id) + '">' + ic("trash") + "</button></div>";
-        }).join("") + "</div>"));
+        }).join("") + "</div>") +
+      '<button class="btn small plain" data-action="export-words" style="margin-top:10px;">导出当前考试生词本（txt）</button>');
+    return html;
+  }
+  /* 考试管理（归档/删除/设时间） */
+  function cetExams(dm) {
+    var html = backBar("domain:cet", "英语学习");
+    var names = Object.keys(dm.exams || {});
+    var act = names.filter(function (k) { return !dm.exams[k].archived; });
+    var arc = names.filter(function (k) { return dm.exams[k].archived; });
+    html += card(cardHead("🗂 考试管理", "活跃 " + act.length + " ｜ 已归档 " + arc.length, "exams"),
+      '<button class="btn ghost small" data-action="add-exam" style="margin-bottom:10px;">＋ 新增考试</button>' +
+      '<div class="li-sub" style="margin-bottom:6px;font-weight:600;">活跃考试</div>' +
+      (act.length === 0 ? '<div class="li-sub" style="margin-bottom:10px;">暂无活跃考试</div>' :
+        '<div class="list">' + act.map(function (k) {
+          var ex = dm.exams[k];
+          var ed = examDateOf(ex);
+          var dd = ed ? daysDiff(ed) : null;
+          var builtin = ex.auto && ex.auto !== "custom";
+          return '<div class="list-item"><div class="li-main">' +
+            '<div class="li-title">' + esc(k) + (dm.activeExam === k ? ' <span class="tag state-doing">当前</span>' : "") + "</div>" +
+            '<div class="li-sub">' + (dd == null ? "未设置日期" : dd < 0 ? "已结束" : "剩 " + dd + " 天 · " + esc(ed)) + " ｜ 生词 " + (ex.wordbook || []).length + " 个</div></div>" +
+            '<button class="btn small plain" data-action="set-exam-date" data-exam="' + esc(k) + '">时间</button>' +
+            (dm.activeExam !== k ? '<button class="btn small plain" data-action="set-exam" data-exam="' + esc(k) + '">设为当前</button>' : "") +
+            '<button class="btn small plain" data-action="archive-exam" data-v="' + esc(k) + '">归档</button>' +
+            (!builtin ? '<button class="btn small danger plain" data-action="del-exam" data-v="' + esc(k) + '">删除</button>' : "") + "</div>";
+        }).join("") + "</div>") +
+      (arc.length ? '<div class="li-sub" style="margin:12px 0 6px;font-weight:600;">已归档（回看旧数据）</div>' +
+        '<div class="list">' + arc.map(function (k) {
+          var ex = dm.exams[k];
+          return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(k) + "</div>" +
+            '<div class="li-sub">生词 ' + (ex.wordbook || []).length + " 个</div></div>" +
+            '<button class="btn small plain" data-action="restore-exam" data-v="' + esc(k) + '">恢复</button></div>';
+        }).join("") + "</div>" : ""));
     return html;
   }
   function cetStats(dm) {
@@ -796,6 +896,15 @@
       (hasKey ? '<button class="btn block" data-action="ai-essay">提交批改（AI 修改、打分、润色）</button>'
         : '<div class="li-sub">配置 AI 密钥后，这里会调用模型做修改、打分、润色。到「设置与数据 → AI 配置」启用。</div>') +
       '<div class="ai-chat" id="essayResult" style="margin-top:12px;"></div>');
+  }
+  /* 阅读专区：内置查词快捷框 */
+  function zoneReading(dm) {
+    return card(cardHead("🔍 阅读查词", "内置词库，遇到生词随时查", "dict"),
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+      '<input id="dictInput2" placeholder="输入单词，回车查询…" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">' +
+      '<button class="btn small" data-action="lookup-word2">查询</button></div>' +
+      '<div id="dictResult2" style="margin-top:10px;"></div>' +
+      '<div class="li-sub" style="margin-top:8px;">查到的单词可一键加入「' + esc(dm.activeExam) + '」生词本。</div>');
   }
   function zoneSpeaking(dm) {
     var W = window.W, d = W.data;
@@ -1222,9 +1331,13 @@
       if (x.date === t) entries.push({ ts: t + "T23:00", icon: "refresh", text: "完成" + (x.type === "weekly" ? "每周" : "每日") + "复盘", type: "复盘" });
     });
     var cetDm = d.domains.filter(function (x) { return x.id === "cet"; })[0];
-    if (cetDm) (cetDm.wordbook || []).forEach(function (x) {
-      if (x.date === t) entries.push({ ts: t + "T12:00", icon: "book", text: "记生词：" + x.word, type: "生词" });
-    });
+    if (cetDm && cetDm.exams) {
+      Object.keys(cetDm.exams).forEach(function (ek) {
+        (cetDm.exams[ek].wordbook || []).forEach(function (x) {
+          if (x.date === t) entries.push({ ts: t + "T12:00", icon: "book", text: "记生词：" + x.word, type: "生词" });
+        });
+      });
+    }
 
     entries.sort(function (a, b) { return a.ts > b.ts ? 1 : -1; });
     var taskDone = entries.filter(function (e) { return e.type === "任务"; }).length;
@@ -1518,6 +1631,12 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.6 考试系统与主题色<span class="log-tag">更新</span></div>' +
+      '<p>英语考试系统升级：支持自定义新增考试（专四/专八/雅思等）；考试倒计时按官方规则动态计算（四六级每年 6 月/12 月第三个周六，考研 12 月倒数第二个周末），支持手动设置日期；考试结束提示、考前 30 天冲刺高亮；考试可归档/恢复，自定义考试可删除（二次确认）。</p>' +
+      '<p>每套考试数据完全隔离：生词本、模块进度、打卡各自独立，切换考试不串扰。</p>' +
+      '<p>英语二级概览页 UI 精简：移除长条进度条（改文字状态摘要）、移除热力图图表（移到「统计回顾」三级页）；新增内置查词插件（ECDICT 开源词库，离线可用，一键加入当前考试生词本）。</p>' +
+      '<p>全局板块主题色：13 个板块各自主色（专注红/学习记录绿/资料库蓝/收集箱紫/错题本橙/答疑青蓝/复盘深蓝/健康薄荷绿/日历蓝紫/账号灰/搜索深灰/AI 电光蓝/设置深灰蓝），统一架构、各板块不同气质。</p>' +
+      '<p>影响范围：英语学习、全站配色。数据：自动迁移（考试自动日期规则、生词本按考试拆分），不删除旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.5 三级分层架构<span class="log-tag">重构</span></div>' +
       '<p>整体改为三级分层：首页（入口卡片）→ 领域概览页（功能卡片入口）→ 详情专区（长列表/图表/表单），每个子页面左上角有返回。</p>' +
       '<p>首页重构：问候横幅、今日目标（固定）、今日待办最多 3 条、领域入口卡片组（小文字徽章，无粗进度条）、快捷工具卡（收集箱/快速打卡/最近继续）。</p>' +
@@ -1566,7 +1685,7 @@
   function englishZone(dm, zoneName) {
     var zones = {
       "听力": { id: "cet-listening", emoji: "🎧", name: "听力", desc: "真题听力、精听训练、听力素材", tag: "听力" },
-      "阅读": { id: "cet-reading", emoji: "📝", name: "阅读", desc: "真题阅读、长难句、错题记录", tag: "阅读" },
+      "阅读": { id: "cet-reading", emoji: "📝", name: "阅读", desc: "真题阅读、长难句、错题记录", tag: "阅读", extra: zoneReading },
       "写作": { id: "cet-writing", emoji: "✍️", name: "写作", desc: "范文、模板、AI 批改、作文素材", tag: "写作", extra: zoneWriting },
       "翻译": { id: "cet-translation", emoji: "🌐", name: "翻译", desc: "真题翻译练习、句式积累", tag: "翻译", extra: zoneTranslation },
       "口语": { id: "cet-speaking", emoji: "🗣️", name: "口语", desc: "AI 口语对话练习", tag: "口语", extra: zoneSpeaking }
@@ -1583,6 +1702,7 @@
     tasksAll: tasksAll,
     cetVocab: cetVocab,
     cetWordbook: cetWordbook,
+    cetExams: cetExams,
     cetStats: cetStats,
     englishZone: englishZone,
     aiHistory: aiHistory,

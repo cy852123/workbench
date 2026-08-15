@@ -118,7 +118,10 @@
           activeExam: "考研英语",
           exams: {
             "考研英语": {
-              examDate: "2027-12-25",
+              auto: "kaoyan", examDate: "", archived: false,
+              wordbook: [
+                { id: "w1", word: "comprehensive", meaning: "adj. 全面的，综合的", note: "考研高频词", mastered: false, date: "2026-08-14" }
+              ],
               subjects: {
                 "词汇": { progress: 25, note: "考研核心词汇，配合艾宾浩斯复习" },
                 "听力": { progress: 20, note: "" },
@@ -128,8 +131,8 @@
                 "口语": { progress: 5, note: "" }
               }
             },
-            "六级": {
-              examDate: "2027-12-12",
+            "大学英语六级": {
+              auto: "cet6", examDate: "", archived: false, wordbook: [],
               subjects: {
                 "词汇": { progress: 30, note: "" },
                 "听力": { progress: 30, note: "" },
@@ -139,8 +142,8 @@
                 "口语": { progress: 10, note: "" }
               }
             },
-            "四级": {
-              examDate: "2027-06-12",
+            "大学英语四级": {
+              auto: "cet4", examDate: "", archived: false, wordbook: [],
               subjects: {
                 "词汇": { progress: 40, note: "" },
                 "听力": { progress: 35, note: "" },
@@ -150,10 +153,7 @@
                 "口语": { progress: 15, note: "" }
               }
             }
-          },
-          wordbook: [
-            { id: "w1", word: "comprehensive", meaning: "adj. 全面的，综合的", note: "考研高频词", mastered: false, date: "2026-08-14" }
-          ]
+          }
         },
         {
           id: "ai", type: "ailearn", name: "AI 知识学习", color: "green", order: 2,
@@ -267,6 +267,25 @@
       }
       if (!cet.exams) { cet.exams = { "考研英语": { examDate: "2027-12-25", subjects: { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } } } }; cet.activeExam = "考研英语"; changed = true; }
       if (!cet.wordbook) { cet.wordbook = []; changed = true; }
+      /* 迁移：旧固定日期 → 自动规则；顶层 wordbook → 当前考试独立生词本 */
+      Object.keys(cet.exams).forEach(function (k) {
+        var ex = cet.exams[k];
+        if (!ex.auto) {
+          if (k.indexOf("六级") >= 0 || k.indexOf("四级") >= 0) ex.auto = k.indexOf("六级") >= 0 ? "cet6" : "cet4";
+          else if (k.indexOf("考研") >= 0) ex.auto = "kaoyan";
+          else ex.auto = "custom";
+          changed = true;
+        }
+        if (!ex.wordbook) { ex.wordbook = []; changed = true; }
+        if (ex.archived === undefined) { ex.archived = false; changed = true; }
+        if (ex.examDate === "2027-12-25" || ex.examDate === "2027-12-12" || ex.examDate === "2027-06-12") { ex.examDate = ""; changed = true; }
+        if (!ex.subjects) { ex.subjects = { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } }; changed = true; }
+      });
+      if (cet.wordbook && cet.wordbook.length && cet.exams["考研英语"]) {
+        cet.exams["考研英语"].wordbook = cet.wordbook.concat(cet.exams["考研英语"].wordbook || []);
+        cet.wordbook = [];
+        changed = true;
+      }
     }
     var aiDom = (data.domains || []).filter(function (x) { return x.id === "ai"; })[0];
     if (aiDom && aiDom.type !== "ailearn") {
@@ -414,6 +433,7 @@
       "cet-translation": { t: "翻译专区", s: "翻译练习与句式积累" },
       "cet-speaking": { t: "口语专区", s: "AI 口语对话练习" },
       "cet-wordbook": { t: "生词本", s: "完整生词管理" },
+      "cet-exams": { t: "考试管理", s: "新增/归档/删除考试" },
       "cet-stats": { t: "英语统计", s: "学习数据" },
       "ai-history": { t: "AI 学习历史", s: "历史学习资料库" }
     };
@@ -424,6 +444,8 @@
   function renderAll() {
     renderNav();
     renderView();
+    applyTheme();
+    applyBg();
   }
   function renderNav() {
     var nav = $id("sideNav");
@@ -493,6 +515,7 @@
     else if (view === "tasks-all") html = Views.tasksAll();
     else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-wordbook") html = Views.cetWordbook(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
+    else if (view === "cet-exams") html = Views.cetExams(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-stats") html = Views.cetStats(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "ai-history") html = Views.aiHistory(data.domains.filter(function (x) { return x.id === "ai"; })[0]);
     else if (view === "cet-listening" || view === "cet-reading" || view === "cet-writing" || view === "cet-translation" || view === "cet-speaking") {
@@ -604,6 +627,27 @@
     var body = document.body;
     body.className = body.className.replace(/\s*bg-\w+/g, "").trim();
     if (cur !== "default") body.className += " bg-" + cur;
+  }
+  /* 板块主题色 */
+  function themeOf(view) {
+    var map = {
+      "focus": "theme-focus", "activity": "theme-activity", "library": "theme-library",
+      "inbox": "theme-inbox", "mistakes": "theme-mistakes", "qa": "theme-qa", "reviews": "theme-reviews",
+      "health": "theme-health", "calendar": "theme-calendar", "accounts": "theme-accounts",
+      "search": "theme-search", "ai": "theme-ai", "settings": "theme-settings",
+      "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
+      "domain:paper": "theme-paper", "domain:courses": "theme-courses",
+      "ky-subjects": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-stats": "theme-kaoyan", "tasks-all": "theme-activity",
+      "cet-vocab": "theme-cet", "cet-listening": "theme-cet", "cet-reading": "theme-cet", "cet-writing": "theme-cet",
+      "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet",
+      "ai-history": "theme-ai"
+    };
+    return map[view] || "";
+  }
+  function applyTheme() {
+    var t = themeOf(W.ui.view);
+    document.body.className = document.body.className.replace(/\s*theme-\w+/g, "").trim();
+    if (t) document.body.className += " " + t;
   }
 
   /* ---------- AI 学习内置学习包（每日 30 分钟） ---------- */
@@ -914,10 +958,11 @@
       toast("已存入资料库");
     } else if (type === "word") {
       var cetDm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
-      if (cetDm) {
-        cetDm.wordbook = cetDm.wordbook || [];
-        cetDm.wordbook.push({ id: uid(), word: m.content.split(/[\s，。,.；;]/)[0].slice(0, 30), meaning: m.content.slice(0, 60), note: note, mastered: false, date: todayStr() });
-        toast("已存入英语生词本");
+      var cetEx = cetDm && cetDm.exams && cetDm.exams[cetDm.activeExam];
+      if (cetEx) {
+        cetEx.wordbook = cetEx.wordbook || [];
+        cetEx.wordbook.push({ id: uid(), word: m.content.split(/[\s，。,.；;]/)[0].slice(0, 30), meaning: m.content.slice(0, 60), note: note, mastered: false, date: todayStr() });
+        toast("已存入「" + cetDm.activeExam + "」生词本");
       }
     }
     modalClose();
@@ -1286,14 +1331,25 @@
         break;
       }
       case "set-exam": {
+        var examName = v || el.getAttribute("data-exam");
         var cdm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
-        if (cdm && cdm.exams && cdm.exams[v]) {
-          cdm.activeExam = v;
+        if (cdm && cdm.exams && examName && cdm.exams[examName] && !cdm.exams[examName].archived) {
+          cdm.activeExam = examName;
           refresh();
-          toast("已切换为" + v + "（各考试进度相互独立）");
+          toast("已切换为" + examName + "（各考试进度与生词本相互独立）");
         }
         break;
       }
+      case "set-exam-date": {
+        var exName = el.getAttribute("data-exam");
+        if (exName) {
+          var cdm2 = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+          if (cdm2 && cdm2.exams && cdm2.exams[exName]) cdm2.activeExam = exName;
+        }
+        setExamDateModal();
+        break;
+      }
+      case "export-words": exportWords(); break;
 
       /* AI */
       case "ai-send": {
@@ -1323,6 +1379,22 @@
       case "submit-ai-append": submitAiAppend(); break;
       case "ai-hist-edit": aiHistEditModal(id); break;
       case "submit-ai-hist-edit": submitAiHistEdit(id); break;
+
+      /* 英语考试管理 */
+      case "add-exam": addExamModal(); break;
+      case "submit-exam": submitExam(); break;
+      case "set-exam-date": setExamDateModal(); break;
+      case "submit-exam-date": submitExamDate(); break;
+      case "reset-exam-date": resetExamDate(); break;
+      case "archive-exam": archiveExam(v); break;
+      case "restore-exam": restoreExam(v); break;
+      case "del-exam": delExamConfirm(v); break;
+      case "del-exam-ok": delExamOk(); break;
+
+      /* 查词 */
+      case "lookup-word": lookupWordIn("dictInput", "dictResult"); break;
+      case "lookup-word2": lookupWordIn("dictInput2", "dictResult2"); break;
+      case "dict-add-word": dictAddWord(el ? el.getAttribute("data-word") : ""); break;
 
       /* 模态提交 */
       case "submit-task": submitTask(); break;
@@ -1632,18 +1704,24 @@
       field("备注（可选）", "wdNote", "text", "考研高频词"),
       cancelBtn() + '<button class="btn" data-action="submit-word" data-domain="' + esc(did) + '">' + ICONS.check + "保存</button>");
   }
+  function activeExamObj() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    return (dm && dm.exams && dm.exams[dm.activeExam]) || null;
+  }
   function submitWord(did) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
     if (!dm) return;
     var word = fval("wdWord").trim();
     if (!word) { toast("请填写单词", true); return; }
-    dm.wordbook = dm.wordbook || [];
-    dm.wordbook.push({ id: uid(), word: word, meaning: fval("wdMeaning").trim(), note: fval("wdNote").trim(), mastered: false, date: todayStr() });
-    modalClose(); refresh(); toast("生词已添加");
+    var ex = dm.exams && dm.exams[dm.activeExam];
+    ex.wordbook = ex.wordbook || [];
+    ex.wordbook.push({ id: uid(), word: word, meaning: fval("wdMeaning").trim(), note: fval("wdNote").trim(), mastered: false, date: todayStr() });
+    modalClose(); refresh(); toast("生词已加入「" + dm.activeExam + "」生词本");
   }
   function toggleWord(did, id) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
-    var w = dm && (dm.wordbook || []).filter(function (x) { return x.id === id; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    var w = ex && (ex.wordbook || []).filter(function (x) { return x.id === id; })[0];
     if (!w) return;
     w.mastered = !w.mastered;
     refresh();
@@ -1651,11 +1729,139 @@
   }
   function delWord(did, id) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
-    var w = dm && (dm.wordbook || []).filter(function (x) { return x.id === id; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    var w = ex && (ex.wordbook || []).filter(function (x) { return x.id === id; })[0];
     if (!w) return;
-    dm.wordbook = dm.wordbook.filter(function (x) { return x.id !== id; });
+    ex.wordbook = ex.wordbook.filter(function (x) { return x.id !== id; });
     data.deleted.push({ id: id, kind: "生词", title: w.word, deletedAt: nowStr() });
     refresh(); toast("生词已删除，可在回收站恢复");
+  }
+  function exportWords() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    var wb = (ex && ex.wordbook) || [];
+    if (wb.length === 0) { toast("当前考试生词本是空的", true); return; }
+    var lines = ["单词\t释义\t状态\t日期"];
+    wb.forEach(function (w) { lines.push([w.word, (w.meaning || "").replace(/\t/g, " "), w.mastered ? "已掌握" : "待复习", w.date || ""].join("\t")); });
+    var blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "生词本-" + dm.activeExam + "-" + todayStr() + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    toast("已导出「" + dm.activeExam + "」生词本");
+  }
+  /* 考试管理 */
+  function addExamModal() {
+    modalOpen("新增考试", "输入考试名称即可创建（如专四、专八、雅思、托福…）。每套考试的生词本、模块记录、打卡进度完全独立。" +
+      field("考试名称", "newExamName", "text", "例如：专八"),
+      cancelBtn() + '<button class="btn" data-action="submit-exam">' + ICONS.check + "创建</button>");
+  }
+  function submitExam() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var name = fval("newExamName").trim();
+    if (!name) { toast("请填写考试名称", true); return; }
+    if (dm.exams[name]) { toast("该考试已存在", true); return; }
+    dm.exams[name] = {
+      auto: "custom", examDate: "", archived: false, wordbook: [],
+      subjects: { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } }
+    };
+    dm.activeExam = name;
+    modalClose(); refresh(); toast("已创建「" + name + "」，请设置考试时间");
+  }
+  function setExamDateModal() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    if (!ex) return;
+    modalOpen("设置「" + dm.activeExam + "」考试时间",
+      '<div class="li-sub" style="margin-bottom:10px;">内置考试默认按官方规则自动计算（四六级：每年 6 月/12 月第三个周六；考研：12 月倒数第二个周末）。手动设置的日期优先，考试结束后可在这里调整。</div>' +
+      '<div class="field"><label>考试日期</label><input id="exDate" type="date" value="' + esc(ex.examDate || examDateOf(ex) || "") + '"></div>' +
+      (ex.auto && ex.auto !== "custom" ? '<button class="btn small plain" data-action="reset-exam-date">恢复自动计算</button>' : ""),
+      cancelBtn() + '<button class="btn" data-action="submit-exam-date">' + ICONS.check + "保存</button>");
+  }
+  function submitExamDate() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    if (!ex) return;
+    ex.examDate = fval("exDate") || "";
+    modalClose(); refresh(); toast(ex.examDate ? "已手动设置考试时间" : "已清空，使用自动计算");
+  }
+  function resetExamDate() {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    if (!ex) return;
+    ex.examDate = "";
+    modalClose(); refresh(); toast("已恢复自动计算考试时间");
+  }
+  function archiveExam(name) {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm.exams && dm.exams[name];
+    if (!ex) return;
+    ex.archived = true;
+    if (dm.activeExam === name) {
+      var first = Object.keys(dm.exams).filter(function (k) { return !dm.exams[k].archived; })[0];
+      dm.activeExam = first || "";
+    }
+    refresh(); toast("已归档「" + name + "」，可在考试管理回看");
+  }
+  function restoreExam(name) {
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    if (dm.exams[name]) { dm.exams[name].archived = false; refresh(); toast("已恢复「" + name + "」"); }
+  }
+  function delExamConfirm(name) {
+    window.__delExamName = name;
+    modalOpen("删除考试", '将删除「' + esc(name) + '」的全部数据（进度、生词本），且不可恢复。仅自定义考试可删除。确定要删除吗？',
+      cancelBtn() + '<button class="btn danger" data-action="del-exam-ok">' + ICONS.trash + "确认删除</button>");
+  }
+  function delExamOk() {
+    var name = window.__delExamName;
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    if (dm && name && dm.exams[name]) {
+      delete dm.exams[name];
+      if (dm.activeExam === name) {
+        var first = Object.keys(dm.exams).filter(function (k) { return !dm.exams[k].archived; })[0];
+        dm.activeExam = first || "";
+      }
+    }
+    modalClose(); refresh(); toast("已删除");
+  }
+  /* 查词（内置词库 ECDICT 精简版） */
+  function lookupWordIn(inputId, resultId) {
+    var word = (fval(inputId) || "").trim().toLowerCase();
+    if (!word) { toast("请输入要查询的单词", true); return; }
+    var box = $id(resultId);
+    var dict = window.WB_DICT || {};
+    var entry = dict[word] || (word.length > 1 ? dict[word[0].toUpperCase() + word.slice(1)] : null) || null;
+    var ex = activeExamObj();
+    var examName = ex ? (data.domains.filter(function (x) { return x.id === "cet"; })[0].activeExam) : "";
+    if (!entry) {
+      box.innerHTML = '<div class="li-sub">词库未收录「' + esc(word) + '」（词库覆盖常用高频词，不含人名地名等专有名词）。可以加入生词本，用 AI 帮手查询。</div>' +
+        '<button class="btn small plain" data-action="dict-add-word" data-word="' + esc(word) + '">加入生词本</button>';
+      return;
+    }
+    var html = '<div class="list-item"><div class="li-main">' +
+      '<div class="li-title" style="font-size:16px;">' + esc(word) + (entry.p ? ' <span style="color:var(--sub);font-weight:400;font-size:13px;">/' + esc(entry.p) + "/</span>" : "") + "</div>" +
+      '<div class="li-sub" style="white-space:pre-wrap;">' + esc(entry.t || entry.d || "暂无释义") + "</div>" +
+      (entry.c ? '<div class="li-sub">柯林斯星级：' + "★".repeat(Math.max(1, Math.min(5, entry.c))) + "</div>" : "") +
+      "</div></div>" +
+      '<div style="margin-top:10px;"><button class="btn small" data-action="dict-add-word" data-word="' + esc(word) + '">加入「' + esc(examName) + '」生词本</button></div>';
+    box.innerHTML = html;
+  }
+  function dictAddWord(wordArg) {
+    var word = (wordArg || fval("dictInput") || fval("dictInput2") || "").trim();
+    if (!word) { toast("没有可添加的单词", true); return; }
+    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var ex = dm && dm.exams && dm.exams[dm.activeExam];
+    if (!ex) return;
+    ex.wordbook = ex.wordbook || [];
+    if (ex.wordbook.some(function (w) { return w.word.toLowerCase() === word.toLowerCase(); })) { toast("该单词已在生词本中"); return; }
+    var entry = (window.WB_DICT || {})[word] || {};
+    ex.wordbook.push({ id: uid(), word: word, meaning: (entry.t || entry.d || "").slice(0, 80), note: "查词加入", mastered: false, date: todayStr() });
+    save();
+    toast("已加入「" + dm.activeExam + "」生词本");
+    var box = $id("dictResult");
+    if (box) box.innerHTML = '<div class="li-sub" style="color:var(--accent);">已加入生词本：' + esc(word) + "</div>";
   }
 
   function courseModal(id, did) {

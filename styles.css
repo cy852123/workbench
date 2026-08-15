@@ -35,6 +35,40 @@ html, body {
   transition: background 0.3s;
 }
 
+/* ===== 板块主题色（统一架构，各自主色） ===== */
+body { --theme: var(--accent); }
+body.theme-focus { --theme: #E74C3C; }
+body.theme-activity { --theme: #27AE60; }
+body.theme-library { --theme: #2980B9; }
+body.theme-inbox { --theme: #9B59B6; }
+body.theme-mistakes { --theme: #F39C12; }
+body.theme-qa { --theme: #1ABC9C; }
+body.theme-reviews { --theme: #34495E; }
+body.theme-health { --theme: #2ECC71; }
+body.theme-calendar { --theme: #8E44AD; }
+body.theme-accounts { --theme: #95A5A6; }
+body.theme-search { --theme: #34495E; }
+body.theme-ai { --theme: #3498DB; }
+body.theme-settings { --theme: #7F8C8D; }
+body.theme-kaoyan { --theme: #2F6B57; }
+body.theme-cet { --theme: #2980B9; }
+body.theme-paper { --theme: #E9A8CF; }
+body.theme-courses { --theme: #8E44AD; }
+#topbar h2 { color: var(--theme); }
+#viewWrap::before {
+  content: ""; display: block; height: 4px; border-radius: 4px;
+  background: var(--theme); margin-bottom: 14px; opacity: 0.85;
+}
+.btn { background: var(--theme); }
+.btn:hover { background: var(--theme); filter: brightness(1.06); }
+.btn.ghost { background: none; border: 1px solid var(--border); color: var(--text); }
+.btn.ghost:hover { border-color: var(--theme); color: var(--theme); background: none; }
+.btn.plain { background: none; color: var(--theme); }
+.btn.plain:hover { background: color-mix(in srgb, var(--theme) 8%, #fff); }
+.nav-item.active { background: color-mix(in srgb, var(--theme) 14%, #fff); color: var(--theme); }
+.sidebar .nav-item.active::before { background: var(--theme); }
+.drawer-item.active { color: var(--theme); }
+
 /* ===== 可选页面背景（设置里切换，卡片与文字不受影响） ===== */
 body.bg-default { background-color: #F7F7F5; background-image: none; }
 body.bg-dots {
