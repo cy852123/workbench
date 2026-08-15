@@ -50,7 +50,8 @@ body.theme-accounts { --theme: #95A5A6; }
 body.theme-search { --theme: #34495E; }
 body.theme-ai { --theme: #3498DB; }
 body.theme-settings { --theme: #7F8C8D; }
-body.theme-kaoyan { --theme: #2F6B57; }
+body.theme-kaoyan { --theme: #F5B041; }
+.tint-gold { background: #FCF5E5; border: 1px solid #F3E3B8; }
 body.theme-cet { --theme: #2980B9; }
 body.theme-paper { --theme: #E9A8CF; }
 body.theme-courses { --theme: #8E44AD; }

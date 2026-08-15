@@ -168,17 +168,25 @@
     var body = "", emoji = "📗", btn = "进入板块";
     if (dm.type === "kaoyan") {
       emoji = "🎓";
-      var cur = 0;
-      (dm.stages || []).forEach(function (s, i) { if (!s.done && cur === i) { } });
-      (dm.stages || []).forEach(function (s, i) { if (!s.done) { cur = i; } });
-      var stageName = dm.stages && dm.stages[cur] ? dm.stages[cur].name : "";
-      var badges = (dm.subjects || []).map(function (s) { return '<span class="tag">' + esc(s.name) + " " + (s.progress || 0) + "%</span>"; }).join("");
-      body = '<div class="li-sub" style="margin-bottom:8px;">当前阶段：<b>' + esc(stageName) + "</b></div><div>" + badges + "</div>";
-      btn = "进入备考板块";
+      var sc = kyActive(dm);
+      if (sc) {
+        var kd = kyExamDate(sc);
+        var kdd = kd ? daysDiff(kd) : null;
+        var stName = kyStageName(sc.stage);
+        var badges = (sc.subjects || []).slice(0, 4).map(function (s) {
+          var st = (sc.tasks || []).filter(function (x) { return x.subjectId === s.id; });
+          var done = st.filter(function (x) { return x.done; }).length;
+          return '<span class="tag">' + esc(s.name) + " " + done + "/" + st.length + "</span>";
+        }).join("");
+        body = '<div class="li-sub" style="margin-bottom:8px;">当前方案：' + esc(sc.name) + (kdd != null && kdd >= 0 ? " ｜ 距离考试：" + kdd + " 天" : "") + " ｜ 当前阶段：" + esc(stName) + "</div><div>" + badges + "</div>";
+      } else {
+        body = '<div class="li-sub" style="margin-bottom:8px;">暂未创建备考方案</div>';
+      }
+      btn = "进入备考";
     } else if (dm.type === "english") {
       emoji = "📖";
       var ex = dm.exams && dm.exams[dm.activeExam];
-      var exd = ex && ex.examDate ? daysDiff(ex.examDate) : null;
+      var exd = ex ? daysDiff(examDateOf(ex)) : null;
       var bd = ex && ex.subjects ? ["词汇", "阅读", "听力", "写作"].map(function (k) {
         var s = ex.subjects[k]; return s ? '<span class="tag">' + k + " " + (s.progress || 0) + "%</span>" : "";
       }).join("") : "";
@@ -680,94 +688,194 @@
   }
 
   /* ==================== 二级概览页：考研备考 ==================== */
+  function kyActive(dm) {
+    if (!dm || !dm.schemes) return null;
+    var list = dm.schemes.list || [];
+    for (var i = 0; i < list.length; i++) { if (list[i].id === dm.schemes.activeId) return list[i]; }
+    return list[0] || null;
+  }
+  function kyExamDate(sc) {
+    if (sc && sc.examDate) return sc.examDate;
+    var W = window.W;
+    if (W && W.settings && W.settings.kaoyanDate) return W.settings.kaoyanDate;
+    var y = new Date().getFullYear();
+    var d = lastButOneSaturday(y, 11);
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    if (d < today) d = lastButOneSaturday(y + 1, 11);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function kySubjectName(sc, sid) {
+    var s = (sc.subjects || []).filter(function (x) { return x.id === sid; })[0];
+    return s ? s.name : "";
+  }
+  function kyStageName(id) {
+    var map = { base: "基础阶段", enhance: "强化阶段", sprint: "冲刺阶段", replay: "复试阶段" };
+    return map[id] || "未知阶段";
+  }
   function kaoyanOverview(dm) {
     var W = window.W, d = W.data;
     var html = "";
-    var cur = 0;
-    (dm.stages || []).forEach(function (s, i) { if (!s.done && cur === i) { } });
-    (dm.stages || []).forEach(function (s, i) { if (!s.done) { cur = i; } });
-    var stage = dm.stages && dm.stages[cur] ? dm.stages[cur] : null;
-    var exd = dm.examDate ? daysDiff(dm.examDate) : null;
-    /* 横幅 */
-    html += '<div class="card tint-yellow"><div class="card-head"><h3>🎓 考研备考</h3></div>' +
-      '<div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">' +
-      (exd != null ? '<span class="cd-num" style="font-size:28px;color:var(--accent);">' + exd + '</span><span class="cd-label">天 · ' + esc(dm.examDate) + "</span>" : "") +
-      '<span class="tag">当前阶段：' + esc(stage ? stage.name : "") + (stage && stage.end ? "（" + esc(stage.end) + "）" : "") + "</span></div>" +
-      (stage && stage.goal ? '<div class="li-sub" style="margin-top:8px;">本阶段目标：' + esc(stage.goal) + "</div>" : "") + "</div>";
+    var sc = kyActive(dm);
+    if (!sc) {
+      html += card(cardHead("🎓 考研备考", "暂未创建备考方案", "empty"),
+        '<div class="li-sub" style="margin-bottom:12px;">创建一套备考方案，开始你的考研旅程。</div>' +
+        '<button class="btn" data-action="ky-scheme-create">新建备考方案</button>');
+      return html;
+    }
+    var exdStr = kyExamDate(sc);
+    var exd = exdStr ? daysDiff(exdStr) : null;
+    var archived = !!sc.archived;
 
-    /* 卡片组 */
-    var wk = dm.weeklyPlan || {};
-    var wkTotal = 0, wkDone = 0;
-    Object.keys(wk).forEach(function (k) { wk[k].forEach(function (i) { wkTotal++; if (i.done) wkDone++; }); });
-    var domTasks = (d.tasks || []).filter(function (x) { return x.domainId === dm.id && !x.done; });
-    var weekLog = (d.studyLog || []).filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6 && x.domainId === dm.id; });
+    /* 区块1：方案 + 倒计时（浅金黄主题，复用全局倒计时逻辑） */
+    html += '<div class="card tint-gold"><div class="card-head"><h3>🎓 ' + esc(sc.name) + (archived ? ' <span class="tag">已归档</span>' : "") + '</h3><span class="hint">' + esc(kyStageName(sc.stage)) + "</span></div>" +
+      '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">' +
+      '<span class="cd-num" style="font-size:30px;color:#F5B041;">' + (exd != null && exd >= 0 ? exd : "--") + '</span><span class="cd-label">天 · ' + esc(exdStr || "未设置") + "</span>" +
+      '<span class="tag" style="background:#FCF5E5;color:#B07D0E;">当前阶段：' + esc(kyStageName(sc.stage)) + "</span></div>" +
+      (exd != null && exd < 0 ? '<div class="li-sub" style="margin-top:8px;color:var(--danger);">✅ 本套备考考试已结束，可以归档本方案</div>' +
+        (archived ? "" : '<button class="btn small" data-action="ky-archive-scheme" style="margin-top:8px;">归档方案</button>') : "") +
+      (exd != null && exd >= 0 && exd <= 30 ? '<div class="li-sub" style="margin-top:8px;color:var(--danger);">距离考试不足 30 天，进入冲刺阶段</div>' : "") +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      '<button class="btn small plain" data-action="ky-scheme-switch">切换备考方案</button>' +
+      '<button class="btn small plain" data-action="ky-set-date">修改考试时间</button>' +
+      '<button class="btn small plain" data-action="ky-stage-switch">切换备考阶段</button></div></div>';
+
+    /* 区块2：今日优先任务（最高优先级） */
+    var dailyTasks = (sc.tasks || []).filter(function (t) { return t.type === "daily" && !t.done; });
+    html += card(cardHead("📌 今日优先任务", "今日必做（最多展示 5 条）", "daily"),
+      dailyTasks.length === 0
+        ? '<div class="li-sub" style="margin-bottom:10px;">🎉 今日暂无待完成任务，可以去任务页面添加任务</div>' +
+          '<button class="btn small" data-action="go-view" data-view="ky-tasks">去添加任务</button>'
+        : '<div class="list">' + dailyTasks.slice(0, 5).map(function (t) {
+            var sn = kySubjectName(sc, t.subjectId);
+            return '<div class="task-item" data-action="ky-task-toggle" data-id="' + esc(t.id) + '">' +
+              '<span class="task-check">' + ic("check") + "</span>" +
+              '<span class="task-title" style="font-weight:400;">' + esc(t.name) + "</span>" +
+              '<span class="tag">' + esc(sn) + (t.costMinutes ? " · " + t.costMinutes + " 分钟" : "") + "</span></div>";
+          }).join("") + "</div>" +
+          '<button class="btn small ghost" data-action="go-view" data-view="ky-tasks" style="margin-top:10px;">查看全部领域任务</button>');
+
+    /* 区块3：科目概览（纯文字） */
+    var subjSummary = (sc.subjects || []).map(function (s) {
+      var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
+      var done = st.filter(function (t) { return t.done; }).length;
+      return '<div class="li-sub">' + esc(s.name) + "：已完成 " + done + " / " + st.length + " 项任务</div>";
+    }).join("");
+    html += card(cardHead("📘 科目概览", "纯文字摘要", "subjects"),
+      (subjSummary || '<div class="li-sub">暂无科目</div>') +
+      '<button class="btn small ghost" data-action="go-view" data-view="ky-subjects" style="margin-top:10px;">查看科目详情</button>');
+
+    /* 区块4：本周计划摘要 */
+    var wk = (sc.tasks || []).filter(function (t) { return t.type === "weekly"; });
+    var wkDone = wk.filter(function (t) { return t.done; }).length;
+    var weekLog = (d.studyLog || []).filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6 && x.domainId === "kaoyan"; });
     var weekMin = weekLog.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
-    var kyRes = (d.resources || []).filter(function (r) { return r.domainId === dm.id; });
-    var subjBadges = (dm.subjects || []).map(function (s) { return '<span class="tag">' + esc(s.name) + " " + (s.progress || 0) + "%</span>"; }).join("");
+    html += card(cardHead("📅 本周计划", "周任务与时长", "weekly"),
+      '<div class="li-sub" style="margin-bottom:10px;">本周共 ' + wk.length + " 项任务 ｜ 已完成 " + wkDone + " / " + wk.length + "；本周累计学习：" + fmtMin(weekMin) + "</div>" +
+      '<button class="btn small ghost" data-action="go-view" data-view="ky-weekly">打开本周计划</button>');
 
-    html += '<div class="grid grid-2">' +
-      card(cardHead("📊 科目总览", "进度概览", "subjects"),
-        '<div style="margin-bottom:10px;">' + subjBadges + "</div>" +
-        '<button class="btn small block" data-action="go-view" data-view="ky-subjects">查看科目详情</button>') +
-      card(cardHead("🗓 本周计划", "按天安排", "weekly"),
-        '<div class="li-sub" style="margin-bottom:10px;">本周任务 ' + wkTotal + ' 项，完成 ' + wkDone + "/" + wkTotal + "</div>" +
-        '<button class="btn small block" data-action="go-view" data-view="ky-weekly">打开本周计划</button>') +
-      card(cardHead("✅ 领域任务", "待办事项", "task"),
-        '<div class="li-sub" style="margin-bottom:10px;">进行中任务 ' + domTasks.length + " 条</div>" +
-        '<button class="btn small block" data-action="go-view" data-view="tasks-all">查看全部领域任务</button>') +
-      card(cardHead("📈 学习数据统计", "打卡与时长", "stats"),
-        '<div class="li-sub" style="margin-bottom:10px;">本周累计学习 ' + fmtMin(weekMin) + "</div>" +
-        '<button class="btn small block" data-action="go-view" data-view="ky-stats">进入统计面板</button>') +
-      card(cardHead("📎 备考资料库", "已关联资料", "resources"),
-        '<div class="li-sub" style="margin-bottom:10px;">已关联 ' + kyRes.length + " 份备考资料</div>" +
-        '<button class="btn small block" data-action="open-library">管理备考资料</button>') +
-      "</div>";
+    /* 区块5：备考资料库摘要 */
+    var files = sc.files || [];
+    html += card(cardHead("📂 备考资料库", "关联文件与笔记", "files"),
+      '<div class="li-sub" style="margin-bottom:10px;">已关联 ' + files.length + " 份备考资料" + (files.length ? " ｜ 最近资料：" + esc(files[files.length - 1].title) : "") + "</div>" +
+      '<button class="btn small ghost" data-action="go-view" data-view="ky-files">管理备考资料</button>');
+
+    /* 区块6：学习数据摘要（仅文字） */
+    var monthLog = (d.studyLog || []).filter(function (x) { return x.domainId === "kaoyan" && x.date.indexOf(todayStr().slice(0, 7)) === 0; });
+    var monthH = Math.round(monthLog.reduce(function (s, x) { return s + (x.minutes || 0); }, 0) / 60 * 10) / 10;
+    html += card(cardHead("📊 学习统计", "仅文字摘要，图表在仪表盘", "stats"),
+      '<div class="li-sub" style="margin-bottom:10px;">本周打卡 ' + weekLog.length + " 天；本月累计学习：" + monthH + " 小时</div>" +
+      '<button class="btn small ghost" data-action="go-view" data-view="ky-stats">进入统计仪表盘</button>');
     return html;
   }
 
   /* ==================== 三级专区 ==================== */
   function kySubjects(dm) {
+    var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
-    html += card(cardHead("📊 科目进度详情", "细窄进度条，点击编辑", "subjects"),
-      '<div class="list">' + (dm.subjects || []).map(function (s) {
-        var em = s.name.indexOf("数学") >= 0 ? "📐" : s.name.indexOf("英语") >= 0 ? "📖" : s.name.indexOf("政治") >= 0 ? "📜" : "🔬";
+    html += card(cardHead("📊 科目详情总览", "任务完成统计", "subjects"),
+      '<button class="btn ghost small" data-action="ky-subject-add" style="margin-bottom:10px;">＋ 新增科目</button>' +
+      '<div class="list">' + (sc.subjects || []).map(function (s) {
+        var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
+        var done = st.filter(function (t) { return t.done; }).length;
+        var em = s.name.indexOf("数学") >= 0 ? "📐" : s.name.indexOf("英语") >= 0 ? "📖" : s.name.indexOf("政治") >= 0 ? "📜" : (s.custom ? "📁" : "🔬");
         return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main">' +
-          '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<span style="font-size:16px;">' + em + "</span>" +
-          '<div class="li-title" style="flex:1;">' + esc(s.name) + "</div>" +
-          '<span style="font-size:13px;color:var(--sub);">' + (s.progress || 0) + "%</span></div>" +
-          '<div class="progress-track" style="height:5px;margin-top:6px;"><div class="progress-fill" style="width:' + (s.progress || 0) + '%;height:5px;"></div></div>' +
-          (s.note ? '<div class="li-sub" style="margin-top:4px;">' + esc(s.note) + "</div>" : "") + "</div>" +
-          '<button class="btn small plain" data-action="update-subject" data-domain="' + esc(dm.id) + '" data-subject="' + esc(s.id) + '">' + ic("edit") + "编辑</button></div>";
+          '<div class="li-main"><div class="li-title">' + em + " " + esc(s.name) + "</div>" +
+          '<div class="li-sub">总任务 ' + st.length + " 项 ｜ 已完成 " + done + " 项" + (s.custom ? " ｜ 自定义科目" : "") + "</div></div>" +
+          (s.custom ? '<button class="btn small danger plain" data-action="ky-subject-del" data-id="' + esc(s.id) + '">删除</button>' : "") + "</div>";
+      }).join("") + "</div>" +
+      '<button class="btn small plain" data-action="ky-import-template" style="margin-top:10px;">导入当前阶段任务模板</button>');
+    return html;
+  }
+  function kyTasks(dm) {
+    var sc = kyActive(dm);
+    var html = backBar("domain:kaoyan", "考研备考");
+    var archived = !!sc.archived;
+    var types = { daily: "每日必做", weekly: "周计划任务", longterm: "长期领域任务" };
+    html += card(cardHead("✅ 全部领域任务", "三类任务管理", "tasks"),
+      (!archived ? '<button class="btn ghost small" data-action="ky-task-add" style="margin-bottom:10px;">＋ 新增任务</button>'
+        : '<div class="li-sub" style="margin-bottom:10px;">方案已归档，仅可查看历史（新增按钮已置灰）</div>') +
+      '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">' +
+      '<button class="btn small plain" data-action="ky-import-template">导入阶段模板</button>' +
+      (!archived ? '<button class="btn small plain" data-action="ky-batch-done">批量完成</button>' +
+        '<button class="btn small plain danger" data-action="ky-batch-del">批量删除</button>' : "") + "</div>" +
+      '<div class="list">' + (sc.tasks || []).slice().sort(function (a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); }).map(function (t) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' +
+          (t.done ? '<span style="text-decoration:line-through;color:var(--sub);">' : "") + esc(t.name) + (t.done ? "</span>" : "") + "</div>" +
+          '<div class="li-sub">' + esc(kySubjectName(sc, t.subjectId)) + " · " + esc(types[t.type] || t.type) + (t.costMinutes ? " · " + t.costMinutes + " 分钟" : "") + "</div></div>" +
+          (!archived ? '<button class="btn small plain" data-action="ky-task-toggle" data-id="' + esc(t.id) + '">' + (t.done ? "恢复" : "完成") + "</button>" +
+            '<button class="btn small plain" data-action="ky-task-edit" data-id="' + esc(t.id) + '">' + ic("edit") + "</button>" +
+            '<button class="icon-btn" data-action="ky-task-del" data-id="' + esc(t.id) + '">' + ic("trash") + "</button>" : "") + "</div>";
       }).join("") + "</div>");
     return html;
   }
   function kyWeekly(dm) {
+    var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
-    var days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-    html += card(cardHead("🗓 本周计划（完整）", "周一至周日全部任务", "weekly"),
-      '<div class="list">' + days.map(function (day) {
-        var items = (dm.weeklyPlan && dm.weeklyPlan[day]) || [];
-        var done = items.filter(function (i) { return i.done; }).length;
-        return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div style="width:40px;font-size:13px;color:var(--sub);padding-top:2px;">' + day + (items.length ? ' <span style="color:var(--accent);">' + done + "/" + items.length + "</span>" : "") + "</div>" +
-          '<div style="flex:1;">' + (items.length === 0 ? '<span style="color:#C4C7C4;font-size:13px;">未安排</span>' : items.map(function (i) {
-            return '<div class="task-item' + (i.done ? " done" : "") + '" data-action="toggle-weekly" data-domain="' + esc(dm.id) + '" data-day="' + day + '" data-id="' + esc(i.id) + '" style="padding:6px 0;">' +
-              '<span class="task-check">' + ic("check") + "</span>" +
-              '<span class="task-title" style="font-weight:400;">' + esc(i.text) + "</span>" +
-              '<button class="icon-btn" data-action="del-weekly" data-domain="' + esc(dm.id) + '" data-day="' + day + '" data-id="' + esc(i.id) + '">' + ic("trash") + "</button></div>";
-          }).join("")) +
-          '<button class="btn ghost small" data-action="add-weekly" data-domain="' + esc(dm.id) + '" data-day="' + day + '">' + ic("plus") + "添加</button></div></div>";
-      }).join("") + "</div>");
+    var wk = (sc.tasks || []).filter(function (t) { return t.type === "weekly"; });
+    html += card(cardHead("🗓 本周计划管理", "周计划任务", "weekly"),
+      (!sc.archived ? '<button class="btn ghost small" data-action="ky-task-add" data-type="weekly" style="margin-bottom:10px;">＋ 新增周任务</button>' : "") +
+      '<button class="btn small plain" data-action="ky-weekly-gen" style="margin-bottom:10px;">一键生成本周计划（按当前阶段）</button>' +
+      (wk.length === 0 ? empty("本周还没有周计划任务", "点上方新增，或一键生成") :
+        '<div class="list">' + wk.map(function (t) {
+          return '<div class="task-item' + (t.done ? " done" : "") + '" data-action="ky-task-toggle" data-id="' + esc(t.id) + '">' +
+            '<span class="task-check">' + ic("check") + "</span>" +
+            '<span class="task-title" style="font-weight:400;">' + esc(t.name) + "</span>" +
+            '<span class="tag">' + esc(kySubjectName(sc, t.subjectId)) + "</span></div>";
+        }).join("") + "</div>"));
+    return html;
+  }
+  function kyFiles(dm) {
+    var sc = kyActive(dm);
+    var html = backBar("domain:kaoyan", "考研备考");
+    var files = sc.files || [];
+    html += card(cardHead("📂 备考资料库", files.length + " 份资料", "files"),
+      '<button class="btn ghost small" data-action="ky-file-add" style="margin-bottom:10px;">＋ 关联资料</button>' +
+      (files.length === 0 ? empty("还没有备考资料", "关联 PDF、笔记、链接到备考方案") :
+        '<div class="list">' + files.map(function (f) {
+          return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(f.title) + "</div>" +
+            '<div class="li-sub">' + esc(kySubjectName(sc, f.subjectId) || "未分类") + (f.label ? " · " + esc(f.label) : "") + "</div></div>" +
+            (f.url ? '<a class="btn small plain" href="' + esc(f.url) + '" target="_blank" rel="noopener">打开</a>' : "") +
+            '<button class="icon-btn" data-action="ky-file-del" data-id="' + esc(f.id) + '">' + ic("trash") + "</button></div>";
+        }).join("") + "</div>"));
     return html;
   }
   function kyStats(dm) {
+    var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
     html += '<div class="grid grid-2">' +
-      card(cardHead("📈 本周学习时长", "最近 7 天", "stats"), weekBars(function (x) { return x.domainId === dm.id; })) +
-      card(cardHead("🔥 28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === dm.id; })) +
+      card(cardHead("🔥 28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "kaoyan"; })) +
+      card(cardHead("📈 每周学习时长", "最近 7 天柱状图", "bars"), weekBars(function (x) { return x.domainId === "kaoyan"; })) +
       "</div>";
+    html += card(cardHead("📚 各科目任务完成进度", "唯一允许进度条的页面", "subjects"),
+      '<div class="list">' + (sc.subjects || []).map(function (s) {
+        var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
+        var done = st.filter(function (t) { return t.done; }).length;
+        var pct = st.length ? Math.round(done / st.length * 100) : 0;
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(s.name) + "</div>" +
+          '<div class="progress-track" style="margin-top:6px;"><div class="progress-fill" style="width:' + pct + '%;"></div></div>' +
+          '<div class="li-sub">' + done + " / " + st.length + " 项（" + pct + "%）</div></div></div>";
+      }).join("") + "</div>" +
+      '<button class="btn small plain" data-action="ky-export-report" style="margin-top:10px;">导出统计报告（txt）</button>');
     return html;
   }
   function tasksAll() {
@@ -1631,6 +1739,14 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.7 考研备考模块重构<span class="log-tag">重构</span></div>' +
+      '<p>按 PRD 终稿重构：三级分层（首页入口卡 → 二级概览 → 5 个三级页：科目详情/任务管理/周计划/备考资料库/统计仪表盘）。</p>' +
+      '<p>多套备考方案：新建/切换/归档/删除（二次确认），数据完全隔离；四阶段切换（基础/强化/冲刺/复试）＋ 一键导入阶段任务模板（只新增不清空，二次确认）。</p>' +
+      '<p>三类任务：每日必做（概览页最高优先级展示）／周计划／长期领域；完成任务自动记录学习时长打卡；批量完成/删除；周计划一键生成。</p>' +
+      '<p>考试倒计时复用全局组件：官方时间自动计算（12 月倒数第二个周末，跟随 28 考研设置 2027-12-25），可手动修改，考试结束提示归档。</p>' +
+      '<p>科目体系：数学/英语/政治/专业课＋自定义科目（删除二次确认）；备考资料库关联文件；统计仪表盘（唯一图表页）含热力图/柱状图/科目进度/导出报告。</p>' +
+      '<p>UI：考研主题色浅金黄 #FCF5E5 点缀＋强调 #F5B041；二级概览零进度条零图表（纯文字摘要）；全部空状态/异常有引导；归档方案新增按钮置灰。</p>' +
+      '<p>影响范围：考研备考模块。数据：自动迁移（旧考研数据 → 默认备考方案），不删除旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.6 考试系统与主题色<span class="log-tag">更新</span></div>' +
       '<p>英语考试系统升级：支持自定义新增考试（专四/专八/雅思等）；考试倒计时按官方规则动态计算（四六级每年 6 月/12 月第三个周六，考研 12 月倒数第二个周末），支持手动设置日期；考试结束提示、考前 30 天冲刺高亮；考试可归档/恢复，自定义考试可删除（二次确认）。</p>' +
       '<p>每套考试数据完全隔离：生词本、模块进度、打卡各自独立，切换考试不串扰。</p>' +
@@ -1697,7 +1813,9 @@
     today: today,
     domainView: domainView,
     kySubjects: kySubjects,
+    kyTasks: kyTasks,
     kyWeekly: kyWeekly,
+    kyFiles: kyFiles,
     kyStats: kyStats,
     tasksAll: tasksAll,
     cetVocab: cetVocab,

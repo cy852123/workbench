@@ -91,26 +91,27 @@
       },
       domains: [
         {
-          id: "kaoyan", type: "kaoyan", name: "考研备考", color: "yellow", order: 0, examDate: "2026-12-26",
-          stages: [
-            { name: "基础期", end: "6月", goal: "数学一轮基础、英语单词一轮", done: true },
-            { name: "强化期", end: "8月", goal: "数学强化、开始英语真题", done: false },
-            { name: "冲刺期", end: "12月", goal: "真题 + 模拟 + 政治背诵", done: false }
-          ],
-          subjects: [
-            { id: "s1", name: "数学", progress: 15, note: "高数上册进行中" },
-            { id: "s2", name: "英语", progress: 20, note: "单词一轮过半" },
-            { id: "s3", name: "政治", progress: 5, note: "还没开始" },
-            { id: "s4", name: "专业课", progress: 10, note: "材料科学基础" }
-          ],
-          weeklyPlan: {
-            "周一": [{ id: "w1", text: "数学 3 小时：极限与连续", done: false }],
-            "周二": [{ id: "w2", text: "英语 1.5 小时：单词 + 长难句", done: false }],
-            "周三": [{ id: "w3", text: "数学 3 小时：导数部分", done: false }],
-            "周四": [{ id: "w4", text: "英语 1.5 小时：阅读精读", done: false }],
-            "周五": [{ id: "w5", text: "数学 3 小时：微分应用", done: false }],
-            "周六": [{ id: "w6", text: "专业课 2 小时：材料科学基础", done: false }],
-            "周日": [{ id: "w7", text: "本周复盘 + 下周计划", done: false }]
+          id: "kaoyan", type: "kaoyan", name: "考研备考", color: "yellow", order: 0,
+          schemes: {
+            activeId: "ky1",
+            list: [
+              {
+                id: "ky1", name: "2027 专硕考研", examDate: "", stage: "base", archived: false,
+                subjects: [
+                  { id: "m1", name: "数学", custom: false },
+                  { id: "m2", name: "英语", custom: false },
+                  { id: "m3", name: "政治", custom: false },
+                  { id: "m4", name: "专业课", custom: false }
+                ],
+                tasks: [
+                  { id: "kt1", name: "数学：高数第 3 章习题 1-20", subjectId: "m1", type: "daily", done: false, costMinutes: 60, date: "", createTime: nowStr(), finishTime: "" },
+                  { id: "kt2", name: "英语：单词 50 个", subjectId: "m2", type: "daily", done: false, costMinutes: 30, date: "", createTime: nowStr(), finishTime: "" },
+                  { id: "kt3", name: "政治：马原基础学习", subjectId: "m3", type: "weekly", done: false, costMinutes: 60, date: "", createTime: nowStr(), finishTime: "" },
+                  { id: "kt4", name: "专业课：材料科学基础第 1 章", subjectId: "m4", type: "longterm", done: false, costMinutes: 60, date: "", createTime: nowStr(), finishTime: "" }
+                ],
+                files: []
+              }
+            ]
           }
         },
         {
@@ -294,6 +295,39 @@
       delete aiDom.subjects;
       changed = true;
     }
+    var ky = (data.domains || []).filter(function (x) { return x.id === "kaoyan"; })[0];
+    if (ky && (!ky.schemes || !ky.schemes.list || !ky.schemes.list.length)) {
+      var oldSubs = ky.subjects || [{ id: "s1", name: "数学" }, { id: "s2", name: "英语" }, { id: "s3", name: "政治" }, { id: "s4", name: "专业课" }];
+      var subs = oldSubs.map(function (s, i) { return { id: "k" + (i + 1), name: s.name, custom: false }; });
+      var ktasks = [];
+      var wp = ky.weeklyPlan || {};
+      Object.keys(wp).forEach(function (day) {
+        (wp[day] || []).forEach(function (w) {
+          ktasks.push({ id: w.id || uid(), name: w.text || w.name, subjectId: "k1", type: "weekly", done: !!w.done, costMinutes: 0, date: "", createTime: nowStr(), finishTime: "" });
+        });
+      });
+      (data.tasks || []).forEach(function (t) {
+        if (t.domainId === "kaoyan") {
+          ktasks.push({ id: t.id, name: t.title, subjectId: "k1", type: "daily", done: !!t.done, costMinutes: 0, date: t.date || "", createTime: t.createdAt || nowStr(), finishTime: "" });
+        }
+      });
+      var stage = "base";
+      if (ky.stages && ky.stages.length) {
+        var sIdx = -1;
+        for (var si = 0; si < ky.stages.length; si++) { if (!ky.stages[si].done) { sIdx = si; break; } }
+        stage = sIdx <= 0 ? "base" : sIdx === 1 ? "enhance" : "sprint";
+      }
+      ky.schemes = {
+        activeId: "ky1",
+        list: [{
+          id: "ky1", name: "2027 专硕考研",
+          examDate: (ky.examDate && ky.examDate !== "2026-12-26") ? ky.examDate : "",
+          stage: stage, archived: false, subjects: subs, tasks: ktasks, files: []
+        }]
+      };
+      delete ky.examDate; delete ky.stages; delete ky.subjects; delete ky.weeklyPlan;
+      changed = true;
+    }
     (data.calendar || []).forEach(function (c) {
       if (c.date === "2026-12-26" && c.title.indexOf("考研") >= 0) { c.date = "2027-12-25"; c.title = "2028 考研初试"; changed = true; }
       if (c.date === "2026-12-12" && c.title.indexOf("六级") >= 0) { c.date = "2027-12-12"; changed = true; }
@@ -422,9 +456,11 @@
       search: { t: "搜索", s: "一次搜遍全部内容" },
       ai: { t: "AI 帮手", s: "辅助学习与整理" },
       settings: { t: "设置与数据", s: "说明、备份、更新日志" },
-      "ky-subjects": { t: "科目进度专区", s: "细窄进度条，可编辑" },
-      "ky-weekly": { t: "周计划专区", s: "完整周计划" },
-      "ky-stats": { t: "统计面板", s: "柱状图与热力图" },
+      "ky-subjects": { t: "科目详情", s: "科目任务统计" },
+      "ky-tasks": { t: "全部领域任务", s: "三类任务管理" },
+      "ky-weekly": { t: "本周计划", s: "周计划管理" },
+      "ky-files": { t: "备考资料库", s: "关联资料" },
+      "ky-stats": { t: "统计仪表盘", s: "所有图表与进度" },
       "tasks-all": { t: "任务管理专区", s: "全部任务" },
       "cet-vocab": { t: "词汇专区", s: "生词本与记忆复习" },
       "cet-listening": { t: "听力专区", s: "真题听力与精听" },
@@ -510,7 +546,9 @@
     else if (view === "calendar") html = Views.calendar();
     else if (view === "settings") html = Views.settings();
     else if (view === "ky-subjects") html = Views.kySubjects(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
+    else if (view === "ky-tasks") html = Views.kyTasks(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
     else if (view === "ky-weekly") html = Views.kyWeekly(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
+    else if (view === "ky-files") html = Views.kyFiles(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
     else if (view === "ky-stats") html = Views.kyStats(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
     else if (view === "tasks-all") html = Views.tasksAll();
     else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
@@ -637,7 +675,7 @@
       "search": "theme-search", "ai": "theme-ai", "settings": "theme-settings",
       "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
       "domain:paper": "theme-paper", "domain:courses": "theme-courses",
-      "ky-subjects": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-stats": "theme-kaoyan", "tasks-all": "theme-activity",
+      "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan",
       "cet-vocab": "theme-cet", "cet-listening": "theme-cet", "cet-reading": "theme-cet", "cet-writing": "theme-cet",
       "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet",
       "ai-history": "theme-ai"
@@ -738,6 +776,390 @@
     if (!h) return;
     h.note = fval("aiHistNote").trim();
     modalClose(); refresh(); toast("历史笔记已更新");
+  }
+
+  /* ---------- 考研阶段任务模板 ---------- */
+  var KY_STAGES = [
+    { id: "base", name: "基础阶段" },
+    { id: "enhance", name: "强化阶段" },
+    { id: "sprint", name: "冲刺阶段" },
+    { id: "replay", name: "复试阶段" }
+  ];
+  var KY_TEMPLATES = {
+    base: { name: "基础阶段", tasks: [
+      { name: "数学：教材一章精读 + 例题", subject: "数学", type: "longterm", cost: 90 },
+      { name: "数学：基础习题 20 道", subject: "数学", type: "daily", cost: 60 },
+      { name: "英语：单词 100 个（一轮）", subject: "英语", type: "daily", cost: 30 },
+      { name: "英语：长难句 3 句", subject: "英语", type: "daily", cost: 20 },
+      { name: "政治：基础课一讲", subject: "政治", type: "weekly", cost: 60 },
+      { name: "专业课：教材章节阅读", subject: "专业课", type: "longterm", cost: 60 }
+    ] },
+    enhance: { name: "强化阶段", tasks: [
+      { name: "数学：刷题 20 道（专题）", subject: "数学", type: "daily", cost: 120 },
+      { name: "英语：真题阅读 2 篇精读", subject: "英语", type: "daily", cost: 60 },
+      { name: "英语：单词 100 个（二轮）", subject: "英语", type: "daily", cost: 30 },
+      { name: "政治：选择题刷题一组", subject: "政治", type: "daily", cost: 40 },
+      { name: "专业课：专题训练", subject: "专业课", type: "weekly", cost: 90 }
+    ] },
+    sprint: { name: "冲刺阶段", tasks: [
+      { name: "数学：真题套卷 1 套 + 订正", subject: "数学", type: "daily", cost: 150 },
+      { name: "英语：真题套卷 + 作文 1 篇", subject: "英语", type: "daily", cost: 90 },
+      { name: "政治：冲刺背诵资料", subject: "政治", type: "daily", cost: 60 },
+      { name: "专业课：真题模拟 + 背诵", subject: "专业课", type: "weekly", cost: 120 }
+    ] },
+    replay: { name: "复试阶段", tasks: [
+      { name: "专业课复试科目复习", subject: "专业课", type: "longterm", cost: 90 },
+      { name: "英语口语对话练习", subject: "英语", type: "daily", cost: 30 },
+      { name: "简历与自我介绍打磨", subject: "专业课", type: "longterm", cost: 30 },
+      { name: "模拟面试一次", subject: "专业课", type: "weekly", cost: 60 }
+    ] }
+  };
+  function kyActiveScheme() {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    if (!dm || !dm.schemes) return null;
+    var list = dm.schemes.list || [];
+    for (var i = 0; i < list.length; i++) { if (list[i].id === dm.schemes.activeId) return list[i]; }
+    return list[0] || null;
+  }
+  function kySubjName(sc, sid) {
+    var s = (sc.subjects || []).filter(function (x) { return x.id === sid; })[0];
+    return s ? s.name : "";
+  }
+  function kyStageNameLocal(id) {
+    var map = { base: "基础阶段", enhance: "强化阶段", sprint: "冲刺阶段", replay: "复试阶段" };
+    return map[id] || "未知阶段";
+  }
+  function kyExamDateLocal(sc) {
+    if (sc && sc.examDate) return sc.examDate;
+    if (data.settings && data.settings.kaoyanDate) return data.settings.kaoyanDate;
+    return "";
+  }
+  function kySetId(sid, name) {
+    var sc = kyActiveScheme();
+    if (!sc) return sid;
+    for (var i = 0; i < (sc.subjects || []).length; i++) { if (sc.subjects[i].name === name) return sc.subjects[i].id; }
+    return sid;
+  }
+  /* 方案管理 */
+  function kySchemeCreateModal() {
+    modalOpen("新建备考方案",
+      field("方案名称", "kySchemeName", "text", "例如：2027 专硕考研") +
+      '<div class="field"><label>考试类型</label><select id="kyExamType"><option value="kaoyan">考研（自动填充官方时间）</option><option value="custom">自定义</option></select></div>' +
+      '<div class="field"><label>初始备考阶段</label><select id="kyStageSel">' + KY_STAGES.map(function (s) { return '<option value="' + s.id + '">' + s.name + "</option>"; }).join("") + "</select></div>" +
+      '<label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px;"><input type="checkbox" id="kyImportTpl" checked> 导入该阶段默认任务模板</label>',
+      cancelBtn() + '<button class="btn" data-action="submit-ky-scheme">' + ICONS.check + "创建方案</button>");
+  }
+  function submitKyScheme() {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var name = fval("kySchemeName").trim();
+    if (!name) { toast("请填写方案名称", true); return; }
+    var sid = uid();
+    var sc = {
+      id: sid, name: name, examDate: "", stage: fval("kyStageSel") || "base", archived: false,
+      subjects: [
+        { id: "m1", name: "数学", custom: false }, { id: "m2", name: "英语", custom: false },
+        { id: "m3", name: "政治", custom: false }, { id: "m4", name: "专业课", custom: false }
+      ],
+      tasks: [], files: []
+    };
+    if ($id("kyImportTpl") && $id("kyImportTpl").checked) {
+      (KY_TEMPLATES[sc.stage] ? KY_TEMPLATES[sc.stage].tasks : []).forEach(function (t) {
+        sc.tasks.push({ id: uid(), name: t.name, subjectId: kySetId("m1", t.subject), type: t.type, done: false, costMinutes: t.cost || 30, date: "", createTime: nowStr(), finishTime: "" });
+      });
+    }
+    dm.schemes.list.push(sc);
+    dm.schemes.activeId = sid;
+    modalClose(); refresh(); toast("已创建方案「" + name + "」");
+  }
+  function kySchemeSwitchModal() {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var act = dm.schemes.list.filter(function (s) { return !s.archived; });
+    var arc = dm.schemes.list.filter(function (s) { return s.archived; });
+    modalOpen("切换备考方案",
+      '<div class="li-sub" style="margin-bottom:8px;font-weight:600;">启用中的方案</div>' +
+      '<div class="list" style="max-height:280px;overflow-y:auto;">' + act.map(function (s) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(s.name) + (dm.schemes.activeId === s.id ? ' <span class="tag state-doing">当前</span>' : "") + "</div>" +
+          '<div class="li-sub">' + esc(kyStageNameLocal(s.stage)) + "</div></div>" +
+          (dm.schemes.activeId !== s.id ? '<button class="btn small plain" data-action="ky-scheme-select" data-v="' + esc(s.id) + '">切换</button>' : "") +
+          '<button class="btn small plain" data-action="ky-scheme-archive" data-v="' + esc(s.id) + '">归档</button>' +
+          '<button class="btn small danger plain" data-action="ky-scheme-delete" data-v="' + esc(s.id) + '">删除</button></div>';
+      }).join("") + "</div>" +
+      (arc.length ? '<div class="li-sub" style="margin:10px 0 8px;font-weight:600;">已归档（可恢复查看历史）</div>' +
+        '<div class="list">' + arc.map(function (s) {
+          return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(s.name) + "</div>" +
+            '<div class="li-sub">已归档</div>' +
+            '<button class="btn small plain" data-action="ky-scheme-restore" data-v="' + esc(s.id) + '">恢复</button></div>';
+        }).join("") + "</div>" : "") +
+      '<button class="btn block" data-action="ky-scheme-create" style="margin-top:12px;">＋ 新建备考方案</button>',
+      cancelBtn());
+  }
+  function kySchemeSelect(id) {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    if (dm && dm.schemes) { dm.schemes.activeId = id; modalClose(); refresh(); toast("已切换备考方案"); }
+  }
+  function kySchemeArchive(id) {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var sc = dm.schemes.list.filter(function (s) { return s.id === id; })[0];
+    if (sc) { sc.archived = true; if (dm.schemes.activeId === id) { dm.schemes.activeId = (dm.schemes.list.filter(function (s2) { return !s2.archived; })[0] || {}).id || ""; } modalClose(); refresh(); toast("已归档方案"); }
+  }
+  function kySchemeRestore(id) {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var sc = dm.schemes.list.filter(function (s) { return s.id === id; })[0];
+    if (sc) { sc.archived = false; modalClose(); refresh(); toast("已恢复方案"); }
+  }
+  function kySchemeDeleteConfirm(id) {
+    window.__delSchemeId = id;
+    modalOpen("删除备考方案", "将删除该方案的全部数据（任务、资料、进度），且不可恢复。确定要删除吗？",
+      cancelBtn() + '<button class="btn danger" data-action="ky-scheme-delete-ok">' + ICONS.trash + "确认删除</button>");
+  }
+  function kySchemeDeleteOk() {
+    var dm = data.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var id = window.__delSchemeId;
+    dm.schemes.list = dm.schemes.list.filter(function (s) { return s.id !== id; });
+    if (dm.schemes.activeId === id) { dm.schemes.activeId = (dm.schemes.list[0] || {}).id || ""; }
+    modalClose(); refresh(); toast("方案已删除");
+  }
+  /* 考试时间 */
+  function kySetDateModal() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    modalOpen("设置「" + sc.name + "」考试时间",
+      '<div class="li-sub" style="margin-bottom:10px;">考研官方时间为 12 月倒数第二个周末（自动计算）。手动设置的日期优先，考试结束后可在这里调整。</div>' +
+      '<div class="field"><label>考试日期</label><input id="kyDate" type="date" value="' + esc(sc.examDate || kyExamDateLocal(sc) || "") + '"></div>' +
+      '<button class="btn small plain" data-action="reset-ky-date">恢复官方自动时间</button>',
+      cancelBtn() + '<button class="btn" data-action="submit-ky-date">' + ICONS.check + "保存</button>");
+  }
+  function submitKyDate() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    sc.examDate = fval("kyDate") || "";
+    modalClose(); refresh(); toast(sc.examDate ? "已手动设置考试时间" : "已恢复官方自动时间");
+  }
+  function resetKyDate() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    sc.examDate = "";
+    modalClose(); refresh(); toast("已恢复官方自动时间");
+  }
+  /* 阶段切换 + 模板导入 */
+  function kyStageSwitchModal() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    modalOpen("切换备考阶段",
+      '<div class="field"><label>选择阶段</label><select id="kyStageSel2">' + KY_STAGES.map(function (s) {
+        return '<option value="' + s.id + '"' + (sc.stage === s.id ? " selected" : "") + ">" + s.name + "</option>";
+      }).join("") + "</select></div>" +
+      '<label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-top:10px;"><input type="checkbox" id="kyImportTpl2"> 一键导入本阶段预设任务模板</label>' +
+      '<div class="li-sub" style="margin-top:8px;">导入模板只会新增任务，不会清除现有任务</div>',
+      cancelBtn() + '<button class="btn" data-action="submit-ky-stage">' + ICONS.check + "保存</button>");
+  }
+  function submitKyStage() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    sc.stage = fval("kyStageSel2") || "base";
+    var needImport = $id("kyImportTpl2") && $id("kyImportTpl2").checked;
+    modalClose(); refresh();
+    if (needImport) kyImportTemplateConfirm();
+    else toast("已切换为" + kyStageNameLocal(sc.stage));
+  }
+  function kyImportTemplateConfirm() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    var tpl = KY_TEMPLATES[sc.stage];
+    modalOpen("导入「" + tpl.name + "」任务模板", "导入模板会新增 " + tpl.tasks.length + " 条任务，<b>不会清空你现有的任务</b>。是否确认导入？",
+      cancelBtn() + '<button class="btn" data-action="ky-import-template-ok">' + ICONS.check + "确认导入</button>");
+  }
+  function kyImportTemplateOk() {
+    var sc = kyActiveScheme();
+    if (!sc) return;
+    var tpl = KY_TEMPLATES[sc.stage];
+    (tpl.tasks || []).forEach(function (t) {
+      sc.tasks.push({ id: uid(), name: t.name, subjectId: kySetId("m1", t.subject), type: t.type, done: false, costMinutes: t.cost || 30, date: "", createTime: nowStr(), finishTime: "" });
+    });
+    modalClose(); refresh(); toast("已导入 " + tpl.tasks.length + " 条模板任务");
+  }
+  /* 任务 */
+  function kyTaskAddModal(preType) {
+    var sc = kyActiveScheme();
+    if (!sc || sc.archived) { toast("方案已归档，无法新增任务", true); return; }
+    modalOpen("新增任务",
+      field("任务名称", "kyTaskName", "text", "例如：数学真题 2 道") +
+      '<div class="field"><label>所属科目</label><select id="kyTaskSubject">' + (sc.subjects || []).map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + "</option>"; }).join("") + "</select></div>" +
+      '<div class="field"><label>任务类型</label><select id="kyTaskType">' +
+      '<option value="daily"' + (preType === "daily" ? " selected" : "") + '>每日必做</option>' +
+      '<option value="weekly"' + (preType === "weekly" ? " selected" : "") + '>周计划任务</option>' +
+      '<option value="longterm"' + (preType === "longterm" ? " selected" : "") + '>长期领域任务</option></select></div>' +
+      field("预计耗时（分钟）", "kyTaskCost", "number", "30") +
+      field("截止时间（可选）", "kyTaskDate", "date", ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-task">' + ICONS.check + "保存</button>");
+  }
+  function submitKyTask() {
+    var sc = kyActiveScheme();
+    if (!sc || sc.archived) return;
+    var name = fval("kyTaskName").trim();
+    if (!name) { toast("请填写任务名称", true); return; }
+    var editId = window.__editKyTaskId;
+    if (editId) {
+      var t = sc.tasks.filter(function (x) { return x.id === editId; })[0];
+      if (t) { t.name = name; t.subjectId = fval("kyTaskSubject"); t.type = fval("kyTaskType"); t.costMinutes = parseInt(fval("kyTaskCost"), 10) || 0; t.date = fval("kyTaskDate") || ""; }
+      window.__editKyTaskId = null;
+    } else {
+      sc.tasks.push({ id: uid(), name: name, subjectId: fval("kyTaskSubject"), type: fval("kyTaskType"), done: false, costMinutes: parseInt(fval("kyTaskCost"), 10) || 0, date: fval("kyTaskDate") || "", createTime: nowStr(), finishTime: "" });
+    }
+    modalClose(); refresh(); toast("任务已保存");
+  }
+  function kyTaskEditModal(id) {
+    var sc = kyActiveScheme();
+    var t = sc.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    window.__editKyTaskId = id;
+    modalOpen("编辑任务",
+      field("任务名称", "kyTaskName", "text", "", t.name) +
+      '<div class="field"><label>所属科目</label><select id="kyTaskSubject">' + (sc.subjects || []).map(function (s) { return '<option value="' + esc(s.id) + '"' + (s.id === t.subjectId ? " selected" : "") + ">" + esc(s.name) + "</option>"; }).join("") + "</select></div>" +
+      '<div class="field"><label>任务类型</label><select id="kyTaskType">' +
+      '<option value="daily"' + (t.type === "daily" ? " selected" : "") + '>每日必做</option>' +
+      '<option value="weekly"' + (t.type === "weekly" ? " selected" : "") + '>周计划任务</option>' +
+      '<option value="longterm"' + (t.type === "longterm" ? " selected" : "") + '>长期领域任务</option></select></div>' +
+      field("预计耗时（分钟）", "kyTaskCost", "number", "30", t.costMinutes || "") +
+      field("截止时间（可选）", "kyTaskDate", "date", "", t.date || ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-task">' + ICONS.check + "保存</button>");
+  }
+  function kyTaskToggle(id) {
+    var sc = kyActiveScheme();
+    var t = sc.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    if (t.done) {
+      t.done = false; t.finishTime = ""; refresh(); toast("已恢复为未完成");
+    } else {
+      /* 完成 → 弹耗时输入，自动记录学习时长 */
+      window.__finishTaskId = id;
+      modalOpen("完成「" + t.name + "」", '<div class="li-sub" style="margin-bottom:10px;">记录本次任务耗时，将自动计入学习打卡。</div>' +
+        field("本次耗时（分钟）", "kyCostInput", "number", "30", t.costMinutes || 30),
+        cancelBtn() + '<button class="btn" data-action="submit-ky-task-cost">' + ICONS.check + "完成并记录</button>");
+    }
+  }
+  function submitKyTaskCost() {
+    var sc = kyActiveScheme();
+    var id = window.__finishTaskId;
+    var t = sc.tasks.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var min = parseInt(fval("kyCostInput"), 10) || 0;
+    t.done = true;
+    t.finishTime = nowStr();
+    if (min > 0) {
+      data.studyLog.push({ date: todayStr(), domainId: "kaoyan", subject: kySubjName(sc, t.subjectId), minutes: min, ts: nowStr() });
+    }
+    modalClose(); refresh(); toast("任务完成" + (min > 0 ? "，已记录 " + min + " 分钟学习时长" : ""));
+  }
+  function kyTaskDel(id) {
+    var sc = kyActiveScheme();
+    sc.tasks = sc.tasks.filter(function (x) { return x.id !== id; });
+    refresh(); toast("任务已删除");
+  }
+  function kyBatchDone() {
+    var sc = kyActiveScheme();
+    var left = (sc.tasks || []).filter(function (t) { return !t.done; }).length;
+    modalOpen("批量完成", "将标记 " + left + " 条未完成任务为已完成（不记录时长）。确定吗？",
+      cancelBtn() + '<button class="btn" data-action="ky-batch-done-ok">' + ICONS.check + "确认</button>");
+  }
+  function kyBatchDoneOk() {
+    var sc = kyActiveScheme();
+    (sc.tasks || []).forEach(function (t) { if (!t.done) { t.done = true; t.finishTime = nowStr(); } });
+    modalClose(); refresh(); toast("已批量完成");
+  }
+  function kyBatchDel() {
+    var sc = kyActiveScheme();
+    modalOpen("批量删除", "将删除当前方案全部 " + (sc.tasks || []).length + " 条任务，且不可恢复。确定吗？",
+      cancelBtn() + '<button class="btn danger" data-action="ky-batch-del-ok">' + ICONS.trash + "确认删除</button>");
+  }
+  function kyBatchDelOk() {
+    var sc = kyActiveScheme();
+    sc.tasks = [];
+    modalClose(); refresh(); toast("已清空任务");
+  }
+  function kyWeeklyGen() {
+    var sc = kyActiveScheme();
+    var tpl = KY_TEMPLATES[sc.stage];
+    var added = 0;
+    (tpl.tasks || []).forEach(function (t) {
+      if (t.type !== "weekly") return;
+      var dup = (sc.tasks || []).some(function (x) { return x.name === t.name; });
+      if (!dup) {
+        sc.tasks.push({ id: uid(), name: t.name, subjectId: kySetId("m1", t.subject), type: "weekly", done: false, costMinutes: t.cost || 60, date: "", createTime: nowStr(), finishTime: "" });
+        added++;
+      }
+    });
+    refresh(); toast(added ? "已生成 " + added + " 条本周计划任务（按" + tpl.name + "）" : "本周计划任务已齐全，无需重复生成");
+  }
+  /* 科目 */
+  function kySubjectAddModal() {
+    modalOpen("新增科目", field("科目名称", "kySubjName", "text", "例如：物理"),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-subject">' + ICONS.check + "保存</button>");
+  }
+  function submitKySubject() {
+    var sc = kyActiveScheme();
+    var name = fval("kySubjName").trim();
+    if (!name) { toast("请填写科目名称", true); return; }
+    if ((sc.subjects || []).some(function (s) { return s.name === name; })) { toast("该科目已存在", true); return; }
+    sc.subjects.push({ id: uid(), name: name, custom: true });
+    modalClose(); refresh(); toast("已新增科目");
+  }
+  function kySubjectDelConfirm(id) {
+    window.__delSubjId = id;
+    modalOpen("删除科目", "将删除该自定义科目（已有任务保留，显示为未分类）。确定吗？",
+      cancelBtn() + '<button class="btn danger" data-action="ky-subject-del-ok">' + ICONS.trash + "确认删除</button>");
+  }
+  function kySubjectDelOk() {
+    var sc = kyActiveScheme();
+    var id = window.__delSubjId;
+    sc.subjects = sc.subjects.filter(function (s) { return s.id !== id; });
+    modalClose(); refresh(); toast("科目已删除");
+  }
+  /* 文件 */
+  function kyFileAddModal() {
+    var sc = kyActiveScheme();
+    modalOpen("关联备考资料",
+      field("标题", "kyFileTitle", "text", "例如：考研数学真题集") +
+      field("链接（可选）", "kyFileUrl", "text", "https://…") +
+      '<div class="field"><label>关联科目</label><select id="kyFileSubj"><option value="">未分类</option>' + (sc.subjects || []).map(function (s) { return '<option value="' + esc(s.id) + '">' + esc(s.name) + "</option>"; }).join("") + "</select></div>" +
+      field("标签（可选）", "kyFileLabel", "text", "真题 / 笔记 / 讲义"),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-file">' + ICONS.check + "保存</button>");
+  }
+  function submitKyFile() {
+    var sc = kyActiveScheme();
+    var title = fval("kyFileTitle").trim();
+    if (!title) { toast("请填写标题", true); return; }
+    sc.files.push({ id: uid(), title: title, url: fval("kyFileUrl").trim(), subjectId: fval("kyFileSubj"), label: fval("kyFileLabel").trim(), addTime: nowStr() });
+    modalClose(); refresh(); toast("已关联资料");
+  }
+  function kyFileDel(id) {
+    var sc = kyActiveScheme();
+    sc.files = sc.files.filter(function (f) { return f.id !== id; });
+    refresh(); toast("资料已移除");
+  }
+  /* 统计报告导出 */
+  function kyExportReport() {
+    var sc = kyActiveScheme();
+    var lines = ["考研备考统计报告", "方案：" + sc.name, "阶段：" + kyStageName(sc.stage), "考试时间：" + (kyExamDateLocal(sc) || "未设置"), "生成时间：" + nowStr(), ""];
+    lines.push("科目完成情况：");
+    (sc.subjects || []).forEach(function (s) {
+      var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
+      var done = st.filter(function (t) { return t.done; }).length;
+      lines.push("  " + s.name + "：" + done + " / " + st.length + " 项");
+    });
+    lines.push("");
+    lines.push("任务统计：共 " + (sc.tasks || []).length + " 条，已完成 " + (sc.tasks || []).filter(function (t) { return t.done; }).length + " 条");
+    var logs = (data.studyLog || []).filter(function (x) { return x.domainId === "kaoyan"; });
+    var totalMin = logs.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    lines.push("累计学习时长：" + Math.round(totalMin / 60 * 10) / 10 + " 小时（" + logs.length + " 次打卡）");
+    var blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "考研备考统计报告-" + todayStr() + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+    toast("统计报告已导出");
   }
 
   /* ---------- AI 本地规则 ---------- */
@@ -1395,6 +1817,45 @@
       case "lookup-word": lookupWordIn("dictInput", "dictResult"); break;
       case "lookup-word2": lookupWordIn("dictInput2", "dictResult2"); break;
       case "dict-add-word": dictAddWord(el ? el.getAttribute("data-word") : ""); break;
+
+      /* 考研方案 */
+      case "ky-scheme-create": kySchemeCreateModal(); break;
+      case "submit-ky-scheme": submitKyScheme(); break;
+      case "ky-scheme-switch": kySchemeSwitchModal(); break;
+      case "ky-scheme-select": kySchemeSelect(v); break;
+      case "ky-scheme-archive": kySchemeArchive(v); break;
+      case "ky-scheme-restore": kySchemeRestore(v); break;
+      case "ky-scheme-delete": kySchemeDeleteConfirm(v); break;
+      case "ky-scheme-delete-ok": kySchemeDeleteOk(); break;
+      case "ky-set-date": kySetDateModal(); break;
+      case "submit-ky-date": submitKyDate(); break;
+      case "reset-ky-date": resetKyDate(); break;
+      case "ky-stage-switch": kyStageSwitchModal(); break;
+      case "submit-ky-stage": submitKyStage(); break;
+      case "ky-import-template": kyImportTemplateConfirm(); break;
+      case "ky-import-template-ok": kyImportTemplateOk(); break;
+      /* 考研任务 */
+      case "ky-task-add": kyTaskAddModal(el ? el.getAttribute("data-type") : ""); break;
+      case "submit-ky-task": submitKyTask(); break;
+      case "ky-task-toggle": kyTaskToggle(id); break;
+      case "submit-ky-task-cost": submitKyTaskCost(); break;
+      case "ky-task-edit": kyTaskEditModal(id); break;
+      case "ky-task-del": kyTaskDel(id); break;
+      case "ky-batch-done": kyBatchDone(); break;
+      case "ky-batch-done-ok": kyBatchDoneOk(); break;
+      case "ky-batch-del": kyBatchDel(); break;
+      case "ky-batch-del-ok": kyBatchDelOk(); break;
+      case "ky-weekly-gen": kyWeeklyGen(); break;
+      /* 考研科目 */
+      case "ky-subject-add": kySubjectAddModal(); break;
+      case "submit-ky-subject": submitKySubject(); break;
+      case "ky-subject-del": kySubjectDelConfirm(v); break;
+      case "ky-subject-del-ok": kySubjectDelOk(); break;
+      /* 考研资料 */
+      case "ky-file-add": kyFileAddModal(); break;
+      case "submit-ky-file": submitKyFile(); break;
+      case "ky-file-del": kyFileDel(id); break;
+      case "ky-export-report": kyExportReport(); break;
 
       /* 模态提交 */
       case "submit-task": submitTask(); break;
