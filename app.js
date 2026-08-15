@@ -87,7 +87,8 @@
         apiKey: "", apiBase: "", apiModel: "",
         primaryDomain: "kaoyan",
         kaoyanDate: "2027-12-25",
-        background: "default"
+        background: "default",
+        fontSize: "normal"
       },
       domains: [
         {
@@ -109,7 +110,14 @@
                   { id: "kt3", name: "政治：马原基础学习", subjectId: "m3", type: "weekly", done: false, costMinutes: 60, date: "", createTime: nowStr(), finishTime: "" },
                   { id: "kt4", name: "专业课：材料科学基础第 1 章", subjectId: "m4", type: "longterm", done: false, costMinutes: 60, date: "", createTime: nowStr(), finishTime: "" }
                 ],
-                files: []
+                files: [],
+                gen: {
+                  targetEnglish: 70, targetMath: 70, targetPolitics: 70, targetMajor: 100,
+                  stageStart: todayStr(), stars: 0, coupon10: false,
+                  readingLog: [], noteLog: [], reviewLog: [],
+                  chapterIndex: 1, wordProgress: { date: "", done: 0 },
+                  dailyDone: { date: "", count: 0, subjects: [] }, backlog: 0
+                }
               }
             ]
           }
@@ -322,7 +330,14 @@
         list: [{
           id: "ky1", name: "2027 专硕考研",
           examDate: (ky.examDate && ky.examDate !== "2026-12-26") ? ky.examDate : "",
-          stage: stage, archived: false, subjects: subs, tasks: ktasks, files: []
+          stage: stage, archived: false, subjects: subs, tasks: ktasks, files: [],
+          gen: {
+            targetEnglish: 70, targetMath: 70, targetPolitics: 70, targetMajor: 100,
+            stageStart: todayStr(), stars: 0, coupon10: false,
+            readingLog: [], noteLog: [], reviewLog: [],
+            chapterIndex: 1, wordProgress: { date: "", done: 0 },
+            dailyDone: { date: "", count: 0, subjects: [] }, backlog: 0
+          }
         }]
       };
       delete ky.examDate; delete ky.stages; delete ky.subjects; delete ky.weeklyPlan;
@@ -477,11 +492,18 @@
   }
 
   /* ---------- 渲染 ---------- */
+  function applyFont() {
+    var fs = (data.settings && data.settings.fontSize) || "normal";
+    var body = document.body;
+    body.className = body.className.replace(/\s*font-(small|normal|large)/g, "").trim();
+    if (fs !== "normal") body.className += (body.className ? " " : "") + "font-" + fs;
+  }
   function renderAll() {
     renderNav();
     renderView();
     applyTheme();
     applyBg();
+    applyFont();
   }
   function renderNav() {
     var nav = $id("sideNav");
@@ -780,13 +802,13 @@
 
   /* ---------- 考研阶段任务模板 ---------- */
   var KY_STAGES = [
-    { id: "base", name: "基础阶段" },
-    { id: "enhance", name: "强化阶段" },
-    { id: "sprint", name: "冲刺阶段" },
-    { id: "replay", name: "复试阶段" }
+    { id: "base", name: "基础期", days: 60 },
+    { id: "enhance", name: "强化期", days: 60 },
+    { id: "zhenti", name: "真题期", days: 70 },
+    { id: "sprint", name: "冲刺期", days: 30 }
   ];
   var KY_TEMPLATES = {
-    base: { name: "基础阶段", tasks: [
+    base: { name: "基础期", tasks: [
       { name: "数学：教材一章精读 + 例题", subject: "数学", type: "longterm", cost: 90 },
       { name: "数学：基础习题 20 道", subject: "数学", type: "daily", cost: 60 },
       { name: "英语：单词 100 个（一轮）", subject: "英语", type: "daily", cost: 30 },
@@ -794,24 +816,24 @@
       { name: "政治：基础课一讲", subject: "政治", type: "weekly", cost: 60 },
       { name: "专业课：教材章节阅读", subject: "专业课", type: "longterm", cost: 60 }
     ] },
-    enhance: { name: "强化阶段", tasks: [
+    enhance: { name: "强化期", tasks: [
       { name: "数学：刷题 20 道（专题）", subject: "数学", type: "daily", cost: 120 },
       { name: "英语：真题阅读 2 篇精读", subject: "英语", type: "daily", cost: 60 },
       { name: "英语：单词 100 个（二轮）", subject: "英语", type: "daily", cost: 30 },
       { name: "政治：选择题刷题一组", subject: "政治", type: "daily", cost: 40 },
       { name: "专业课：专题训练", subject: "专业课", type: "weekly", cost: 90 }
     ] },
-    sprint: { name: "冲刺阶段", tasks: [
+    zhenti: { name: "真题期", tasks: [
       { name: "数学：真题套卷 1 套 + 订正", subject: "数学", type: "daily", cost: 150 },
       { name: "英语：真题套卷 + 作文 1 篇", subject: "英语", type: "daily", cost: 90 },
-      { name: "政治：冲刺背诵资料", subject: "政治", type: "daily", cost: 60 },
+      { name: "政治：真题选择题一套", subject: "政治", type: "daily", cost: 60 },
       { name: "专业课：真题模拟 + 背诵", subject: "专业课", type: "weekly", cost: 120 }
     ] },
-    replay: { name: "复试阶段", tasks: [
-      { name: "专业课复试科目复习", subject: "专业课", type: "longterm", cost: 90 },
-      { name: "英语口语对话练习", subject: "英语", type: "daily", cost: 30 },
-      { name: "简历与自我介绍打磨", subject: "专业课", type: "longterm", cost: 30 },
-      { name: "模拟面试一次", subject: "专业课", type: "weekly", cost: 60 }
+    sprint: { name: "冲刺期", tasks: [
+      { name: "数学：模拟卷 1 套 + 错题复盘", subject: "数学", type: "daily", cost: 150 },
+      { name: "英语：模拟 + 作文背诵", subject: "英语", type: "daily", cost: 90 },
+      { name: "政治：冲刺背诵 + 押题", subject: "政治", type: "daily", cost: 60 },
+      { name: "专业课：重点背诵 + 真题重做", subject: "专业课", type: "weekly", cost: 120 }
     ] }
   };
   function kyActiveScheme() {
@@ -826,7 +848,7 @@
     return s ? s.name : "";
   }
   function kyStageNameLocal(id) {
-    var map = { base: "基础阶段", enhance: "强化阶段", sprint: "冲刺阶段", replay: "复试阶段" };
+    var map = { base: "基础期", enhance: "强化期", zhenti: "真题期", sprint: "冲刺期" };
     return map[id] || "未知阶段";
   }
   function examDateOfLocal(ex) {
@@ -881,7 +903,14 @@
         { id: "m1", name: "数学", custom: false }, { id: "m2", name: "英语", custom: false },
         { id: "m3", name: "政治", custom: false }, { id: "m4", name: "专业课", custom: false }
       ],
-      tasks: [], files: []
+      tasks: [], files: [],
+      gen: {
+        targetEnglish: 70, targetMath: 70, targetPolitics: 70, targetMajor: 100,
+        stageStart: todayStr(), stars: 0, coupon10: false,
+        readingLog: [], noteLog: [], reviewLog: [],
+        chapterIndex: 1, wordProgress: { date: "", done: 0 },
+        dailyDone: { date: "", count: 0, subjects: [] }, backlog: 0
+      }
     };
     if ($id("kyImportTpl") && $id("kyImportTpl").checked) {
       (KY_TEMPLATES[sc.stage] ? KY_TEMPLATES[sc.stage].tasks : []).forEach(function (t) {
@@ -1184,6 +1213,228 @@
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
     toast("统计报告已导出");
+  }
+
+  /* ---------- 考研今日行动：点击链路闭环 ---------- */
+  var KY_POL_POINTS = {
+    "马原": ["实践是认识的来源、动力、检验标准和目的", "矛盾分析法：对立统一规律是唯物辩证法的核心", "物质决定意识，意识对物质有能动反作用", "社会存在决定社会意识，社会意识具有相对独立性"],
+    "毛中特": ["新时代主要矛盾：人民日益增长的美好生活需要和不平衡不充分的发展之间的矛盾", "两个一百年：建党百年全面建成小康社会，建国百年建成社会主义现代化强国", "新发展理念：创新、协调、绿色、开放、共享", "全过程人民民主是社会主义民主政治的本质属性"],
+    "史纲": ["中国近代史的开端：鸦片战争（1840）", "新民主主义革命的开端：五四运动（1919）", "遵义会议：党的历史上生死攸关的转折点", "七届二中全会：工作重心由乡村转移到城市"],
+    "思修": ["理想信念是精神之钙", "社会主义核心价值观：富强民主文明和谐、自由平等公正法治、爱国敬业诚信友善", "道德的本质：由经济基础决定的社会意识形态", "法治思维的基本内容：法律至上、权力制约、公平正义、权利保障、程序正当"]
+  };
+  var KY_WORDS = ["abandon", "abide", "absorb", "abstract", "abundant", "academic", "accelerate", "accommodate", "accompany", "accomplish", "accumulate", "accurate"];
+  var kyTimer = { iv: null, sec: 0, label: "", cb: null };
+  function kyTimerStart(label, cb) {
+    if (kyTimer.iv) clearInterval(kyTimer.iv);
+    kyTimer.sec = 0; kyTimer.label = label; kyTimer.cb = cb;
+    var box = $id("kyTimerBox");
+    if (!box) { box = document.createElement("div"); box.id = "kyTimerBox"; box.className = "ky-timer-box"; document.body.appendChild(box); }
+    box.innerHTML = '<div class="ky-timer-label">' + esc(label) + '</div><div class="ky-timer-time" id="kyTimerTime">00:00</div>' +
+      '<button class="btn small" data-action="ky-timer-stop">结束并记录</button>';
+    box.style.display = "block";
+    kyTimer.iv = setInterval(function () {
+      kyTimer.sec++;
+      var el = $id("kyTimerTime");
+      if (el) el.textContent = String(Math.floor(kyTimer.sec / 60)).padStart(2, "0") + ":" + String(kyTimer.sec % 60).padStart(2, "0");
+    }, 1000);
+  }
+  function kyTimerStopAction() {
+    if (kyTimer.iv) clearInterval(kyTimer.iv);
+    kyTimer.iv = null;
+    var box = $id("kyTimerBox"); if (box) box.style.display = "none";
+    var cb = kyTimer.cb; var sec = kyTimer.sec; kyTimer.cb = null;
+    if (cb) cb(sec);
+  }
+  function kyMarkDone(sc, key) {
+    var gen = sc.gen || {};
+    gen.dailyDone = gen.dailyDone || { date: "", count: 0, subjects: [] };
+    var t = todayStr();
+    if (gen.dailyDone.date !== t) gen.dailyDone = { date: t, count: 0, subjects: [] };
+    if (gen.dailyDone.subjects.indexOf(key) < 0) gen.dailyDone.subjects.push(key);
+    gen.dailyDone.count = gen.dailyDone.subjects.length;
+    if (gen.dailyDone.count >= 5) gen.stars = (gen.stars || 0) + 3;
+    save();
+  }
+  function kyStartEnglish() {
+    var papers = [];
+    for (var y = 2010; y <= 2019; y++) for (var i = 1; i <= 4; i++) papers.push(y + " Text" + i);
+    modalOpen("今日英语任务",
+      '<div class="li-sub" style="margin-bottom:10px;">选择今天精读的篇目，确认后自动开始计时（悬浮显示用时）。</div>' +
+      '<div class="field"><label>选择篇目</label><select id="kyPaper">' + papers.map(function (p) { return "<option>" + p + "</option>"; }).join("") + "</select></div>" +
+      '<div class="li-sub" style="margin-top:8px;">完成阅读后记录正确率与错题类型，自动存入历史复盘。正确率 ≥60% 得 1 颗 ⭐。</div>',
+      cancelBtn() + '<button class="btn" data-action="ky-paper-ok">开始计时阅读</button>');
+  }
+  function kyPaperOk() {
+    var paper = fval("kyPaper") || "2010 Text1";
+    modalClose();
+    kyTimerStart("英语精读 " + paper, function (sec) { kyReadingSave(paper, sec); });
+  }
+  function kyFmtSec(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return m > 0 ? m + " 分 " + s + " 秒" : s + " 秒";
+  }
+  function kyReadingSave(paper, sec) {
+    modalOpen("记录「" + paper + "」结果",
+      field("正确率（%）", "kyCorrect", "number", "70", "") +
+      '<div class="field"><label>错题类型（多选）</label>' +
+      '<label class="checkline"><input type="checkbox" value="主旨"> 主旨</label>' +
+      '<label class="checkline"><input type="checkbox" value="细节"> 细节</label>' +
+      '<label class="checkline"><input type="checkbox" value="推理"> 推理</label>' +
+      '<label class="checkline"><input type="checkbox" value="词汇"> 词汇</label></div>' +
+      '<div class="li-sub" style="margin-top:4px;">用时 ' + kyFmtSec(sec) + "。正确率 ≥60% 得 1 颗 ⭐</div>",
+      cancelBtn() + '<button class="btn" data-action="ky-reading-save">保存</button>');
+    window.__kyPaper = paper; window.__kySec = sec;
+  }
+  function kyReadingSaveOk() {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    var correct = parseInt(fval("kyCorrect"), 10) || 0;
+    var wrongTypes = [];
+    var cbs = document.querySelectorAll('#modalBody input[type="checkbox"]:checked');
+    for (var i = 0; i < cbs.length; i++) wrongTypes.push(cbs[i].value);
+    gen.readingLog = gen.readingLog || [];
+    gen.readingLog.push({ date: todayStr(), paper: window.__kyPaper || "", correct: correct, wrongTypes: wrongTypes, minutes: Math.max(1, Math.round((window.__kySec || 0) / 60)) });
+    gen.stars = (gen.stars || 0) + (correct >= 60 ? 1 : 0);
+    kyMarkDone(sc, "english");
+    modalClose(); refresh();
+    toast(correct >= 60 ? "正确率 " + correct + "% +1 ⭐" : "已记录（正确率 <60%，未得星，明天继续）");
+  }
+  function kyStartMath() {
+    var sc = kyActiveScheme();
+    var items = ({ base: "教材精读 + 基础习题 20 道", enhance: "专题刷题 20 道（限时）", zhenti: "真题套卷 1 套 + 订正", sprint: "模拟卷 1 套 + 错题复盘" })[sc.stage] || "基础复习";
+    modalOpen("今日数学任务",
+      '<div class="li-sub" style="margin-bottom:10px;">' + esc(items) + "</div>" +
+      '<div class="li-sub">点击开始计时，结束后自动记录时长打卡。</div>',
+      cancelBtn() + '<button class="btn" data-action="ky-math-go">开始计时</button>');
+  }
+  function kyMathGo() {
+    modalClose();
+    kyTimerStart("数学学习", function (sec) {
+      var sc = kyActiveScheme();
+      var min = Math.max(1, Math.round(sec / 60));
+      data.studyLog.push({ date: todayStr(), domainId: "kaoyan", subject: "数学", minutes: min, ts: nowStr() });
+      kyMarkDone(sc, "math");
+      refresh(); toast("数学完成，已记录 " + min + " 分钟");
+    });
+  }
+  function kyStartPolitics() {
+    var gen = kyActiveScheme().gen || {};
+    var t = todayStr();
+    var polSubj = ["马原", "毛中特", "史纲", "思修"][Math.floor(Date.parse(t + "T00:00:00") / 86400000) % 4];
+    var points = KY_POL_POINTS[polSubj] || [];
+    modalOpen("今日政治任务（" + polSubj + " 轮播）",
+      '<div class="li-sub" style="margin-bottom:8px;">今日知识点 4 条：</div>' +
+      '<div class="list">' + points.map(function (p) {
+        return '<div class="list-item"><div class="li-title" style="font-weight:400;font-size:14px;">· ' + esc(p) + "</div></div>";
+      }).join("") + "</div>" +
+      '<div class="li-sub" style="margin:8px 0;">配套：1000 题 20 道（自行刷题后回来标记完成）</div>',
+      cancelBtn() + '<button class="btn" data-action="ky-politics-done">标记掌握并完成</button>');
+  }
+  function kyPoliticsDone() {
+    kyMarkDone(kyActiveScheme(), "politics");
+    modalClose(); refresh(); toast("政治完成，知识点已掌握");
+  }
+  function kyStartMajor() {
+    var gen = kyActiveScheme().gen || {};
+    modalOpen("今日专业课（第 " + (gen.chapterIndex || 1) + " 章）",
+      '<div class="field"><label>标签（必选，避免无效笔记）</label>' +
+      '<label class="checkline"><input type="radio" name="mjTag" value="教材页码"> 教材页码：<input id="mjPage" placeholder="如 P120-135" style="width:120px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;"></label>' +
+      '<label class="checkline"><input type="radio" name="mjTag" value="真题年份"> 真题年份：<input id="mjYear" placeholder="如 2019" style="width:90px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;"></label></div>' +
+      '<div class="field"><label>本章笔记</label><textarea id="mjNote" placeholder="写下本章核心内容、公式、易错点…" style="min-height:100px;width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--border);border-radius:8px;"></textarea></div>',
+      cancelBtn() + '<button class="btn" data-action="ky-major-save">保存笔记并完成</button>');
+  }
+  function kyMajorSave() {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    var tagType = document.querySelector('input[name="mjTag"]:checked');
+    if (!tagType) { toast("请先选择标签（教材页码或真题年份）", true); return; }
+    var tagVal = (tagType.value === "教材页码" ? fval("mjPage") : fval("mjYear") || "").trim();
+    if (!tagVal) { toast("请填写" + tagType.value, true); return; }
+    var note = fval("mjNote").trim();
+    if (!note) { toast("请写下本章笔记内容", true); return; }
+    gen.noteLog = gen.noteLog || [];
+    gen.noteLog.push({ date: todayStr(), chapter: gen.chapterIndex || 1, tagType: tagType.value, tag: tagVal, note: note });
+    gen.chapterIndex = (gen.chapterIndex || 1) + 1;
+    kyMarkDone(sc, "major");
+    modalClose(); refresh(); toast("笔记已保存，下一章：第 " + (gen.chapterIndex || 1) + " 章");
+  }
+  function kyStartWord() {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    var t = todayStr();
+    gen.wordProgress = gen.wordProgress || {};
+    if (gen.wordProgress.date !== t) { gen.wordProgress.date = t; gen.wordProgress.done = 0; }
+    modalOpen("今日单词（新词 80 + 复习 120）",
+      '<div class="li-sub" style="margin-bottom:8px;">点击已记住的词划掉（每 10 个自动保存）。当前进度：' + gen.wordProgress.done + " / 200</div>" +
+      '<div class="ky-words">' + KY_WORDS.map(function (w, i) {
+        var entry = (window.WB_DICT || {})[w] || {};
+        return '<div class="ky-word' + (gen.wordProgress.done > i ? " done" : "") + '" data-action="ky-word-toggle" data-idx="' + i + '">' +
+          "<span class=\"kw-w\">" + w + '</span><span class="kw-m">' + esc((entry.t || "").slice(0, 26)) + "</span></div>";
+      }).join("") + "</div>" +
+      '<div class="li-sub" style="margin-top:8px;">这是示例词组（12 词一组），完整 200 词进度由学习记录累计。</div>',
+      cancelBtn() + '<button class="btn block" data-action="ky-word-done">今日单词完成</button>');
+  }
+  function kyWordToggle(idx) {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    var t = todayStr(); gen.wordProgress = gen.wordProgress || {};
+    if (gen.wordProgress.date !== t) { gen.wordProgress.date = t; gen.wordProgress.done = 0; }
+    var el = document.querySelector('[data-action="ky-word-toggle"][data-idx="' + idx + '"]');
+    if (!el) return;
+    var nowDone = el.classList.contains("done");
+    el.classList.toggle("done");
+    gen.wordProgress.done = Math.max(0, (gen.wordProgress.done || 0) + (nowDone ? -1 : 1));
+    save();
+    if (gen.wordProgress.done > 0 && gen.wordProgress.done % 10 === 0) toast("已划掉 " + gen.wordProgress.done + " 个，进度已自动保存");
+  }
+  function kyWordDone() {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    gen.wordProgress = gen.wordProgress || {}; gen.wordProgress.done = 200;
+    kyMarkDone(sc, "word");
+    modalClose(); refresh(); toast("今日单词完成");
+  }
+  /* 快捷复盘 3 问 + 目标分数 */
+  function kyReviewToday() {
+    modalOpen("今日快捷复盘（3 问）",
+      '<div class="field"><label>1. 今日最大干扰源？</label>' +
+      '<label class="checkline"><input type="radio" name="rv1" value="手机"> 手机</label>' +
+      '<label class="checkline"><input type="radio" name="rv1" value="困倦"> 困倦</label>' +
+      '<label class="checkline"><input type="radio" name="rv1" value="题目太难"> 题目太难</label>' +
+      '<label class="checkline"><input type="radio" name="rv1" value="其他"> 其他</label></div>' +
+      '<div class="field"><label>2. 今日最有收获的科目？</label>' +
+      '<label class="checkline"><input type="radio" name="rv2" value="英语"> 英语</label>' +
+      '<label class="checkline"><input type="radio" name="rv2" value="政治"> 政治</label>' +
+      '<label class="checkline"><input type="radio" name="rv2" value="专业课"> 专业课</label>' +
+      '<label class="checkline"><input type="radio" name="rv2" value="单词"> 单词</label></div>' +
+      '<div class="field"><label>3. 明天是否维持今日任务量？</label>' +
+      '<label class="checkline"><input type="radio" name="rv3" value="维持"> 维持</label>' +
+      '<label class="checkline"><input type="radio" name="rv3" value="减少10%"> 减少 10%</label>' +
+      '<label class="checkline"><input type="radio" name="rv3" value="增加10%"> 增加 10%</label></div>',
+      cancelBtn() + '<button class="btn" data-action="ky-review-save">保存复盘</button>');
+  }
+  function kyReviewSave() {
+    var sc = kyActiveScheme(); var gen = sc.gen || {};
+    var q1 = document.querySelector('input[name="rv1"]:checked');
+    var q2 = document.querySelector('input[name="rv2"]:checked');
+    var q3 = document.querySelector('input[name="rv3"]:checked');
+    if (!q1 || !q2 || !q3) { toast("请完成 3 个选择题", true); return; }
+    gen.reviewLog = gen.reviewLog || [];
+    gen.reviewLog.push({ date: todayStr(), disturb: q1.value, gain: q2.value, adjust: q3.value });
+    modalClose(); refresh(); toast("复盘已保存，周日生成拦路虎周报");
+  }
+  function kyGoalModal() {
+    var gen = kyActiveScheme().gen || {};
+    modalOpen("目标分数（推荐任务据此自动生成）",
+      field("英语目标分", "kyGoalEn", "number", "70", gen.targetEnglish || 70) +
+      field("数学目标分", "kyGoalMath", "number", "70", gen.targetMath || 70) +
+      field("政治目标分", "kyGoalPol", "number", "70", gen.targetPolitics || 70) +
+      field("专业课目标分", "kyGoalMajor", "number", "100", gen.targetMajor || 100) +
+      '<div class="li-sub" style="margin-top:4px;">英语 ≥70 分 → 每日精读 2 篇 + 长难句 5 句；<60 分 → 精读 1 篇 + 单词 150 个。</div>',
+      cancelBtn() + '<button class="btn" data-action="submit-ky-goal">' + ICONS.check + "保存</button>");
+  }
+  function submitKyGoal() {
+    var gen = kyActiveScheme().gen || {};
+    gen.targetEnglish = parseInt(fval("kyGoalEn"), 10) || 70;
+    gen.targetMath = parseInt(fval("kyGoalMath"), 10) || 70;
+    gen.targetPolitics = parseInt(fval("kyGoalPol"), 10) || 70;
+    gen.targetMajor = parseInt(fval("kyGoalMajor"), 10) || 100;
+    modalClose(); refresh(); toast("目标已保存，今日推荐任务已重新生成");
   }
 
   /* ---------- AI 本地规则 ---------- */
@@ -1776,6 +2027,13 @@
         toast("背景已切换");
         break;
       }
+      case "set-font": {
+        data.settings.fontSize = v;
+        applyFont();
+        refresh();
+        toast("字体大小已调整");
+        break;
+      }
       case "set-exam": {
         var examName = v || el.getAttribute("data-exam");
         var cdm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
@@ -1883,6 +2141,24 @@
       case "submit-ky-file": submitKyFile(); break;
       case "ky-file-del": kyFileDel(id); break;
       case "ky-export-report": kyExportReport(); break;
+      /* 今日行动链路 */
+      case "ky-start-english": kyStartEnglish(); break;
+      case "ky-paper-ok": kyPaperOk(); break;
+      case "ky-timer-stop": kyTimerStopAction(); break;
+      case "ky-reading-save": kyReadingSaveOk(); break;
+      case "ky-start-math": kyStartMath(); break;
+      case "ky-math-go": kyMathGo(); break;
+      case "ky-start-politics": kyStartPolitics(); break;
+      case "ky-politics-done": kyPoliticsDone(); break;
+      case "ky-start-major": kyStartMajor(); break;
+      case "ky-major-save": kyMajorSave(); break;
+      case "ky-start-word": kyStartWord(); break;
+      case "ky-word-toggle": kyWordToggle(parseInt(el ? el.getAttribute("data-idx") : "", 10)); break;
+      case "ky-word-done": kyWordDone(); break;
+      case "ky-review-today": kyReviewToday(); break;
+      case "ky-review-save": kyReviewSave(); break;
+      case "ky-goal-modal": kyGoalModal(); break;
+      case "submit-ky-goal": submitKyGoal(); break;
 
       /* 模态提交 */
       case "submit-task": submitTask(); break;
