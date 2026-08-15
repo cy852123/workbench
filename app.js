@@ -829,6 +829,27 @@
     var map = { base: "基础阶段", enhance: "强化阶段", sprint: "冲刺阶段", replay: "复试阶段" };
     return map[id] || "未知阶段";
   }
+  function examDateOfLocal(ex) {
+    if (!ex) return null;
+    if (ex.examDate) return ex.examDate;
+    if (!ex.auto || ex.auto === "custom") return null;
+    var now = new Date();
+    var y = now.getFullYear();
+    var cands = [];
+    var thirdSat = function (yy, mm) { var d = new Date(yy, mm, 1); var fs = 1 + (6 - d.getDay() + 7) % 7; return new Date(yy, mm, fs + 14); };
+    var lbSat = function (yy, mm) { var d = new Date(yy, mm + 1, 0); var ld = d.getDate(); var dow = d.getDay(); return new Date(yy, mm, ld - ((dow + 1) % 7) - 7); };
+    if (ex.auto === "cet4" || ex.auto === "cet6") {
+      cands.push(thirdSat(y, 5));
+      cands.push(thirdSat(y, 11));
+    } else if (ex.auto === "kaoyan") {
+      cands.push(lbSat(y, 11));
+    }
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var future = cands.filter(function (c) { return c >= today; }).sort(function (a, b) { return a - b; });
+    var chosen = future[0] || (cands.length ? new Date(cands[0].getFullYear() + 1, cands[0].getMonth(), cands[0].getDate()) : null);
+    if (!chosen) return null;
+    return chosen.getFullYear() + "-" + String(chosen.getMonth() + 1).padStart(2, "0") + "-" + String(chosen.getDate()).padStart(2, "0");
+  }
   function kyExamDateLocal(sc) {
     if (sc && sc.examDate) return sc.examDate;
     if (data.settings && data.settings.kaoyanDate) return data.settings.kaoyanDate;
@@ -1140,7 +1161,7 @@
   /* 统计报告导出 */
   function kyExportReport() {
     var sc = kyActiveScheme();
-    var lines = ["考研备考统计报告", "方案：" + sc.name, "阶段：" + kyStageName(sc.stage), "考试时间：" + (kyExamDateLocal(sc) || "未设置"), "生成时间：" + nowStr(), ""];
+    var lines = ["考研备考统计报告", "方案：" + sc.name, "阶段：" + kyStageNameLocal(sc.stage), "考试时间：" + (kyExamDateLocal(sc) || "未设置"), "生成时间：" + nowStr(), ""];
     lines.push("科目完成情况：");
     (sc.subjects || []).forEach(function (s) {
       var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
@@ -2237,7 +2258,7 @@
     if (!ex) return;
     modalOpen("设置「" + dm.activeExam + "」考试时间",
       '<div class="li-sub" style="margin-bottom:10px;">内置考试默认按官方规则自动计算（四六级：每年 6 月/12 月第三个周六；考研：12 月倒数第二个周末）。手动设置的日期优先，考试结束后可在这里调整。</div>' +
-      '<div class="field"><label>考试日期</label><input id="exDate" type="date" value="' + esc(ex.examDate || examDateOf(ex) || "") + '"></div>' +
+      '<div class="field"><label>考试日期</label><input id="exDate" type="date" value="' + esc(ex.examDate || examDateOfLocal(ex) || "") + '"></div>' +
       (ex.auto && ex.auto !== "custom" ? '<button class="btn small plain" data-action="reset-exam-date">恢复自动计算</button>' : ""),
       cancelBtn() + '<button class="btn" data-action="submit-exam-date">' + ICONS.check + "保存</button>");
   }
