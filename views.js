@@ -1840,37 +1840,131 @@
   }
 
   /* ==================== 错题本 ==================== */
+  function mistakeCard(m, withBtns) {
+    return '<div class="list-item" style="align-items:flex-start;">' +
+      '<div class="li-main"><div class="li-title">' + esc(m.title) + (m.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + "</div>" +
+      '<div class="li-sub">' +
+      '<span class="tag">' + esc(m.subject || "未分类") + "</span>" +
+      (m.topic ? '<span class="tag">' + esc(m.topic) + "</span>" : "") +
+      (m.type ? '<span class="tag">' + esc(m.type) + "</span>" : "") +
+      '<span class="tag">' + esc(m.cause || "未填错因") + "</span>" +
+      (m.reviewCount ? '<span class="tag">复习 ' + m.reviewCount + " 次</span>" : "") +
+      (m.source ? '<span class="tag">' + esc(m.source) + "</span>" : "") +
+      "</div>" +
+      (m.solution ? '<div class="li-sub" style="color:var(--accent);">' + esc(m.solution.slice(0, 60)) + (m.solution.length > 60 ? "…" : "") + "</div>" : "") +
+      "</div>" +
+      (withBtns ? '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
+        (m.mastered ? '<button class="btn small plain" data-action="toggle-master" data-id="' + esc(m.id) + '">取消掌握</button>'
+          : '<button class="btn small" data-action="mistake-review" data-id="' + esc(m.id) + '">复习</button>') +
+        '<div style="display:flex;gap:2px;">' +
+        '<button class="icon-btn" data-action="edit-mistake" data-id="' + esc(m.id) + '">' + ic("edit") + "</button>" +
+        '<button class="icon-btn" data-action="del-mistake" data-id="' + esc(m.id) + '">' + ic("trash") + "</button></div></div>" : "") +
+      "</div>";
+  }
+  /* 四级：科目 → 专题 → 类型 → 错题 */
   function mistakes() {
     var W = window.W, d = W.data;
-    var subj = W.ui.mistakeSubj || "";
-    var list = (d.mistakes || []).filter(function (m) { return !subj || m.subject === subj; }).slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; });
-    var subjects = [];
-    (d.mistakes || []).forEach(function (m) { if (m.subject && subjects.indexOf(m.subject) < 0) subjects.push(m.subject); });
+    var t = todayStr();
+    var all = (d.mistakes || []).slice().sort(function (a, b) { return (b.date || "") > (a.date || "") ? 1 : -1; });
     var html = "";
-    html += card("", '<button class="btn block" data-action="add-mistake">' + ic("plus") + "记录一道错题</button>" +
-      (subjects.length ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">' +
-      '<button class="btn ' + (subj === "" ? "" : "plain") + ' small" data-action="mistake-subj" data-v="">全部</button>' +
-      subjects.map(function (s) { return '<button class="btn ' + (subj === s ? "" : "plain") + ' small" data-action="mistake-subj" data-v="' + esc(s) + '">' + esc(s) + "</button>"; }).join("") + "</div>" : ""));
+    html += '<div class="grid grid-2">' +
+      card(cardHead("📊 错题统计", "今日待复习优先", "mk-stat"),
+        '<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">' +
+        '<div><div class="mk-big" style="color:var(--danger);">' + all.filter(function (m) { return !m.mastered && (!m.nextReview || m.nextReview <= t); }).length + "</div><div class=\"li-sub\">今日待复习</div></div>" +
+        '<div><div class="mk-big">' + all.filter(function (m) { return m.mastered; }).length + "</div><div class=\"li-sub\">已掌握 / " + all.length + "</div></div>" +
+        '<div><div class="mk-big" style="color:var(--accent);">' + all.reduce(function (s, m) { return s + (m.reviewCount || 0); }, 0) + "</div><div class=\"li-sub\">累计复习次数</div></div>" +
+        "</div>") +
+      card(cardHead("✏️ 快速记录", "错题是复习的宝藏", "mk-add"),
+        '<button class="btn block" data-action="add-mistake">' + ic("plus") + "记录一道错题</button>" +
+        '<div class="li-sub" style="margin-top:8px;">选科目 + 专题 + 错因，保存后自动进入复习队列（1→3→7→14→30 天）。</div>') +
+      "</div>";
 
-    html += card(cardHead("错题列表", list.length + " 道 · 已复习 " + list.filter(function (m) { return m.reviewed; }).length + " 道", "mistakes"),
-      list.length === 0 ? empty("还没有错题", "错题是复习的宝藏，看到就记下来") :
-      '<div class="list">' + list.map(function (m) {
-        return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main"><div class="li-title">' + esc(m.title) + "</div>" +
-          '<div class="li-sub">' +
-          '<span class="tag">' + esc(m.subject || "未分类") + "</span>" +
-          '<span class="tag">' + esc(m.reason || "未填错因") + "</span>" +
-          (m.reviewed ? '<span class="tag state-done">已复习</span>' : '<span class="tag state-todo">待复习</span>') +
-          "</div>" +
-          (m.answer ? '<div class="li-sub" style="color:var(--accent);">答案：' + esc(m.answer) + "</div>" : "") +
-          "</div>" +
-          '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
-          '<button class="btn small ' + (m.reviewed ? "plain" : "") + '" data-action="toggle-review" data-id="' + esc(m.id) + '">' + ic("check") + (m.reviewed ? "已复习" : "标记已复习") + "</button>" +
-          '<div style="display:flex;gap:2px;">' +
-          '<button class="icon-btn" data-action="edit-mistake" data-id="' + esc(m.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-mistake" data-id="' + esc(m.id) + '">' + ic("trash") + "</button></div></div></div>";
-      }).join("") + "</div>");
-
+    /* 科目分区 */
+    var groups = {};
+    all.forEach(function (m) { var s = m.subject || "其他"; (groups[s] = groups[s] || []).push(m); });
+    var cards = Object.keys(groups).map(function (s) {
+      var arr = groups[s];
+      var due = arr.filter(function (m) { return !m.mastered && (!m.nextReview || m.nextReview <= t); }).length;
+      return '<div class="hd" data-action="mistake-subj" data-v="' + esc(s) + '" style="border-left:3px solid var(--accent);">' +
+        '<div class="hd-row"><span class="hd-emoji">' + mkEmoji(s) + '</span><span class="hd-name">' + esc(s) + "</span></div>" +
+        '<div class="hd-sub">' + arr.length + " 道错题 · 待复习 " + due + "</div>" +
+        '<span class="hd-go">进入 →</span></div>';
+    });
+    html += card(cardHead("📚 错题科目", "点进科目，再按专题和错因分类", "mk-subjects"),
+      cards.length ? '<div class="home-domains" style="grid-template-columns:repeat(3,1fr);">' + cards.join("") + "</div>"
+        : empty("还没有错题", "错题是复习的宝藏，看到就记下来"));
+    return html;
+  }
+  function mkEmoji(s) {
+    return s.indexOf("数学") >= 0 ? "📐" : s.indexOf("英语") >= 0 ? "📖" : s.indexOf("政治") >= 0 ? "📜" : s.indexOf("专业课") >= 0 ? "🔬" : "📁";
+  }
+  function mkTopics() {
+    var W = window.W, d = W.data;
+    var subj = W.ui.mistakeSubj || "";
+    var t = todayStr();
+    var html = backBar("mistakes", "错题本");
+    var arr = (d.mistakes || []).filter(function (m) { return (m.subject || "") === subj; });
+    var topics = {};
+    arr.forEach(function (m) { var k = m.topic || "未分专题"; (topics[k] = topics[k] || []).push(m); });
+    var cards = Object.keys(topics).map(function (k) {
+      var list = topics[k];
+      var due = list.filter(function (m) { return !m.mastered && (!m.nextReview || m.nextReview <= t); }).length;
+      return '<div class="hd" data-action="mk-topic" data-v="' + esc(k) + '">' +
+        '<div class="hd-row"><span class="hd-emoji">🗂</span><span class="hd-name">' + esc(k) + "</span></div>" +
+        '<div class="hd-sub">' + list.length + " 道 · 待复习 " + due + "</div>" +
+        '<span class="hd-go">进入 →</span></div>';
+    });
+    html += '<div class="page-head-row"><div><div class="page-title">' + mkEmoji(subj) + " " + esc(subj) + "</div>" +
+      '<div class="li-sub">' + arr.length + " 道错题 · 按专题分类</div></div>" +
+      '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
+    html += card(cardHead("🗂 专题", "点击进入，再按错因类型分类", "mk-topics"),
+      '<div class="home-domains" style="grid-template-columns:repeat(2,1fr);">' + cards.join("") + "</div>");
+    return html;
+  }
+  function mkTypes() {
+    var W = window.W, d = W.data;
+    var subj = W.ui.mistakeSubj || "";
+    var topic = W.ui.mistakeTopic || "";
+    var t = todayStr();
+    var html = backBar("mk-topics", subj);
+    var arr = (d.mistakes || []).filter(function (m) { return (m.subject || "") === subj && (m.topic || "未分专题") === topic; });
+    var types = {};
+    arr.forEach(function (m) { var c = m.type || "未分类"; (types[c] = types[c] || []).push(m); });
+    var cards = Object.keys(types).map(function (c) {
+      var list = types[c];
+      var due = list.filter(function (m) { return !m.mastered && (!m.nextReview || m.nextReview <= t); }).length;
+      return '<div class="hd" data-action="mk-type" data-v="' + esc(c) + '">' +
+        '<div class="hd-row"><span class="hd-emoji">📌</span><span class="hd-name">' + esc(c) + "</span></div>" +
+        '<div class="hd-sub">' + list.length + " 道 · 待复习 " + due + "</div>" +
+        '<span class="hd-go">进入 →</span></div>';
+    });
+    html += '<div class="page-head-row"><div><div class="page-title">' + esc(topic) + "</div>" +
+      '<div class="li-sub">' + esc(subj) + " · " + arr.length + " 道错题 · 按考点类型分类</div></div>" +
+      '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
+    html += card(cardHead("📌 考点类型", "点击查看该类型的错题", "mk-types"),
+      cards.length ? '<div class="home-domains" style="grid-template-columns:repeat(2,1fr);">' + cards.join("") + "</div>"
+        : empty("没有错题", ""));
+    return html;
+  }
+  function mkList() {
+    var W = window.W, d = W.data;
+    var subj = W.ui.mistakeSubj || "";
+    var topic = W.ui.mistakeTopic || "";
+    var type = W.ui.mistakeType || "";
+    var t = todayStr();
+    var html = backBar("mk-types", topic || subj);
+    var list = (d.mistakes || []).filter(function (m) {
+      if ((m.subject || "") !== subj) return false;
+      if ((m.topic || "未分专题") !== topic) return false;
+      if ((m.type || "未分类") !== type) return false;
+      return true;
+    }).slice().sort(function (a, b) { return (b.date || "") > (a.date || "") ? 1 : -1; });
+    html += '<div class="page-head-row"><div><div class="page-title">' + esc(type) + "</div>" +
+      '<div class="li-sub">' + esc(subj) + " · " + esc(topic) + " · " + list.length + " 道错题</div></div>" +
+      '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
+    html += card(cardHead("📚 错题", list.length + " 道", "mk-list"),
+      list.length === 0 ? empty("没有符合条件的错题", "") :
+      '<div class="list">' + list.map(function (m) { return mistakeCard(m, true); }).join("") + "</div>");
     return html;
   }
 
@@ -2154,6 +2248,9 @@
     activity: activity,
     reviews: reviews,
     mistakes: mistakes,
+    mkTopics: mkTopics,
+    mkTypes: mkTypes,
+    mkList: mkList,
     qa: qa,
     calendar: calendar,
     settings: settings

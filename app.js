@@ -248,6 +248,23 @@
     var changed = false;
     /* 论文写作板块已移除（界面隐藏，历史数据保留在本机） */
     (data.domains || []).forEach(function (dm) { if (dm.id === "paper" && !dm.hidden) { dm.hidden = true; changed = true; } });
+    /* 错题本升级：补全复习字段（原因/答案 → 错因/解法/来源/复习次数/下次复习/掌握） */
+    (data.mistakes || []).forEach(function (m) {
+      if (m.cause === undefined) {
+        m.cause = m.reason || "";
+        m.solution = m.answer || "";
+        m.source = "";
+        m.reviewCount = m.reviewed ? 1 : 0;
+        m.nextReview = "";
+        m.mastered = false;
+        m.topic = m.topic || "";
+        changed = true;
+      } else if (m.topic === undefined) {
+        m.topic = "";
+        changed = true;
+      }
+      if (m.type === undefined) { m.type = ""; changed = true; }
+    });
     if (data.settings && data.settings.kaoyanDate === "2026-12-26") {
       data.settings.kaoyanDate = "2027-12-25";
       changed = true;
@@ -463,6 +480,9 @@
       library: { t: "资料库", s: "分类、标签、链接识别" },
       inbox: { t: "收集箱", s: "先收着，稍后整理" },
       mistakes: { t: "错题本", s: "错题是复习的宝藏" },
+      "mk-topics": { t: "错题 · 专题", s: "科目下的专题" },
+      "mk-types": { t: "错题 · 考点类型", s: "专题下的考点" },
+      "mk-list": { t: "错题 · 列表", s: "该考点下的错题" },
       qa: { t: "答疑库", s: "问过的题不再错" },
       reviews: { t: "复盘", s: "让进步发生" },
       health: { t: "健康", s: "学习的第一步" },
@@ -572,6 +592,9 @@
     else if (view === "activity") html = Views.activity();
     else if (view === "reviews") html = Views.reviews();
     else if (view === "mistakes") html = Views.mistakes();
+    else if (view === "mk-topics") html = Views.mkTopics();
+    else if (view === "mk-types") html = Views.mkTypes();
+    else if (view === "mk-list") html = Views.mkList();
     else if (view === "qa") html = Views.qa();
     else if (view === "calendar") html = Views.calendar();
     else if (view === "settings") html = Views.settings();
@@ -705,7 +728,7 @@
   function themeOf(view) {
     var map = {
       "focus": "theme-focus", "activity": "theme-activity", "library": "theme-library",
-      "inbox": "theme-inbox", "mistakes": "theme-mistakes", "qa": "theme-qa", "reviews": "theme-reviews",
+      "inbox": "theme-inbox", "mistakes": "theme-mistakes", "mk-topics": "theme-mistakes", "mk-types": "theme-mistakes", "mk-list": "theme-mistakes", "qa": "theme-qa", "reviews": "theme-reviews",
       "health": "theme-health", "calendar": "theme-calendar", "accounts": "theme-accounts",
       "search": "theme-search", "ai": "theme-ai", "settings": "theme-settings",
       "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
@@ -2396,11 +2419,23 @@
         break;
       }
       case "toggle-review": {
-        var m2 = data.mistakes.filter(function (x) { return x.id === id; })[0];
-        if (m2) { m2.reviewed = !m2.reviewed; refresh(); }
+        var tr = data.mistakes.filter(function (x) { return x.id === id; })[0];
+        if (tr) { tr.reviewed = !tr.reviewed; if (tr.reviewed) { tr.reviewCount = (tr.reviewCount || 0) + 1; tr.nextReview = mkNextReview(tr.reviewCount); } else { tr.nextReview = todayStr(); } save(); renderView(); }
         break;
       }
-      case "mistake-subj": W.ui.mistakeSubj = v; renderView(); break;
+      case "mistake-review": mistakeReviewModal(id); break;
+      case "mistake-review-ok": mistakeReviewOk(id); break;
+      case "mistake-review-no": mistakeReviewNo(id); break;
+      case "toggle-master": {
+        var tm = data.mistakes.filter(function (x) { return x.id === id; })[0];
+        if (tm) { tm.mastered = !tm.mastered; save(); renderView(); toast(tm.mastered ? "已标记掌握，移出复习队列" : "改回待复习"); }
+        break;
+      }
+      case "mistake-subj": W.ui.mistakeSubj = v; W.ui.mistakeTopic = ""; W.ui.mistakeType = ""; go("mk-topics"); break;
+      case "mk-topic": W.ui.mistakeTopic = v; W.ui.mistakeType = ""; go("mk-types"); break;
+      case "mk-type": W.ui.mistakeType = v; go("mk-list"); break;
+      case "mistake-state": W.ui.mistakeState = v; renderView(); break;
+      case "mistake-cause": W.ui.mistakeCause = v; renderView(); break;
 
       /* 答疑 */
       case "add-qa": qaModal(null); break;
@@ -3408,25 +3443,109 @@
     toast("已为 " + pend.length + " 条内容生成建议，请逐条确认");
   }
 
+  var MK_CAUSES = ["概念不清", "计算失误", "审题失误", "知识点遗忘", "粗心"];
+  var MK_SUBJECTS = ["数学", "英语", "政治", "专业课", "其他"];
+  var MK_TOPICS = {
+    "数学": ["高数·极限", "高数·导数", "高数·积分", "线代·矩阵", "概率·统计"],
+    "英语": ["词汇", "阅读", "写作", "翻译"],
+    "政治": ["马原", "毛中特", "史纲", "思修"],
+    "专业课": [],
+    "其他": []
+  };
+  var MK_TOPIC_LIST = [];
+  Object.keys(MK_TOPICS).forEach(function (k) { MK_TOPICS[k].forEach(function (t) { if (MK_TOPIC_LIST.indexOf(t) < 0) MK_TOPIC_LIST.push(t); }); });
   function mistakeModal(id) {
     var m = id ? data.mistakes.filter(function (x) { return x.id === id; })[0] : null;
+    var mSubj = m ? m.subject : (W.ui.mistakeSubj || "数学");
+    var mTopic = m ? (m.topic || "") : (W.ui.mistakeTopic || "");
+    var mType = m ? (m.type || "") : (W.ui.mistakeType || "");
     modalOpen(m ? "编辑错题" : "记录错题",
-      field("科目", "mkSubject", "text", "数学", m ? m.subject : "") +
-      area("题目 / 错题内容", "mkTitle", "题目或知识点", m ? m.title : "") +
-      field("错因", "mkReason", "text", "粗心 / 不会 / 概念不清", m ? m.reason : "") +
-      area("正确答案", "mkAnswer", "正确答案或正确思路", m ? m.answer : "") +
-      '<div class="checkline"><input type="checkbox" id="mkReviewed"' + (m && m.reviewed ? " checked" : "") + '><label for="mkReviewed">已复习</label></div>',
+      selField("科目（错题进对应科目板块）", "mkSubject", MK_SUBJECTS.map(function (s) { return [s, s]; }), mSubj) +
+      '<div class="field"><label>专题（可选，进入科目后按专题分组；可自由填写）</label>' +
+      '<input id="mkTopic" list="mkTopicsList" value="' + esc(mTopic) + '" placeholder="如 高数·极限 / 阅读" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;">' +
+      '<datalist id="mkTopicsList">' + MK_TOPIC_LIST.map(function (t) { return "<option value=\"" + esc(t) + "\">"; }).join("") + "</datalist></div>" +
+      field("类型 / 考点（第三级分类，如具体题型）", "mkType", "text", "如 洛必达法则 / 泰勒公式 / 定语从句", mType) +
+      area("题目 / 错题内容", "mkTitle", "如：2010 高数第 3 题，极限计算", m ? m.title : "") +
+      '<div class="field"><label>错因（选择最符合的一项）</label>' +
+      MK_CAUSES.map(function (c) {
+        return '<label class="checkline"><input type="radio" name="mkCause" value="' + c + '"' + ((m ? m.cause : "") === c || (!m && c === "概念不清") ? " checked" : "") + "> " + c + "</label>";
+      }).join("") + "</div>" +
+      field("来源（真题编号，可回溯）", "mkSource", "text", "如 2010 T1 / 习题 3-2", m ? m.source : "") +
+      area("正确解法 / 订正", "mkSolution", "正确思路或订正过程", m ? (m.solution || m.answer || "") : ""),
       cancelBtn() + okBtn("submit-mistake"));
     window.__editMistakeId = id || "";
+    var ms = $id("mkSubject");
+    if (ms) ms.addEventListener("change", function () {
+      var topic = $id("mkTopic");
+      if (topic && MK_TOPICS[ms.value] && MK_TOPICS[ms.value].length && !topic.value) topic.placeholder = "如 " + MK_TOPICS[ms.value][0];
+    });
   }
   function submitMistake(id) {
     var title = fval("mkTitle").trim();
     if (!title) { toast("请填写错题内容", true); return; }
-    var obj = { subject: fval("mkSubject").trim() || "未分类", title: title, reason: fval("mkReason").trim(), answer: fval("mkAnswer").trim(), reviewed: !!$id("mkReviewed").checked };
+    var causeEl = document.querySelector('input[name="mkCause"]:checked');
+    var obj = {
+      subject: fval("mkSubject").trim() || "未分类",
+      topic: fval("mkTopic").trim(),
+      type: fval("mkType").trim(),
+      title: title,
+      cause: causeEl ? causeEl.value : "概念不清",
+      solution: fval("mkSolution").trim(),
+      source: fval("mkSource").trim(),
+      reviewed: false, reason: causeEl ? causeEl.value : "", answer: fval("mkSolution").trim()
+    };
     var m = data.mistakes.filter(function (x) { return x.id === window.__editMistakeId; })[0];
-    if (m) { Object.assign(m, obj); }
-    else { obj.id = uid(); obj.date = todayStr(); data.mistakes.push(obj); }
+    if (m) {
+      Object.assign(m, obj);
+      if (m.mastered && !m.reviewed) m.mastered = false;
+    } else {
+      obj.id = uid();
+      obj.date = todayStr();
+      obj.reviewCount = 0;
+      obj.nextReview = todayStr();
+      obj.mastered = false;
+      data.mistakes.push(obj);
+      toast("已记录，今天开始第一次复习");
+    }
     modalClose(); refresh(); toast("错题已保存");
+  }
+  /* 遗忘曲线间隔：复习次数 → 下次间隔天数 */
+  function mkNextReview(count) {
+    var d = new Date();
+    var gap = count <= 0 ? 1 : count === 1 ? 3 : count === 2 ? 7 : count === 3 ? 14 : 30;
+    d.setDate(d.getDate() + gap);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function mistakeReviewModal(id) {
+    var m = data.mistakes.filter(function (x) { return x.id === id; })[0];
+    if (!m) return;
+    modalOpen("复习这道错题",
+      '<div class="li-sub" style="margin-bottom:8px;">第 ' + ((m.reviewCount || 0) + 1) + " 次复习 · 下次按间隔排期</div>" +
+      '<div class="formula-block"><div class="formula-title">' + esc(m.title) + "</div>" +
+      (m.solution ? '<div class="formula-line">解法：' + esc(m.solution) + "</div>" : "") + "</div>" +
+      '<div class="li-sub" style="margin:8px 0;">现在能独立做对吗？</div>',
+      cancelBtn() +
+      '<button class="btn plain" data-action="mistake-review-no" data-id="' + esc(m.id) + '" style="margin-right:8px;">还不会</button>' +
+      '<button class="btn" data-action="mistake-review-ok" data-id="' + esc(m.id) + '">答对了</button>');
+  }
+  function mistakeReviewOk(id) {
+    var m = data.mistakes.filter(function (x) { return x.id === id; })[0];
+    if (!m) return;
+    m.reviewCount = (m.reviewCount || 0) + 1;
+    m.nextReview = mkNextReview(m.reviewCount);
+    m.reviewed = true;
+    m.lastReview = todayStr();
+    modalClose(); refresh();
+    toast("已复习 " + m.reviewCount + " 次，下次 " + m.nextReview + "（" + (m.reviewCount >= 4 ? "30 天后" : m.reviewCount === 3 ? "14 天后" : m.reviewCount === 2 ? "7 天后" : m.reviewCount === 1 ? "3 天后" : "1 天后") + "）");
+  }
+  function mistakeReviewNo(id) {
+    var m = data.mistakes.filter(function (x) { return x.id === id; })[0];
+    if (!m) return;
+    m.nextReview = mkNextReview(0);
+    m.reviewed = false;
+    m.lastReview = todayStr();
+    modalClose(); refresh();
+    toast("没关系，明天再复习一次");
   }
 
   function qaModal(id) {

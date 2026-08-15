@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英语学习 · 变体B 暖极简（Notion 风）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #FBFBFA; font-family: Georgia, "Songti SC", "SimSun", "PingFang SC", serif; color: #33332E; padding: 28px; max-width: 920px; margin: 0 auto; }
+  .brand { font-family: "PingFang SC", sans-serif; font-size: 12px; color: #9B9B93; letter-spacing: .4px; margin-bottom: 20px; display: flex; justify-content: space-between; }
+  /* 考试信息条（Notion 无边框卡） */
+  .exam-bar { display: flex; align-items: baseline; gap: 16px; padding: 10px 0 22px; border-bottom: 1px solid #EFEEE9; margin-bottom: 22px; }
+  .exam-name { font-size: 22px; font-weight: 700; }
+  .exam-days { font-size: 22px; font-weight: 700; color: #2F6B57; }
+  .exam-meta { font-size: 13px; color: #9B9B93; }
+  .exam-switch { margin-left: auto; font-size: 13px; color: #2F6B57; font-family: "PingFang SC", sans-serif; }
+  /* 今日任务 */
+  .today-card { background: #fff; border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .today-head { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 15px; font-weight: 700; }
+  .today-head .go { font-size: 12.5px; color: #9B9B93; font-weight: 400; }
+  .task-line { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed #EFEEE9; font-size: 14px; }
+  .task-line:last-child { border: none; }
+  .task-box { width: 14px; height: 14px; border: 1.5px solid #C9C9C2; border-radius: 3px; flex-shrink: 0; align-self: center; }
+  .task-box.on { background: #2F6B57; border-color: #2F6B57; }
+  .task-name { flex: 1; }
+  .task-tag { font-size: 12px; color: #9B9B93; font-family: "PingFang SC", sans-serif; }
+  /* 专项列表（Notion 式行列表） */
+  .sec-title { font-size: 13px; color: #9B9B93; font-family: "PingFang SC", sans-serif; margin: 20px 0 8px; }
+  .skill-list { background: #fff; border-radius: 12px; padding: 4px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .skill-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #F4F3EF; cursor: pointer; }
+  .skill-row:last-child { border: none; }
+  .skill-ic { font-size: 17px; width: 30px; text-align: center; }
+  .skill-name { font-size: 14.5px; flex: 1; }
+  .skill-sub { font-size: 12px; color: #9B9B93; font-family: "PingFang SC", sans-serif; }
+  .skill-arrow { color: #C9C9C2; font-size: 15px; }
+  /* 底部入口 */
+  .bottom { display: flex; gap: 10px; margin-top: 18px; font-family: "PingFang SC", sans-serif; }
+  .entry { flex: 1; background: #fff; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #6F7277; box-shadow: 0 1px 4px rgba(0,0,0,.05); text-align: center; }
+  @media (max-width: 768px) { body { padding: 18px; } .exam-bar { flex-wrap: wrap; gap: 8px; } }
+</style>
+</head>
+<body>
+  <div class="brand"><span>英语学习 · EXAM</span><span>设置 ▾</span></div>
+
+  <!-- 考试信息条 -->
+  <div class="exam-bar">
+    <span class="exam-name">考研英语</span>
+    <span class="exam-days">496 天</span>
+    <span class="exam-meta">初试 2027-12-25 · 目标 70 分</span>
+    <span class="exam-switch">切换考试 ▾</span>
+  </div>
+
+  <!-- 今日任务 -->
+  <div class="today-card">
+    <div class="today-head"><span>📌 今日任务</span><span class="go">查看全部 →</span></div>
+    <div class="task-line"><span class="task-box"></span><span class="task-name">阅读精读 1 篇（2010 Text1）</span><span class="task-tag">阅读 · 30 分钟</span></div>
+    <div class="task-line"><span class="task-box"></span><span class="task-name">复习生词 20 个</span><span class="task-tag">词汇 · 15 分钟</span></div>
+    <div class="task-line"><span class="task-box on"></span><span class="task-name">长难句 3 句</span><span class="task-tag">完成 ✓</span></div>
+  </div>
+
+  <!-- 六个专项 -->
+  <div class="sec-title">学习专区</div>
+  <div class="skill-list">
+    <div class="skill-row"><span class="skill-ic">📖</span><span class="skill-name">词汇</span><span class="skill-sub">生词本 · 46 待复习</span><span class="skill-arrow">›</span></div>
+    <div class="skill-row"><span class="skill-ic">🎧</span><span class="skill-name">听力</span><span class="skill-sub">本周 3 次 · 精听打卡</span><span class="skill-arrow">›</span></div>
+    <div class="skill-row"><span class="skill-ic">📝</span><span class="skill-name">阅读</span><span class="skill-sub">正确率 78% · 真题精读</span><span class="skill-arrow">›</span></div>
+    <div class="skill-row"><span class="skill-ic">✍️</span><span class="skill-name">写作</span><span class="skill-sub">模板 · 3 篇批改</span><span class="skill-arrow">›</span></div>
+    <div class="skill-row"><span class="skill-ic">🌐</span><span class="skill-name">翻译</span><span class="skill-sub">连续 5 天 · 每日一句</span><span class="skill-arrow">›</span></div>
+    <div class="skill-row"><span class="skill-ic">🗣️</span><span class="skill-name">口语</span><span class="skill-sub">AI 对话 · 1 次</span><span class="skill-arrow">›</span></div>
+  </div>
+
+  <div class="bottom">
+    <div class="entry">📒 生词本（46）</div>
+    <div class="entry">📊 统计回顾（320 分）</div>
+    <div class="entry">🎓 考试管理（3 套）</div>
+  </div>
+</body>
+</html>
