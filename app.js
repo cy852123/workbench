@@ -2057,7 +2057,7 @@
   function callAI(messages, cb) {
     var s = data.settings;
     if (!s.apiKey || !s.apiBase) { cb("对话式 AI 未启用：请先在「设置与数据 → AI 配置」填入 API 地址、模型和密钥。"); return; }
-    if (s.aiProxy) {
+    if (s.aiProxy || String(s.apiBase).indexOf("workbench-sync-c9e.pages.dev") >= 0) {
       /* 云端代理模式：请求发到部署好的代理（/api/ai），密钥用同步密钥 */
       fetch(String(s.apiBase).replace(/\/+$/, "") + "/api/ai", {
         method: "POST",
