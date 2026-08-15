@@ -919,6 +919,7 @@
       /* 设置 */
       case "export-data": exportData(); break;
       case "import-data": importModal(); break;
+      case "merge-ok": if (window.__mergeData) { doMerge(window.__mergeData); } break;
       case "reset-example": resetExampleConfirm(); break;
       case "restore-item": restoreItem(id); break;
       case "empty-trash": emptyTrashConfirm(); break;
@@ -1657,14 +1658,80 @@
   }
 
   function importModal() {
-    modalOpen("导入数据", '<p style="font-size:14px;color:var(--sub);">选择之前导出的备份文件（JSON）。导入前会自动备份当前数据到浏览器，出错可恢复。</p>' +
-      '<input type="file" id="importFile" accept=".json" style="margin-top:12px;">',
-      cancelBtn() + '<button class="btn" data-action="import-file">' + ICONS.upload + "导入</button>");
+    modalOpen("导入数据", '<p style="font-size:14px;color:var(--sub);margin-bottom:12px;">选择导出的备份文件（JSON）。</p>' +
+      '<div class="field"><label>导入方式</label><select id="importMode">' +
+      '<option value="merge">合并导入（追加到现有数据，不覆盖）</option>' +
+      '<option value="replace">完整导入（恢复备份，覆盖当前数据）</option></select></div>' +
+      '<div class="li-sub" style="margin-bottom:10px;">合并导入：适合把聊天/学习中产生的资料增量加进工作台，导入前会预览将新增的内容。</div>' +
+      '<input type="file" id="importFile" accept=".json" style="margin-top:8px;">',
+      cancelBtn() + '<button class="btn" data-action="import-file">' + ICONS.upload + "选择文件并导入</button>");
+  }
+  function handleImportFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var d = JSON.parse(reader.result);
+        if (!d || (!d.domains && !d.resources && !d.tasks && !d.qa && !d.mistakes)) { toast("文件格式不正确，导入已取消", true); return; }
+        var modeEl = $id("importMode");
+        var mode = modeEl ? modeEl.value : "replace";
+        if (mode === "replace") {
+          localStorage.setItem(STORE_KEY + "_preimport_backup", JSON.stringify(data));
+          data = d;
+          data.meta.updated = nowStr();
+          W.data = data;
+          save(true);
+          renderAll();
+          modalClose();
+          toast("已完整导入（导入前数据已自动备份）");
+        } else {
+          previewMerge(d);
+        }
+      } catch (e) { toast("文件解析失败，导入已取消", true); }
+    };
+    reader.readAsText(file);
+  }
+  function previewMerge(imported) {
+    var labels = { tasks: "任务", studyLog: "学习打卡", goals: "学习目标", mistakes: "错题", qa: "答疑", resources: "资料", inbox: "收集箱", reviews: "复盘", accounts: "账号", calendar: "重要日期" };
+    var counts = {};
+    Object.keys(labels).forEach(function (f) {
+      var n = (imported[f] || []).length;
+      if (n > 0) counts[f] = n;
+    });
+    var newDomains = (imported.domains || []).filter(function (nd) {
+      return !data.domains.some(function (dd) { return dd.id === nd.id; });
+    });
+    var rows = Object.keys(counts).map(function (f) {
+      return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + labels[f] + "</div></div>" +
+        '<span class="li-meta">新增 ' + counts[f] + " 条</span></div>";
+    }).join("");
+    if (newDomains.length) rows += '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">领域</div></div><span class="li-meta">新增 ' + newDomains.length + " 个</span></div>";
+    if (!rows) rows = '<div class="empty">文件中没有可新增的内容</div>';
+    modalOpen("合并导入预览", '<div class="li-sub" style="margin-bottom:10px;">将新增以下内容（现有数据不会改变）：</div><div class="list">' + rows + "</div>",
+      cancelBtn() + '<button class="btn" data-action="merge-ok">' + ICONS.check + "确认合并</button>");
+    window.__mergeData = imported;
+  }
+  function doMerge(imported) {
+    var listFields = ["tasks", "studyLog", "goals", "mistakes", "qa", "resources", "inbox", "reviews", "accounts", "calendar"];
+    var known = {};
+    listFields.forEach(function (f) { (data[f] || []).forEach(function (x) { known[x.id] = 1; }); });
+    listFields.forEach(function (f) {
+      data[f] = data[f] || [];
+      (imported[f] || []).forEach(function (x) {
+        if (x.id && known[x.id]) x.id = uid();
+        data[f].push(x);
+      });
+    });
+    (imported.domains || []).forEach(function (nd) {
+      if (!data.domains.some(function (dd) { return dd.id === nd.id; })) data.domains.push(nd);
+    });
+    modalClose();
+    refresh();
+    toast("合并完成，内容已追加到工作台");
   }
   document.addEventListener("change", function (e) {
     if (e.target && e.target.id === "importFile") {
       var f = e.target.files && e.target.files[0];
-      if (f) importData(f);
+      if (f) handleImportFile(f);
     }
   });
   function resetExampleConfirm() {
