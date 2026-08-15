@@ -118,6 +118,52 @@ body.font-large { --fs-base: 16px; --fs-sm: 14px; --fs-h3: 16px; }
   .ky-timer-box { top: 8px; right: 8px; left: 8px; }
 }
 
+/* ===== 今日首页（变体B 行动优先） ===== */
+.home-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.home-brand { font-size: 13px; color: var(--sub); letter-spacing: .3px; }
+.home-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font-size: 12px; border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; color: #555; }
+.chip.gold { background: #FCF5E5; border-color: #F3E3B8; color: #B07D0E; }
+.home-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.home-greet { font-size: 22px; font-weight: 800; }
+.home-date { font-size: 13px; color: var(--sub); margin-top: 4px; }
+.home-cta { display: flex; gap: 10px; flex-wrap: wrap; }
+.home-action-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.home-action-head h3 { font-size: 16px; font-weight: 800; }
+.home-pct { font-size: 13px; color: var(--accent); font-weight: 700; }
+.home-goal { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F7F7F5; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+.home-goal .gl { flex: 1; color: var(--sub); }
+.home-goal .gl.has { color: var(--text); }
+.home-tasks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.home-task { border: 1px solid #EEEEEA; border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+.home-task .box { width: 20px; height: 20px; border: 2px solid #C9CCCB; border-radius: 6px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+.home-task .box.on { background: var(--accent); border-color: var(--accent); }
+.ht-name { font-size: 14px; font-weight: 600; }
+.ht-sub { font-size: 12px; color: #888; margin-top: 2px; }
+.ht-late { font-size: 11.5px; color: var(--danger); margin-top: 2px; }
+.home-domains { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.hd { border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: all .12s; background: #fff; }
+.hd:hover { border-color: var(--accent); }
+.hd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.hd-emoji { font-size: 19px; }
+.hd-name { font-size: 14px; font-weight: 700; }
+.hd-sub { font-size: 12px; color: var(--sub); line-height: 1.5; min-height: 36px; margin-bottom: 8px; }
+.hd-go { font-size: 12.5px; font-weight: 700; color: var(--accent); }
+.hd-go.ky { color: #B07D0E; } .hd-go.en { color: #2980B9; } .hd-go.ai { color: #3498DB; } .hd-go.pa { color: #C0392B; } .hd-go.cu { color: #8E44AD; }
+.home-status { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.hs-ring { width: 52px; height: 52px; border-radius: 50%; background: conic-gradient(var(--accent) 0 var(--p, 0%), #E8E8E5 0); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hs-ring i { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 13px; font-weight: 800; color: var(--accent); }
+.hs-item { font-size: 13.5px; color: #555; padding: 0 12px; border-left: 1px solid #EEE; }
+.hs-item b { font-size: 17px; color: var(--text); }
+@media (max-width: 768px) {
+  .home-hero { flex-direction: column; align-items: flex-start; }
+  .home-tasks { grid-template-columns: 1fr; }
+  .home-domains { grid-template-columns: repeat(2, 1fr); }
+  .hs-ring { width: 46px; height: 46px; }
+  .hs-ring i { width: 36px; height: 36px; font-size: 12px; }
+  .hs-item { padding: 0 8px; font-size: 12.5px; }
+}
+
 /* ===== 可选页面背景（设置里切换，卡片与文字不受影响） ===== */
 body.bg-default { background-color: #F7F7F5; background-image: none; }
 body.bg-dots {
