@@ -154,7 +154,7 @@
 
     /* 学科入口 5 卡（紧凑） */
     html += '<div class="card"><div class="card-head"><h3>📚 学习领域</h3></div>' +
-      '<div class="home-domains">' + d.domains.slice().sort(function (a, b) { return a.order - b.order; }).map(homeDomainCard).join("") + "</div></div>";
+      '<div class="home-domains">' + d.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).map(homeDomainCard).join("") + "</div></div>";
 
     /* 底部状态条 */
     var streak = kyStreak(d, "kaoyan");
@@ -1421,7 +1421,7 @@
       states.map(function (s) { return '<button class="btn ' + (filterState === (s === "全部状态" ? "" : s) ? "" : "plain") + ' small" data-action="lib-state" data-v="' + esc(s) + '">' + s + "</button>"; }).join("") + "</div>" +
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">' +
       '<button class="btn ' + (filterDom === "" ? "" : "plain") + ' small" data-action="lib-dom" data-v="">全部领域</button>' +
-      d.domains.map(function (dm) { return '<button class="btn ' + (filterDom === dm.id ? "" : "plain") + ' small" data-action="lib-dom" data-v="' + esc(dm.id) + '">' + esc(dm.name) + "</button>"; }).join("") + "</div>" +
+      d.domains.filter(function (x) { return !x.hidden; }).map(function (dm) { return '<button class="btn ' + (filterDom === dm.id ? "" : "plain") + ' small" data-action="lib-dom" data-v="' + esc(dm.id) + '">' + esc(dm.name) + "</button>"; }).join("") + "</div>" +
       '<button class="btn block" data-action="add-resource" style="margin-top:14px;">' + ic("plus") + "新建资料（粘贴链接自动识别平台）</button>");
 
     html += card(cardHead("全部资料", list.length + " 条", "resources"),
@@ -1524,7 +1524,7 @@
     });
     push("课程与作业", (function () {
       var arr = [];
-      d.domains.forEach(function (dm) {
+      d.domains.filter(function (x) { return !x.hidden; }).forEach(function (dm) {
         (dm.courses || []).forEach(function (c) { if ((c.name + " " + (c.teacher || "")).toLowerCase().indexOf(kw) >= 0) arr.push({ t: c.name + "（课程）", sub: c.day + " " + (c.time || "") }); });
         (dm.assignments || []).forEach(function (a) { if ((a.title + " " + (a.type || "")).toLowerCase().indexOf(kw) >= 0) arr.push({ t: a.title + "（" + (a.type || "作业") + "）", sub: a.due || "" }); });
       });
@@ -1981,7 +1981,7 @@
       '<button class="btn danger small" data-action="empty-trash" style="margin-top:10px;">清空回收站（不可恢复）</button>');
 
     html += card(cardHead("领域管理", "你的学习领域，可增删排序", "domains"),
-      '<div class="list">' + d.domains.map(function (dm) {
+      '<div class="list">' + d.domains.filter(function (x) { return !x.hidden; }).map(function (dm) {
         return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(dm.name) + "</div>" +
           '<div class="li-sub">' + esc(dm.type === "courses" ? "课程管理" : dm.type === "paper" ? "论文写作" : dm.type === "kaoyan" ? "考研备考" : "通用领域") + "</div></div>" +
           '<button class="btn small plain" data-action="edit-domain" data-id="' + esc(dm.id) + '">' + ic("edit") + "</button>" +
@@ -1989,7 +1989,7 @@
       }).join("") + "</div>" +
       '<button class="btn ghost small" data-action="add-domain" style="margin-top:10px;">' + ic("plus") + "新建领域</button>" +
       '<div class="field" style="margin-top:14px;"><label>手机底部导航第二个入口（默认第一个领域）</label>' +
-      '<select id="primaryDomain">' + d.domains.map(function (dm) {
+      '<select id="primaryDomain">' + d.domains.filter(function (x) { return !x.hidden; }).map(function (dm) {
         return '<option value="' + esc(dm.id) + '"' + (d.settings.primaryDomain === dm.id ? " selected" : "") + ">" + esc(dm.name) + "</option>";
       }).join("") + "</select></div>" +
       '<button class="btn" data-action="save-primary">' + ic("check") + "保存</button>");

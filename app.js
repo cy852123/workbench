@@ -246,6 +246,8 @@
   function migrate() {
     /* 旧数据 → 新结构的一次性迁移（不删除任何数据） */
     var changed = false;
+    /* 论文写作板块已移除（界面隐藏，历史数据保留在本机） */
+    (data.domains || []).forEach(function (dm) { if (dm.id === "paper" && !dm.hidden) { dm.hidden = true; changed = true; } });
     if (data.settings && data.settings.kaoyanDate === "2026-12-26") {
       data.settings.kaoyanDate = "2027-12-25";
       changed = true;
@@ -430,7 +432,7 @@
     items.push({ group: "开始" });
     items.push({ view: "today", label: "今日", icon: "sun" });
     items.push({ group: "我的领域" });
-    data.domains.slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
+    data.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
       items.push({ view: "domain:" + dm.id, label: dm.name, icon: dm.type === "courses" ? "book" : dm.type === "paper" ? "file" : dm.type === "kaoyan" ? "target" : "book", domain: true });
     });
     items.push({ group: "工具" });
@@ -2713,7 +2715,7 @@
   }
 
   function addTaskModal(domain) {
-    var domOpts = data.domains.map(function (x) { return [x.id, x.name]; });
+    var domOpts = data.domains.filter(function (x) { return !x.hidden; }).map(function (x) { return [x.id, x.name]; });
     modalOpen("添加任务",
       '<div class="field"><label>任务内容</label><input id="tTitle" placeholder="要做什么"></div>' +
       selField("所属领域", "tDomain", domOpts, domain || data.settings.primaryDomain) +
@@ -2736,7 +2738,7 @@
   function editTaskModal(id) {
     var t = data.tasks.filter(function (x) { return x.id === id; })[0];
     if (!t) return;
-    var domOpts = data.domains.map(function (x) { return [x.id, x.name]; });
+    var domOpts = data.domains.filter(function (x) { return !x.hidden; }).map(function (x) { return [x.id, x.name]; });
     modalOpen("编辑任务",
       '<div class="field"><label>任务内容</label><input id="tTitle" value="' + esc(t.title) + '"></div>' +
       selField("所属领域", "tDomain", domOpts, t.domainId) +
@@ -2748,7 +2750,7 @@
   }
 
   function goalModal() {
-    var domOpts = data.domains.map(function (x) { return [x.id, x.name]; });
+    var domOpts = data.domains.filter(function (x) { return !x.hidden; }).map(function (x) { return [x.id, x.name]; });
     modalOpen("设定今日目标", "今天想在各领域学多久？填完保存，晚上看完成率。" +
       '<div id="goalRows"></div>' +
       '<button class="btn ghost small" data-action="goal-add-row">' + ICONS.plus + "再加一项</button>",
@@ -2762,7 +2764,7 @@
     var el = e.target.closest ? e.target.closest("[data-action]") : null;
     if (el && el.getAttribute("data-action") === "goal-add-row") {
       var n = document.querySelectorAll("#goalRows .form-row").length;
-      var domOpts = data.domains.map(function (x) { return [x.id, x.name]; });
+      var domOpts = data.domains.filter(function (x) { return !x.hidden; }).map(function (x) { return [x.id, x.name]; });
       var div = document.createElement("div");
       div.className = "form-row";
       div.innerHTML = '<div class="field"><label>领域</label><select id="gDomain' + n + '">' + domOpts.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + "</option>"; }).join("") + "</select></div>" +
@@ -2923,7 +2925,7 @@
   }
   function punchModal(did) {
     var dm = did ? data.domains.filter(function (x) { return x.id === did; })[0] : null;
-    var doms = data.domains.filter(function (x) { return punchSubjects(x).length > 0; });
+    var doms = data.domains.filter(function (x) { return !x.hidden && punchSubjects(x).length > 0; });
     if (doms.length === 0) { toast("没有可打卡的领域", true); return; }
     var sel = dm && punchSubjects(dm).length ? dm : doms[0];
     modalOpen("打卡学习", "记录今天学了什么、学了多久。" +
@@ -3272,7 +3274,7 @@
 
   function resourceModal(id) {
     var r = id ? data.resources.filter(function (x) { return x.id === id; })[0] : null;
-    var domOpts = [["", "不关联"]] .concat(data.domains.map(function (x) { return [x.id, x.name]; }));
+    var domOpts = [["", "不关联"]].concat(data.domains.filter(function (x) { return !x.hidden; }).map(function (x) { return [x.id, x.name]; }));
     modalOpen(r ? "编辑资料" : "新建资料",
       field("标题（B站链接可自动填充）", "resTitle", "text", "", r ? r.title : "") +
       field("链接（粘贴自动识别平台）", "resUrl", "text", "https://", r ? r.url : "") +
@@ -3360,7 +3362,7 @@
   function sortModal(id) {
     var x = data.inbox.filter(function (y) { return y.id === id; })[0];
     if (!x) return;
-    var targets = [["library", "资料库"]].concat(data.domains.map(function (d) { return [d.id, d.name]; }));
+    var targets = [["library", "资料库"]].concat(data.domains.filter(function (x) { return !x.hidden; }).map(function (d) { return [d.id, d.name]; }));
     modalOpen("确认去向",
       '<div class="li-sub" style="margin-bottom:10px;">内容：' + esc(x.content || x.url) + "</div>" +
       (x.suggestion ? '<div class="ai-banner" style="margin-bottom:10px;">' + ICONS.spark + "AI 建议：" + esc(x.suggestion) + "</div>" : "") +
