@@ -176,6 +176,7 @@
         { date: "2026-08-13", domainId: "kaoyan", subject: "数学", minutes: 150 },
         { date: "2026-08-14", domainId: "kaoyan", subject: "专业课", minutes: 60 }
       ],
+      focusSessions: [],
       goals: [],
       mistakes: [
         { id: "m1", subject: "数学", title: "极限计算：洛必达适用条件判断错误", reason: "粗心，未验证 0/0 型", answer: "先判断型再使用洛必达", reviewed: false, date: "2026-08-14" }
@@ -328,6 +329,8 @@
       items.push({ view: "domain:" + dm.id, label: dm.name, icon: dm.type === "courses" ? "book" : dm.type === "paper" ? "file" : dm.type === "kaoyan" ? "target" : "book", domain: true });
     });
     items.push({ group: "工具" });
+    items.push({ view: "focus", label: "专注", icon: "timer" });
+    items.push({ view: "activity", label: "学习记录", icon: "trending" });
     items.push({ view: "library", label: "资料库", icon: "folder" });
     items.push({ view: "inbox", label: "收集箱", icon: "inbox", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
     items.push({ view: "mistakes", label: "错题本", icon: "alert" });
@@ -356,6 +359,8 @@
       qa: { t: "答疑库", s: "问过的题不再错" },
       reviews: { t: "复盘", s: "让进步发生" },
       health: { t: "健康", s: "学习的第一步" },
+      focus: { t: "专注", s: "番茄钟计时" },
+      activity: { t: "学习记录", s: "自动汇总你今天干了什么" },
       calendar: { t: "日历", s: "重要日期一目了然" },
       accounts: { t: "账号", s: "管理我的平台账号" },
       search: { t: "搜索", s: "一次搜遍全部内容" },
@@ -425,6 +430,8 @@
     else if (view === "ai") html = Views.ai();
     else if (view === "accounts") html = Views.accounts();
     else if (view === "health") html = Views.health();
+    else if (view === "focus") html = Views.focus();
+    else if (view === "activity") html = Views.activity();
     else if (view === "reviews") html = Views.reviews();
     else if (view === "mistakes") html = Views.mistakes();
     else if (view === "qa") html = Views.qa();
@@ -487,7 +494,10 @@
     "daily-review": { t: "每日复盘", c: ["3 个问题：今天完成了什么 / 没完成什么及原因 / 明天怎么调整。", "1 分钟完成，坚持比完美重要。", "完成后今天算复盘过，可修改。", "历史在下方时间线，能看到进步轨迹。"] },
     "weekly-review": { t: "每周复盘", c: ["AI 自动汇总本周数据（各领域时长、任务完成、打卡、健康）生成草稿。", "草稿可以修改，确认后才保存。", "每周日做一次，形成常态。"] },
     "health": { t: "健康页", c: ["记录睡眠、运动、当日状态；专注计时（番茄钟）也在这里。", "睡眠：记录几点睡几点起，自动算时长，周报统计平均睡眠。", "运动：记当天是否运动。", "状态：开始学习前标一下精力充沛/一般/疲惫，复盘对照。", "提醒只在页面打开时生效，手机锁屏后浏览器无法提醒，这是所有网页的限制。"] },
-    "timer": { t: "专注计时（番茄钟）", c: ["25/45/60 分钟专注倒计时。", "开始后页面内倒计时，到点提示休息并发出提示音。", "注意：页面打开时有效；手机锁屏或切到其他应用会暂停，这是网页的限制。", "专注完成后可去打卡学习时长。"] },
+    "timer": { t: "专注计时（番茄钟）", c: ["独立页面，圆形进度环显示剩余时间。", "25/45/60 分钟预设，可随时开始/暂停/重置。", "完成一次专注会自动记录（今日番茄数、累计番茄），并弹出小奖励。", "专注历史记录每次完成的时间。", "注意：页面打开时有效；手机锁屏或切到其他应用会暂停，这是网页的限制。", "专注完成后可去领域页打卡学习时长。"] },
+    "focus-history": { t: "专注历史", c: ["记录每次完成的专注（时长、日期）。", "数据自动记录，无需手动填写。"] },
+    "activity-today": { t: "今日时间线", c: ["自动汇总你今天的所有学习活动：打卡、完成的任务、专注、新增的资料/答疑/错题/生词、复盘。", "按时间顺序排列，不用自己记。", "记录全部来自你真实操作的数据，不会编造。"] },
+    "activity-history": { t: "最近 7 天", c: ["每天的学习时长、专注次数、是否复盘。", "想不起来昨天干了什么，看这里。"] },
     "accounts": { t: "账号管理", c: ["记录你在各平台用的账号：平台 + 账号名 + 用途。", "只存公开信息，不存密码，不会登录你的账号。", "密码请用浏览器自带的密码管理器。"] },
     "calendar": { t: "日历", c: ["当月日历 + 重要日期列表（考研报名、四六级、期末、论文截止等）。", "有标记的日子在日历上有圆点。", "临近 3 天会在今日页异常提醒出现。"] },
     "important-dates": { t: "重要日期", c: ["记录不忘记的日子：考试、报名、截止日期。", "添加后日历有标记，临近自动提醒。", "删除进回收站可恢复。"] },
@@ -584,10 +594,16 @@
   function aiSend(text) {
     var s = data.settings;
     var chat = $id("aiChat");
-    var mk = function (cls, txt) {
+    var mk = function (cls, txt, saveIdx) {
       var div = document.createElement("div");
       div.className = "msg " + cls;
       div.textContent = txt;
+      if (saveIdx != null) {
+        var bar = document.createElement("div");
+        bar.style.cssText = "margin-top:8px;display:flex;gap:8px;";
+        bar.innerHTML = '<button class="btn small plain" data-action="ai-save" data-id="' + saveIdx + '">' + ICONS.folder + "保存到工作台</button>";
+        div.appendChild(bar);
+      }
       return div;
     };
     chat.appendChild(mk("user", text));
@@ -615,9 +631,10 @@
         chat.appendChild(mk("bot", "AI 返回了空结果，可能密钥或地址配置有误。"));
         toast("AI 请求失败，请检查配置", true);
       } else {
-        chat.appendChild(mk("bot", reply));
         W.ui.aiChat.push({ role: "user", content: text });
         W.ui.aiChat.push({ role: "assistant", content: reply });
+        var idx = W.ui.aiChat.length - 1;
+        chat.appendChild(mk("bot", reply, idx));
         if (W.ui.aiChat.length > 20) W.ui.aiChat = W.ui.aiChat.slice(-20);
       }
       chat.scrollTop = chat.scrollHeight;
@@ -626,6 +643,61 @@
       chat.appendChild(mk("bot", "请求失败：网络不通或 API 地址错误。请检查配置后重试。"));
       chat.scrollTop = chat.scrollHeight;
     });
+  }
+  /* AI 回答 → 保存到工作台（分类存放） */
+  function suggestSubject(txt) {
+    var c = String(txt || "").toLowerCase();
+    if (/英语|单词|词汇|语法|作文|听力|阅读|翻译|四六|六级|四级/.test(c)) return "英语";
+    if (/数学|高数|线代|概率/.test(c)) return "数学";
+    if (/政治|马原|毛概|思修/.test(c)) return "政治";
+    if (/材料|专业|高物|化学/.test(c)) return "专业课";
+    return "未分类";
+  }
+  function aiSaveModal(idx) {
+    var m = W.ui.aiChat[idx];
+    if (!m || m.role !== "assistant") return;
+    var content = m.content;
+    var subj = suggestSubject(content);
+    var cetDm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+    var hasWordbook = !!cetDm;
+    var typeOpts = '<option value="qa">答疑记录（问题+解答）</option>' +
+      '<option value="resource">学习资料（存入资料库）</option>' +
+      (hasWordbook ? '<option value="word">生词（存入英语生词本）</option>' : "");
+    modalOpen("保存到工作台",
+      '<div class="li-sub" style="margin-bottom:10px;">内容预览：' + esc(content.slice(0, 80)) + (content.length > 80 ? "…" : "") + "</div>" +
+      '<div class="field"><label>保存为</label><select id="asType">' + typeOpts + "</select></div>" +
+      '<div class="field"><label>科目 / 分类（已自动推荐，可修改）</label><input id="asSubject" value="' + esc(subj) + '"></div>' +
+      '<div class="field" id="asCatWrap" style="display:none;"><label>资料分类</label><select id="asCat">' +
+      '<option value="考研">考研</option><option value="课程">课程</option><option value="课外">课外</option><option value="其他">其他</option></select></div>' +
+      '<div class="field"><label>备注（可选）</label><input id="asNote" placeholder="来源：AI 对话"></div>',
+      cancelBtn() + '<button class="btn" data-action="submit-ai-save" data-id="' + idx + '">' + ICONS.check + "保存</button>");
+    var typeSel = $id("asType");
+    typeSel.addEventListener("change", function () {
+      $id("asCatWrap").style.display = typeSel.value === "resource" ? "" : "none";
+    });
+  }
+  function submitAiSave(idx) {
+    var m = W.ui.aiChat[idx];
+    if (!m) return;
+    var type = fval("asType");
+    var subject = fval("asSubject").trim() || "未分类";
+    var note = fval("asNote").trim() || "来源：AI 对话";
+    if (type === "qa") {
+      data.qa.push({ id: uid(), subject: subject, question: "AI 解答（" + subject + "）", answer: m.content, date: todayStr() });
+      toast("已存入答疑库");
+    } else if (type === "resource") {
+      data.resources.push({ id: uid(), title: m.content.slice(0, 40), category: fval("asCat"), tags: [subject], url: "", platform: "", extractCode: "", status: "未看", domainId: "", note: m.content, createdAt: nowStr(), updatedAt: nowStr() });
+      toast("已存入资料库");
+    } else if (type === "word") {
+      var cetDm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+      if (cetDm) {
+        cetDm.wordbook = cetDm.wordbook || [];
+        cetDm.wordbook.push({ id: uid(), word: m.content.split(/[\s，。,.；;]/)[0].slice(0, 30), meaning: m.content.slice(0, 60), note: note, mastered: false, date: todayStr() });
+        toast("已存入英语生词本");
+      }
+    }
+    modalClose();
+    refresh();
   }
 
   /* ---------- 导出 / 导入 ---------- */
@@ -658,6 +730,33 @@
     reader.readAsText(file);
   }
 
+  /* ---------- 奖励与鼓励 ---------- */
+  var REWARDS = ["奖励一杯奶茶", "奖励看一集喜欢的视频", "奖励出门散步 15 分钟", "奖励听一首喜欢的歌", "奖励一个小零食", "奖励 10 分钟自由时间", "奖励刷 10 分钟手机（就 10 分钟）", "奖励给朋友夸夸自己"];
+  var PRAISES = ["做得好", "状态不错", "又进一步", "稳扎稳打", "真棒", "继续加油", "今天的你很靠谱", "保持这个节奏"];
+  function randomPick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function calcStreakDays() {
+    var logs = {};
+    (data.studyLog || []).forEach(function (x) { logs[x.date] = 1; });
+    var dt = new Date(), n = 0;
+    while (true) {
+      var key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+      if (logs[key]) { n++; dt.setDate(dt.getDate() - 1); }
+      else break;
+    }
+    return n;
+  }
+  function rewardModal(title, msg, withReward) {
+    var streak = calcStreakDays();
+    var reward = withReward ? randomPick(REWARDS) : null;
+    var html = '<div style="text-align:center;padding:10px 0;">' +
+      '<div style="font-size:15px;font-weight:700;margin-bottom:8px;">' + esc(title) + "</div>" +
+      '<p style="font-size:14px;color:var(--sub);margin-bottom:12px;">' + esc(msg) + "</p>";
+    if (streak > 0) html += '<div class="li-sub" style="margin-bottom:10px;">连续打卡 ' + streak + ' 天' + (streak >= 7 ? "，已经坚持一整周了" : streak >= 3 ? "，节奏很稳" : "，好的开始") + "</div>";
+    if (reward) html += '<div class="card tint-yellow" style="margin:6px auto 4px;max-width:260px;padding:14px;">' + esc(reward) + "</div>";
+    html += "</div>";
+    modalOpen("给你的小奖励", html, '<button class="btn" data-action="modal-close">' + ICONS.check + "收到</button>");
+  }
+
   /* ---------- 番茄钟 ---------- */
   function timerRender() {
     var el = $id("timerDisp");
@@ -665,7 +764,20 @@
     var m = Math.floor(W.timer.left / 60), s = W.timer.left % 60;
     el.textContent = String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
     var btn = $id("timerBtn");
-    if (btn) btn.innerHTML = (W.timer.running ? "暂停" : "继续") ;
+    if (btn) btn.innerHTML = (W.timer.running ? "暂停" : "继续");
+    /* 圆环进度 */
+    var ring = $id("timerRing");
+    if (ring) {
+      var r = 130, circ = 2 * Math.PI * r;
+      var remain = W.timer.left / W.timer.total;
+      ring.setAttribute("stroke-dashoffset", String(circ * (1 - remain)));
+    }
+    var st = $id("timerState");
+    if (st) {
+      if (W.timer.running) st.textContent = "专注中，坚持住";
+      else if (W.timer.left < W.timer.total) st.textContent = "已暂停";
+      else st.textContent = "准备开始";
+    }
   }
   function timerBeep() {
     try {
@@ -686,10 +798,18 @@
       if (W.timer.left <= 0) {
         clearInterval(W.timer.iv);
         W.timer.running = false;
+        /* 记录本次专注 */
+        data.focusSessions = data.focusSessions || [];
+        var totalMin = W.timer.total / 60;
+        data.focusSessions.push({ id: uid(), date: todayStr(), minutes: totalMin, ts: nowStr().slice(11) });
+        save(true);
         W.timer.left = W.timer.total;
         timerRender();
         toast("专注完成，休息一下吧");
         timerBeep();
+        rewardModal("专注完成", "完成一次 " + totalMin + " 分钟专注，给自己一个肯定。", false);
+        /* 若在专注页，刷新统计 */
+        if (W.ui.view === "focus") renderView();
       }
     }, 1000);
     timerRender();
@@ -737,11 +857,18 @@
       case "open-qa": go("qa"); break;
       case "open-mistakes": go("mistakes"); break;
       case "open-ai": go("ai"); break;
+      case "open-focus": go("focus"); break;
 
       /* 任务 */
       case "toggle-task": {
         var t = data.tasks.filter(function (x) { return x.id === id; })[0];
-        if (t) { t.done = !t.done; refresh(); toast(t.done ? "任务已完成" : "已恢复为未完成"); }
+        if (t) {
+          t.done = !t.done;
+          t.doneAt = t.done ? nowStr() : "";
+          refresh();
+          if (t.done) toast("任务完成，" + randomPick(PRAISES));
+          else toast("已恢复为未完成");
+        }
         break;
       }
       case "add-task": addTaskModal(domain); break;
@@ -933,6 +1060,8 @@
         if (txt) { aiSend(txt); $id("aiInput").value = ""; }
         break;
       }
+      case "ai-save": aiSaveModal(parseInt(id, 10)); break;
+      case "submit-ai-save": submitAiSave(parseInt(id, 10)); break;
 
       /* 模态提交 */
       case "submit-task": submitTask(); break;
@@ -1191,8 +1320,23 @@
   function submitPunch(did) {
     var min = parseInt(fval("pMin"), 10) || 0;
     if (min <= 0) { toast("请填写有效时长", true); return; }
-    data.studyLog.push({ date: todayStr(), domainId: fval("pDomain"), subject: fval("pSubject"), minutes: min });
-    modalClose(); refresh(); toast("打卡成功");
+    var todayLogs = (data.studyLog || []).filter(function (x) { return x.date === todayStr(); });
+    var isFirstToday = todayLogs.length === 0;
+    data.studyLog.push({ date: todayStr(), domainId: fval("pDomain"), subject: fval("pSubject"), minutes: min, ts: nowStr().slice(11) });
+    modalClose(); refresh();
+    if (isFirstToday) {
+      rewardModal("今日打卡成功", "今天第一次打卡，学起来就有状态了。", true);
+    } else {
+      toast("打卡成功，" + randomPick(PRAISES));
+      /* 今日目标全部达成奖励（非首次打卡时检查，避免双弹窗） */
+      var g = (data.goals || []).filter(function (x) { return x.date === todayStr(); });
+      var plan = g.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+      var done = (data.studyLog || []).filter(function (x) { return x.date === todayStr(); }).reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+      var beforeMin = todayLogs.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+      if (g.length > 0 && plan > 0 && done >= plan && beforeMin < plan) {
+        rewardModal("今日目标全部达成", "说好的目标都完成了，今天的你很靠谱。", true);
+      }
+    }
   }
 
   /* ---------- 生词本 ---------- */

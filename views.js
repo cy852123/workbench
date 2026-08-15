@@ -683,17 +683,10 @@
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">记录睡眠和状态后，每周复盘会自动统计健康情况。</div>');
 
-    /* 番茄钟 */
-    html += card(cardHead("专注计时（番茄钟）", "页面打开时有效，手机锁屏会暂停", "timer"),
-      '<div class="timer-display" id="timerDisp">25:00</div>' +
-      '<div class="timer-controls">' +
-      '<button class="btn small plain" data-action="timer-preset" data-min="25">25 分</button>' +
-      '<button class="btn small plain" data-action="timer-preset" data-min="45">45 分</button>' +
-      '<button class="btn small plain" data-action="timer-preset" data-min="60">60 分</button></div>' +
-      '<div class="timer-controls">' +
-      '<button class="btn" data-action="timer-toggle" id="timerBtn">' + ic("play") + "开始</button>" +
-      '<button class="btn plain" data-action="timer-reset">' + ic("refresh") + "重置</button></div>" +
-      '<div class="li-sub" style="text-align:center;margin-top:10px;">到点会提示休息。专注完成后可打卡学习时长。</div>');
+    /* 番茄钟入口（已独立为"专注"页面） */
+    html += card(cardHead("专注计时", "已独立为单独页面", "timer"),
+      '<p style="font-size:14px;color:var(--sub);margin-bottom:12px;">番茄钟已搬到独立的「专注」页面，那里有更大的计时器和专注统计。</p>' +
+      '<button class="btn block" data-action="open-focus">' + ic("timer") + "打开专注页</button>");
 
     html += "</div>";
 
@@ -717,6 +710,156 @@
       '<div class="li-sub" style="margin-top:8px;">说明：提醒只在工作台页面打开时生效；手机锁屏或关闭页面后浏览器无法继续提醒，这是所有网页的共同限制。</div>');
 
     return html;
+  }
+
+  /* ==================== 专注（番茄钟独立页） ==================== */
+  function focus() {
+    var W = window.W, d = W.data;
+    var t = todayStr();
+    var sessions = (d.focusSessions || []).filter(function (x) { return x.date === t; });
+    var todayMin = sessions.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    var totalSessions = (d.focusSessions || []).length;
+    var html = "";
+
+    /* 圆环计时器 */
+    var r = 130, circ = 2 * Math.PI * r;
+    html += '<div class="card" style="text-align:center;">' +
+      '<div style="position:relative;width:300px;max-width:78vw;margin:0 auto;">' +
+      '<svg viewBox="0 0 300 300" style="transform:rotate(-90deg);">' +
+      '<circle cx="150" cy="150" r="' + r + '" fill="none" stroke="#EDEFEC" stroke-width="14"></circle>' +
+      '<circle id="timerRing" cx="150" cy="150" r="' + r + '" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round" stroke-dasharray="' + circ + '" stroke-dashoffset="0"></circle>' +
+      "</svg>" +
+      '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">' +
+      '<div class="timer-display" id="timerDisp" style="font-size:52px;">25:00</div>' +
+      '<div class="li-sub" id="timerState" style="margin-top:6px;">准备开始</div>' +
+      "</div></div>" +
+      '<div class="timer-controls">' +
+      '<button class="btn small plain" data-action="timer-preset" data-min="25">25 分</button>' +
+      '<button class="btn small plain" data-action="timer-preset" data-min="45">45 分</button>' +
+      '<button class="btn small plain" data-action="timer-preset" data-min="60">60 分</button></div>' +
+      '<div class="timer-controls" style="margin-top:14px;">' +
+      '<button class="btn" data-action="timer-toggle" id="timerBtn" style="min-width:120px;">' + ic("play") + "开始</button>" +
+      '<button class="btn plain" data-action="timer-reset">' + ic("refresh") + "重置</button></div>" +
+      '<div class="li-sub" style="margin-top:12px;">说明：专注完成会自动记录一个番茄；页面打开时有效，手机锁屏会暂停（所有网页的共同限制）。</div></div>';
+
+    /* 今日统计 */
+    html += '<div class="grid grid-3">' +
+      '<div class="card tint-blue"><div class="stat-num">' + sessions.length + '</div><div class="stat-label">今日番茄</div></div>' +
+      '<div class="card tint-yellow"><div class="stat-num">' + Math.round(todayMin / 60) + '<span style="font-size:14px;"> 小时</span></div><div class="stat-label">今日专注</div></div>' +
+      '<div class="card tint-green"><div class="stat-num">' + totalSessions + '</div><div class="stat-label">累计番茄</div></div>' +
+      "</div>";
+
+    /* 历史 */
+    var recent = (d.focusSessions || []).slice().sort(function (a, b) { return b.ts > a.ts ? 1 : -1; }).slice(0, 8);
+    html += card(cardHead("专注历史", "最近完成的番茄", "focus-history"),
+      recent.length === 0 ? empty("还没有完成的专注", "从第一个 25 分钟开始") :
+      '<div class="list">' + recent.map(function (s) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">完成一次 ' + s.minutes + ' 分钟专注</div></div>' +
+          '<span class="li-meta">' + esc(s.date) + "</span></div>";
+      }).join("") + "</div>");
+
+    return html;
+  }
+
+  /* ==================== 学习记录（今日日报） ==================== */
+  function activity() {
+    var W = window.W, d = W.data;
+    var t = todayStr();
+    var html = "";
+    var entries = [];
+    var todayMin = 0;
+
+    /* 聚合今日活动 */
+    (d.studyLog || []).forEach(function (x) {
+      if (x.date === t) { todayMin += (x.minutes || 0); entries.push({ ts: t + "T" + (x.ts || "12:00"), icon: "flame", text: "学习了 " + domainName(x.domainId) + "：" + (x.subject || "") + " " + fmtMin(x.minutes), type: "打卡" }); }
+    });
+    (d.tasks || []).forEach(function (x) {
+      if (x.done && x.doneAt && String(x.doneAt).indexOf(t) === 0) entries.push({ ts: x.doneAt, icon: "check", text: "完成任务：" + x.title, type: "任务" });
+    });
+    (d.focusSessions || []).forEach(function (x) {
+      if (x.date === t) entries.push({ ts: t + "T" + (x.ts || "12:00"), icon: "timer", text: "完成 " + x.minutes + " 分钟专注", type: "专注" });
+    });
+    (d.resources || []).forEach(function (x) {
+      if (x.createdAt && String(x.createdAt).indexOf(t) === 0) entries.push({ ts: x.createdAt, icon: "folder", text: "新增资料：" + x.title, type: "资料" });
+    });
+    (d.qa || []).forEach(function (x) {
+      if (x.date === t) entries.push({ ts: t + "T12:00", icon: "help", text: "记录答疑：" + x.question, type: "答疑" });
+    });
+    (d.mistakes || []).forEach(function (x) {
+      if (x.date === t) entries.push({ ts: t + "T12:00", icon: "alert", text: "记录错题：" + x.title, type: "错题" });
+    });
+    (d.reviews || []).forEach(function (x) {
+      if (x.date === t) entries.push({ ts: t + "T23:00", icon: "refresh", text: "完成" + (x.type === "weekly" ? "每周" : "每日") + "复盘", type: "复盘" });
+    });
+    var cetDm = d.domains.filter(function (x) { return x.id === "cet"; })[0];
+    if (cetDm) (cetDm.wordbook || []).forEach(function (x) {
+      if (x.date === t) entries.push({ ts: t + "T12:00", icon: "book", text: "记生词：" + x.word, type: "生词" });
+    });
+
+    entries.sort(function (a, b) { return a.ts > b.ts ? 1 : -1; });
+    var taskDone = entries.filter(function (e) { return e.type === "任务"; }).length;
+    var addCount = entries.filter(function (e) { return ["资料", "答疑", "错题", "生词"].indexOf(e.type) >= 0; }).length;
+
+    /* 统计卡 */
+    html += '<div class="grid grid-4">' +
+      '<div class="card tint-green"><div class="stat-num">' + Math.round(todayMin / 60) + '<span style="font-size:13px;"> 小时</span></div><div class="stat-label">今日学习时长</div></div>' +
+      '<div class="card tint-blue"><div class="stat-num">' + taskDone + '</div><div class="stat-label">完成任务</div></div>' +
+      '<div class="card tint-yellow"><div class="stat-num">' + entries.filter(function (e) { return e.type === "专注"; }).length + '</div><div class="stat-label">专注番茄</div></div>' +
+      '<div class="card tint-pink"><div class="stat-num">' + addCount + '</div><div class="stat-label">新增记录</div></div>' +
+      "</div>";
+
+    /* 鼓励语 */
+    var streak = calcStreak();
+    var praise = "";
+    if (todayMin > 0 && taskDone > 0) praise = "今天学得扎实，既有投入又有产出，继续保持这个节奏。";
+    else if (todayMin > 0) praise = "今天学习了 " + fmtMin(todayMin) + "，每一步都算数，明天继续。";
+    else if (entries.length > 0) praise = "今天有记录就有进步，慢慢来，比较快。";
+    else praise = "今天还没开始，现在开始也来得及，打开今日页定个小目标吧。";
+    if (streak >= 2) praise += " 连续打卡 " + streak + " 天，这是你自己的节奏。";
+    html += '<div class="card tint-yellow"><div class="card-head"><h3>今天小结</h3></div>' +
+      '<p style="font-size:15px;line-height:1.8;">' + praise + "</p></div>";
+
+    /* 今日时间线 */
+    html += card(cardHead("今日时间线", entries.length + " 条记录", "activity-today"),
+      entries.length === 0 ? empty("今天还没有记录", "去打卡、学一会儿，这里会自动汇总你干了什么") :
+      '<div class="list">' + entries.map(function (e) {
+        return '<div class="list-item"><span class="tag">' + e.type + "</span>" +
+          '<div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(e.text) + "</div></div>" +
+          '<span class="li-meta">' + (String(e.ts).indexOf("T") >= 0 ? String(e.ts).split("T")[1].slice(0, 5) : "") + "</span></div>";
+      }).join("") + "</div>");
+
+    /* 历史（近 7 天） */
+    var days = [];
+    for (var i = 0; i < 7; i++) {
+      var dt = new Date(); dt.setDate(dt.getDate() - i);
+      var key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+      if (key === t) continue;
+      var m = (d.studyLog || []).filter(function (x) { return x.date === key; }).reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+      var fs = (d.focusSessions || []).filter(function (x) { return x.date === key; }).length;
+      var rev = (d.reviews || []).filter(function (x) { return x.date === key; }).length;
+      days.push({ key: key, m: m, fs: fs, rev: rev });
+    }
+    html += card(cardHead("最近 7 天", "每天的学习情况", "activity-history"),
+      '<div class="list">' + days.map(function (x) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(x.key) + "</div></div>" +
+          '<span class="li-meta">' + fmtMin(x.m) + (x.fs ? " · " + x.fs + " 番茄" : "") + (x.rev ? " · 有复盘" : "") + "</span></div>";
+      }).join("") + "</div>" +
+      '<div class="li-sub" style="margin-top:10px;">想不起来昨天干了什么？看这里。记录来自你的打卡、任务、资料、答疑、错题、生词和复盘，不会编造。</div>');
+
+    return html;
+  }
+  function calcStreak() {
+    var W = window.W, d = W.data;
+    var logs = {};
+    (d.studyLog || []).forEach(function (x) { logs[x.date] = 1; });
+    var dt = new Date();
+    var n = 0;
+    while (true) {
+      var key = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+      if (logs[key]) { n++; dt.setDate(dt.getDate() - 1); }
+      else break;
+    }
+    return n;
   }
 
   /* ==================== 复盘 ==================== */
@@ -927,6 +1070,15 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.3 专注与记录<span class="log-tag">更新</span></div>' +
+      '<p>番茄钟独立为「专注」页面：圆形进度环、25/45/60 预设、今日番茄与专注统计、专注历史，完成后自动记录并弹小奖励。</p>' +
+      '<p>新增「学习记录」页面：自动汇总你今天干了什么（打卡、完成任务、专注、新增资料/答疑/错题/生词、复盘），含今日时间线、最近 7 天回顾和鼓励语。</p>' +
+      '<p>打卡与任务完成增加鼓励与奖励：连续打卡天数、随机小奖励弹窗（打卡/专注/目标达成时）。</p>' +
+      '<p>AI 帮手：对话回答后可点「保存到工作台」，按答疑/资料/生词分类存放，科目自动推荐可修改。</p>' +
+      '<p>影响范围：导航、健康页、AI 帮手、打卡。数据：新增专注记录与任务完成时间（不删除旧数据）。你需要的操作：无。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.2 合并导入<span class="log-tag">更新</span></div>' +
+      '<p>设置页新增「合并导入」：把聊天/学习中产生的资料文件增量追加到工作台（预览+确认，不覆盖现有数据）。</p>' +
+      '<p>影响范围：设置与数据。数据：无变化。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.1 体验优化<span class="log-tag">更新</span></div>' +
       '<p>手机端「更多」抽屉改为从左侧滑出，分组更清晰（开始 / 我的领域 / 工具 / 系统）。</p>' +
       '<p>考研日期更正为 2028 考研（初试 2027 年 12 月 25 日），倒计时与日历同步。</p>' +
@@ -958,6 +1110,8 @@
     ai: ai,
     accounts: accounts,
     health: health,
+    focus: focus,
+    activity: activity,
     reviews: reviews,
     mistakes: mistakes,
     qa: qa,
