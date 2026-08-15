@@ -542,7 +542,7 @@
     icons: ICONS,
     data: data,
     settings: null,
-    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", aiChat: [], focusType: "pomodoro" },
+    ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", grammarIdx: null, aiChat: [], focusType: "pomodoro" },
     timer: { total: 1500, left: 1500, running: false, iv: null }
   };
   window.W = W;
@@ -613,6 +613,7 @@
       "tasks-all": { e: "📋", t: "任务管理专区", s: "全部任务" },
       "cet-vocab": { e: "📖", t: "词汇专区", s: "生词本与记忆复习" },
       "cet-grammar": { e: "📚", t: "语法专区", s: "语法检查器与知识点" },
+      "grammar-detail": { e: "📚", t: "语法知识点", s: "查看与复习" },
       "cet-listening": { e: "🎧", t: "听力专区", s: "真题听力与精听" },
       "cet-reading": { e: "📖", t: "阅读专区", s: "真题阅读与长难句" },
       "cet-writing": { e: "✍️", t: "写作专区", s: "范文模板与 AI 批改" },
@@ -753,6 +754,7 @@
     else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-wordbook") html = Views.cetWordbook(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-grammar") html = Views.cetGrammar(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
+    else if (view === "grammar-detail") html = Views.grammarDetail(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-exams") html = Views.cetExams(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-stats") html = Views.cetStats(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "ai-history") html = Views.aiHistory(data.domains.filter(function (x) { return x.id === "ai"; })[0]);
@@ -885,7 +887,7 @@
       "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan",
       "ky-english": "theme-cet", "ky-math": "theme-kaoyan", "ky-politics": "theme-kaoyan", "ky-major": "theme-kaoyan", "ky-word": "theme-kaoyan",
       "cet-vocab": "theme-cet", "cet-listening": "theme-cet", "cet-reading": "theme-cet", "cet-writing": "theme-cet",
-      "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet", "cet-grammar": "theme-cet",
+      "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet", "cet-grammar": "theme-cet", "grammar-detail": "theme-cet",
       "ai-history": "theme-ai"
     };
     return map[view] || "";
@@ -2911,6 +2913,23 @@
       case "submit-grammar-add": submitGrammarAdd(); break;
       case "grammar-toggle": grammarToggle(parseInt(el ? el.getAttribute("data-idx") : "", 10)); break;
       case "grammar-del": grammarDel(parseInt(el ? el.getAttribute("data-idx") : "", 10)); break;
+      case "grammar-open": {
+        var gi = parseInt(el ? el.getAttribute("data-idx") : "0", 10);
+        W.ui.grammarIdx = isNaN(gi) ? 0 : gi;
+        go("grammar-detail");
+        break;
+      }
+      case "grammar-nav": {
+        var dir = parseInt(el ? el.getAttribute("data-dir") : "1", 10);
+        var gpts = (data.grammar && data.grammar.points) || [];
+        var cur = W.ui.grammarIdx != null ? W.ui.grammarIdx : 0;
+        W.ui.grammarIdx = Math.max(0, Math.min(gpts.length - 1, cur + dir));
+        renderView();
+        break;
+      }
+      case "grammar-export": grammarExportModal(); break;
+      case "submit-grammar-export": submitGrammarExport(); break;
+      case "grammar-export-all": grammarExportAll(); break;
 
       /* AI */
       case "ai-send": {
@@ -3535,7 +3554,70 @@
     if (!pts[i]) return;
     if (!confirm("确定删除这个知识点？")) return;
     pts.splice(i, 1);
+    if (W.ui.grammarIdx != null && W.ui.grammarIdx > pts.length - 1) W.ui.grammarIdx = Math.max(0, pts.length - 1);
     save(); renderView(); toast("已删除");
+  }
+  /* 导出知识点：勾选模态，自由选择 */
+  function grammarExportModal() {
+    var pts = (data.grammar && data.grammar.points) || [];
+    if (!pts.length) { toast("还没有知识点可导出", true); return; }
+    var body = '<div class="li-sub" style="margin-bottom:8px;">勾选要导出的知识点（共 ' + pts.length + ' 条），导出为 txt 文本，可打印或存到别处。</div>' +
+      '<label class="checkline" style="margin-bottom:6px;"><input type="checkbox" id="gExpAll" checked> <b>全选 / 取消全选</b></label>' +
+      '<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;">' +
+      pts.map(function (p, i) {
+        return '<label class="checkline" style="padding:3px 0;"><input type="checkbox" class="gExpItem" data-idx="' + i + '" checked> ' +
+          esc(p.title) + ' <span class="li-sub">（' + esc(p.cat) + "）</span></label>";
+      }).join("") + "</div>";
+    modalOpen("导出语法知识点", body,
+      cancelBtn() + '<button class="btn plain" data-action="grammar-export-all">导出全部</button>' +
+      '<button class="btn" data-action="submit-grammar-export">' + ICONS.download + "导出所选</button>");
+    /* 全选/取消全选联动 */
+    var all = $id("gExpAll");
+    if (all) {
+      all.addEventListener("change", function () {
+        var items = document.querySelectorAll(".gExpItem");
+        items.forEach(function (c) { c.checked = all.checked; });
+      });
+    }
+  }
+  function submitGrammarExport() {
+    var pts = (data.grammar && data.grammar.points) || [];
+    var idxs = Array.from(document.querySelectorAll(".gExpItem")).filter(function (c) { return c.checked; })
+      .map(function (c) { return parseInt(c.getAttribute("data-idx"), 10); });
+    if (!idxs.length) { toast("请至少勾选一条知识点", true); return; }
+    var lines = ["个人工作台 · 英语语法知识点（共 " + idxs.length + " 条）", "导出时间：" + todayStr(), ""];
+    idxs.forEach(function (i) {
+      var p = pts[i];
+      if (!p) return;
+      lines.push("【" + p.cat + "】" + p.title + (p.mastered ? "（已掌握）" : "") + (p.custom ? "（自定义）" : ""));
+      lines.push(p.content);
+      lines.push("");
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "语法知识点_" + todayStr() + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    modalClose(); toast("已导出 " + idxs.length + " 条知识点");
+  }
+  function grammarExportAll() {
+    var pts = (data.grammar && data.grammar.points) || [];
+    var lines = ["个人工作台 · 英语语法知识点（共 " + pts.length + " 条）", "导出时间：" + todayStr(), ""];
+    pts.forEach(function (p) {
+      lines.push("【" + p.cat + "】" + p.title + (p.mastered ? "（已掌握）" : "") + (p.custom ? "（自定义）" : ""));
+      lines.push(p.content);
+      lines.push("");
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "语法知识点_" + todayStr() + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    modalClose(); toast("已导出全部 " + pts.length + " 条知识点");
   }
   /* 考试管理 */
   function addExamModal() {

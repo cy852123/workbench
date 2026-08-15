@@ -1242,26 +1242,51 @@
       '<textarea id="grammarText" rows="4" placeholder="粘贴英文作文或句子…" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:var(--fs-base);resize:vertical;"></textarea>' +
       '<button class="btn block" style="margin-top:8px;" data-action="grammar-check">检查语法错误</button>' +
       '<div id="grammarResult" style="margin-top:10px;"></div>');
-    /* 知识点库：按分类分组 */
+    /* 知识点库：列表只显示标题，点击单开一页看内容 */
     var pts = (d.grammar && d.grammar.points) || [];
     var cats = [];
     pts.forEach(function (p) { if (cats.indexOf(p.cat) < 0) cats.push(p.cat); });
     var done = pts.filter(function (p) { return p.mastered; }).length;
     html += card(cardHead("📚 语法知识点", pts.length + " 条 ｜ 已掌握 " + done, "grammar-points"),
-      '<button class="btn ghost small" data-action="grammar-add" style="margin-bottom:10px;">＋ 添加知识点</button>' +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+      '<button class="btn ghost small" data-action="grammar-add">' + ic("plus") + "添加知识点</button>" +
+      '<button class="btn ghost small" data-action="grammar-export">' + ic("download") + "导出知识点</button></div>" +
       (pts.length === 0 ? '<div class="li-sub">还没有知识点，点上方按钮添加。</div>' :
         cats.map(function (c) {
           var list = pts.filter(function (p) { return p.cat === c; });
           return '<div class="li-sub" style="font-weight:600;margin:10px 0 4px;">' + esc(c) + "（" + list.length + "）</div>" +
             '<div class="list">' + list.map(function (p, i) {
-              return '<div class="list-item" style="align-items:flex-start;"><div class="li-main">' +
-                '<div class="li-title">' + esc(p.title) + (p.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + (p.custom ? ' <span class="tag">自定义</span>' : "") + "</div>" +
-                '<div class="li-sub" style="white-space:pre-wrap;">' + esc(p.content) + "</div></div>" +
-                '<button class="btn small ' + (p.mastered ? "plain" : "") + '" data-action="grammar-toggle" data-idx="' + i + '">' + ic("check") + (p.mastered ? "已掌握" : "标记掌握") + "</button>" +
-                '<button class="icon-btn" data-action="grammar-del" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+              return '<div class="list-item" data-action="grammar-open" data-idx="' + i + '" style="cursor:pointer;">' +
+                '<div class="li-main"><div class="li-title">' + esc(p.title) + (p.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + (p.custom ? ' <span class="tag">自定义</span>' : "") + "</div>" +
+                '<div class="li-sub">' + esc(p.cat) + " ｜ 点击查看详情</div></div>" +
+                '<span class="en-skill-arrow">›</span></div>';
             }).join("") + "</div>";
         }).join("")) +
-      '<div class="li-sub" style="margin-top:10px;">内置示例知识点只是示范，点「＋ 添加知识点」可以写自己的内容。</div>');
+      '<div class="li-sub" style="margin-top:10px;">内置示例知识点只是示范，点「添加知识点」可以写自己的内容。</div>');
+    return html;
+  }
+  /* 知识点详情页：单开一页显示完整内容 */
+  function grammarDetail(dm) {
+    var W = window.W, d = W.data;
+    var pts = (d.grammar && d.grammar.points) || [];
+    var i = W.ui.grammarIdx != null ? W.ui.grammarIdx : 0;
+    var p = pts[i];
+    if (!p) return '<div class="card">' + esc("知识点不存在或已删除") + "</div>";
+    var html = backBar("cet-grammar", "语法专区");
+    html += card(cardHead(esc(p.title), esc(p.cat) + (p.mastered ? " ｜ 已掌握" : " ｜ 未掌握"), "grammar-detail"),
+      '<div class="li-sub" style="margin-bottom:8px;">分类：' + esc(p.cat) + (p.custom ? ' <span class="tag">自定义</span>' : ' <span class="tag">内置示例</span>') + "</div>" +
+      '<div style="white-space:pre-wrap;line-height:1.7;font-size:var(--fs-base);color:var(--text);">' + esc(p.content) + "</div>" +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      '<button class="btn small ' + (p.mastered ? "plain" : "") + '" data-action="grammar-toggle" data-idx="' + i + '">' + ic("check") + (p.mastered ? "已掌握（点此取消）" : "标记掌握") + "</button>" +
+      '<button class="btn small ghost" data-action="grammar-del" data-idx="' + i + '">' + ic("trash") + "删除</button>" +
+      "</div>");
+    /* 上一条 / 下一条切换 */
+    if (pts.length > 1) {
+      html += '<div style="display:flex;gap:8px;margin-top:10px;">' +
+        (i > 0 ? '<button class="btn ghost small" data-action="grammar-nav" data-dir="-1">← 上一条</button>' : '<span></span>') +
+        (i < pts.length - 1 ? '<button class="btn ghost small" data-action="grammar-nav" data-dir="1" style="margin-left:auto;">下一条 →</button>' : "") +
+        "</div>";
+    }
     return html;
   }
   function cetWordbook(dm) {
@@ -2418,6 +2443,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · 语法知识点优化<span class="log-tag">升级</span></div>' +
+      '<p>📚 语法知识点改为「列表 + 单页详情」：列表只显示标题（不拉长页面），点任意知识点单开一页看完整内容，可上一条/下一条切换。新增「导出知识点」按钮：弹窗勾选想导出的知识点（或导出全部），保存为 txt 文件。</p>' +
+      '<p>影响范围：英语学习 → 语法专区。数据：无影响。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · 语法学习专区<span class="log-tag">升级</span></div>' +
       '<p>📚 英语学习新增「语法」专区：①语法检查器——粘贴英文作文/句子，自动找出语法错误并给修改建议（在线免费服务）；②语法知识点库——内置 8 个高频语法点示例（时态/从句/虚拟语气/非谓语/主谓一致/倒装），可自己添加、标记掌握。</p>' +
       '<p>影响范围：英语学习板块。数据：自动初始化，不删旧数据。你需要的操作：无。</p></div>' +
@@ -2532,6 +2560,7 @@
     cetWordbook: cetWordbook,
     cetExams: cetExams,
     cetGrammar: cetGrammar,
+    grammarDetail: grammarDetail,
     cetStats: cetStats,
     englishZone: englishZone,
     aiHistory: aiHistory,
