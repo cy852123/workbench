@@ -1971,24 +1971,82 @@
   /* ==================== 答疑库 ==================== */
   function qa() {
     var W = window.W, d = W.data;
-    var list = (d.qa || []).slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; });
+    var subj = W.ui.qaSubj || "";
+    var status = W.ui.qaStatus || "";
+    var list = (d.qa || []).slice().sort(function (a, b) { return (b.date || "") > (a.date || "") ? 1 : -1; });
     var html = "";
-    html += card("", '<button class="btn block" data-action="add-qa">' + ic("plus") + "记录一个问题与解答</button>" +
-      '<div class="li-sub" style="margin-top:10px;">问过的问题记下来，考前翻看，避免问过的题再错。AI 对话的解答也可以存档到这里。</div>');
-    html += card(cardHead("答疑记录", list.length + " 条", "qa"),
-      list.length === 0 ? empty("还没有答疑记录", "学习时遇到不懂的，得到解答后记到这里") :
-      '<div class="list">' + list.map(function (q) {
+    var pending = list.filter(function (q) { return q.status === "待解决" && !q.mastered; });
+    var starred = list.filter(function (q) { return q.starred; });
+    var mastered = list.filter(function (q) { return q.mastered; });
+
+    /* 概览 */
+    html += '<div class="grid grid-2">' +
+      card(cardHead("📊 答疑统计", "问过的题不再错", "qa-stat"),
+        '<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">' +
+        '<div><div class="mk-big" style="color:var(--danger);">' + pending.length + "</div><div class=\"li-sub\">待解决</div></div>" +
+        '<div><div class="mk-big" style="color:#F5B041;">' + starred.length + "</div><div class=\"li-sub\">⭐ 收藏</div></div>" +
+        '<div><div class="mk-big" style="color:var(--accent);">' + mastered.length + "</div><div class=\"li-sub\">已掌握 / " + list.length + "</div></div>" +
+        "</div>" +
+        '<div class="li-sub" style="margin-top:8px;">考前回顾：</div>' +
+        '<button class="btn small ghost" data-action="qa-subj" data-v="" style="margin-top:4px;">查看收藏与待解决问题</button>') +
+      card(cardHead("✏️ 记录问题", "不懂就问，弄懂就记", "qa-add"),
+        '<button class="btn block" data-action="add-qa">' + ic("plus") + "记录一个问题</button>" +
+        '<div class="li-sub" style="margin-top:8px;">AI 帮手的解答可直接存档到答疑库（会标注「AI 回答」）。</div>') +
+      "</div>";
+
+    /* 考前回顾：收藏 + 待解决 */
+    var reviewList = starred.concat(pending).filter(function (q, i, arr) { return arr.indexOf(q) === i; });
+    if (reviewList.length) {
+      html += card(cardHead("🔍 考前回顾", "⭐ 收藏 + 待解决 · " + reviewList.length + " 条", "qa-review"),
+        '<div class="list">' + reviewList.slice(0, 8).map(function (q) {
+          return '<div class="list-item" style="align-items:flex-start;">' +
+            '<div class="li-main"><div class="li-title">' + (q.starred ? "⭐ " : "❗ ") + esc(q.question) + "</div>" +
+            '<div class="li-sub">' +
+            '<span class="tag">' + esc(q.subject || "未分类") + "</span>" +
+            (q.status === "待解决" ? '<span class="tag state-todo">待解决</span>' : "") +
+            "</div></div></div>";
+        }).join("") + "</div>");
+    }
+
+    /* 全部问题（筛选） */
+    var subjects = [];
+    list.forEach(function (q) { if (q.subject && subjects.indexOf(q.subject) < 0) subjects.push(q.subject); });
+    var filtered = list.filter(function (q) {
+      if (subj && q.subject !== subj) return false;
+      if (status && q.status !== status) return false;
+      return true;
+    });
+    html += card(cardHead("📚 全部答疑", filtered.length + " 条", "qa-list"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      '<button class="btn ' + (subj === "" ? "" : "plain") + ' small" data-action="qa-subj" data-v="">全部科目</button>' +
+      subjects.map(function (s) { return '<button class="btn ' + (subj === s ? "" : "plain") + ' small" data-action="qa-subj" data-v="' + esc(s) + '">' + esc(s) + "</button>"; }).join("") +
+      "</div>" +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      [["", "全部"], ["待解决", "待解决"], ["已解决", "已解决"]].map(function (st) {
+        return '<button class="btn ' + (status === st[0] ? "" : "plain") + ' small" data-action="qa-status" data-v="' + st[0] + '">' + st[1] + "</button>";
+      }).join("") +
+      "</div>" +
+      (filtered.length === 0 ? empty("还没有答疑记录", "学习时遇到不懂的，得到解答后记到这里") :
+      '<div class="list">' + filtered.map(function (q) {
         return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main"><div class="li-title">' + esc(q.question) + "</div>" +
+          '<div class="li-main"><div class="li-title">' + (q.starred ? "⭐ " : "") + esc(q.question) + (q.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + "</div>" +
           '<div class="li-sub">' +
           (q.subject ? '<span class="tag">' + esc(q.subject) + "</span>" : "") +
-          '<span class="tag">' + esc(q.date || "") + "</span></div>" +
-          (q.answer ? '<div class="li-sub" style="white-space:pre-wrap;margin-top:4px;">' + esc(q.answer) + "</div>" : "") +
+          (q.tags ? '<span class="tag">' + esc(q.tags) + "</span>" : "") +
+          (q.source ? '<span class="tag">' + esc(q.source) + "</span>" : "") +
+          (q.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+          (q.status === "待解决" ? '<span class="tag state-todo">待解决</span>' : '<span class="tag state-done">已解决</span>') +
+          "</div>" +
+          (q.answer ? '<div class="li-sub" style="white-space:pre-wrap;margin-top:4px;">' + esc(q.answer.slice(0, 120)) + (q.answer.length > 120 ? "…" : "") + "</div>" : "") +
           "</div>" +
           '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">' +
+          '<button class="icon-btn" data-action="toggle-qa-star" data-id="' + esc(q.id) + '">' + (q.starred ? "⭐" : "☆") + "</button>" +
+          '<button class="btn small plain" data-action="toggle-qa-status" data-id="' + esc(q.id) + '">' + (q.status === "待解决" ? "标记已解决" : "改回待解决") + "</button>" +
+          '<button class="btn small plain" data-action="toggle-qa-master" data-id="' + esc(q.id) + '">' + (q.mastered ? "取消掌握" : "标记掌握") + "</button>" +
+          '<div style="display:flex;gap:2px;">' +
           '<button class="icon-btn" data-action="edit-qa" data-id="' + esc(q.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-qa" data-id="' + esc(q.id) + '">' + ic("trash") + "</button></div></div>";
-      }).join("") + "</div>");
+          '<button class="icon-btn" data-action="del-qa" data-id="' + esc(q.id) + '">' + ic("trash") + "</button></div></div></div>";
+      }).join("") + "</div>"));
     return html;
   }
 

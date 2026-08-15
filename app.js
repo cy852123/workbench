@@ -265,6 +265,17 @@
       }
       if (m.type === undefined) { m.type = ""; changed = true; }
     });
+    /* 答疑库升级：状态/收藏/掌握/来源/标签 */
+    (data.qa || []).forEach(function (q) {
+      if (q.status === undefined) {
+        q.status = "待解决";
+        q.starred = false;
+        q.mastered = false;
+        q.source = "";
+        q.tags = "";
+        changed = true;
+      }
+    });
     if (data.settings && data.settings.kaoyanDate === "2026-12-26") {
       data.settings.kaoyanDate = "2027-12-25";
       changed = true;
@@ -2131,8 +2142,8 @@
     var subject = fval("asSubject").trim() || "未分类";
     var note = fval("asNote").trim() || "来源：AI 对话";
     if (type === "qa") {
-      data.qa.push({ id: uid(), subject: subject, question: "AI 解答（" + subject + "）", answer: m.content, date: todayStr() });
-      toast("已存入答疑库");
+      data.qa.push({ id: uid(), subject: subject, question: "AI 解答（" + subject + "）", answer: m.content, date: todayStr(), status: "待解决", starred: false, mastered: false, source: "AI 对话", tags: "", aiMarked: true });
+      toast("已存入答疑库（标记为 AI 回答）");
     } else if (type === "resource") {
       data.resources.push({ id: uid(), title: m.content.slice(0, 40), category: fval("asCat"), tags: [subject], url: "", platform: "", extractCode: "", status: "未看", domainId: "", note: m.content, createdAt: nowStr(), updatedAt: nowStr() });
       toast("已存入资料库");
@@ -2441,14 +2452,31 @@
       case "add-qa": qaModal(null); break;
       case "edit-qa": qaModal(id); break;
       case "del-qa": {
-        var q = data.qa.filter(function (x) { return x.id === id; })[0];
-        if (q) {
+        var qa1 = data.qa.filter(function (x) { return x.id === id; })[0];
+        if (qa1) {
           data.qa = data.qa.filter(function (x) { return x.id !== id; });
-          data.deleted.push({ id: id, kind: "答疑", title: q.question, deletedAt: nowStr() });
-          refresh(); toast("答疑已删除，可在回收站恢复");
+          data.deleted.push({ id: id, kind: "答疑", title: qa1.question, deletedAt: nowStr() });
+          save(); refresh(); toast("答疑已删除，可在回收站恢复");
         }
         break;
       }
+      case "toggle-qa-star": {
+        var qs = data.qa.filter(function (x) { return x.id === id; })[0];
+        if (qs) { qs.starred = !qs.starred; save(); renderView(); toast(qs.starred ? "已收藏（考前必看）" : "已取消收藏"); }
+        break;
+      }
+      case "toggle-qa-status": {
+        var qt = data.qa.filter(function (x) { return x.id === id; })[0];
+        if (qt) { qt.status = qt.status === "已解决" ? "待解决" : "已解决"; save(); renderView(); }
+        break;
+      }
+      case "toggle-qa-master": {
+        var qm = data.qa.filter(function (x) { return x.id === id; })[0];
+        if (qm) { qm.mastered = !qm.mastered; save(); renderView(); }
+        break;
+      }
+      case "qa-subj": W.ui.qaSubj = v; renderView(); break;
+      case "qa-status": W.ui.qaStatus = v; renderView(); break;
 
       /* 复盘 */
       case "add-daily-review": dailyReviewModal(null); break;
@@ -3550,21 +3578,37 @@
 
   function qaModal(id) {
     var q = id ? data.qa.filter(function (x) { return x.id === id; })[0] : null;
+    var qSubj = q ? q.subject : (W.ui.qaSubj || "");
     modalOpen(q ? "编辑答疑" : "记录答疑",
-      field("科目", "qaSubject", "text", "英语 / 数学", q ? q.subject : "") +
-      area("问题", "qaQ", "遇到的问题", q ? q.question : "") +
-      area("解答", "qaA", "解答或思路", q ? q.answer : ""),
+      selField("科目", "qaSubject", MK_SUBJECTS.map(function (s) { return [s, s]; }), qSubj || "数学") +
+      area("问题", "qaQ", "遇到的问题（不懂就问，弄懂就记）", q ? q.question : "") +
+      area("解答", "qaA", "解答或思路", q ? q.answer : "") +
+      field("来源 / 出处", "qaSource", "text", "如 教材 P120 / 老师课上 / AI 对话", q ? (q.source || "") : "") +
+      field("知识点标签", "qaTags", "text", "如 极限 / 定语从句", q ? (q.tags || "") : "") +
+      '<div class="field"><label>状态</label>' +
+      '<label class="checkline"><input type="radio" name="qaStatus" value="待解决"' + ((q ? q.status : "待解决") === "待解决" ? " checked" : "") + "> 待解决（还没弄懂）</label>" +
+      '<label class="checkline"><input type="radio" name="qaStatus" value="已解决"' + ((q ? q.status : "") === "已解决" ? " checked" : "") + "> 已解决</label></div>" +
+      '<label class="checkline"><input type="checkbox" id="qaStar"' + (q && q.starred ? " checked" : "") + "><label for=\"qaStar\">⭐ 收藏（考前必看）</label>",
       cancelBtn() + okBtn("submit-qa"));
     window.__editQaId = id || "";
   }
   function submitQa(id) {
     var question = fval("qaQ").trim();
     if (!question) { toast("请填写问题", true); return; }
-    var obj = { subject: fval("qaSubject").trim(), question: question, answer: fval("qaA").trim() };
+    var stEl = document.querySelector('input[name="qaStatus"]:checked');
+    var obj = {
+      subject: fval("qaSubject").trim() || "未分类",
+      question: question,
+      answer: fval("qaA").trim(),
+      source: fval("qaSource").trim(),
+      tags: fval("qaTags").trim(),
+      status: stEl ? stEl.value : "待解决",
+      starred: !!(document.getElementById("qaStar") && document.getElementById("qaStar").checked)
+    };
     var q = data.qa.filter(function (x) { return x.id === window.__editQaId; })[0];
     if (q) { Object.assign(q, obj); }
-    else { obj.id = uid(); obj.date = todayStr(); data.qa.push(obj); }
-    modalClose(); refresh(); toast("答疑已保存");
+    else { obj.id = uid(); obj.mastered = false; obj.date = todayStr(); data.qa.push(obj); toast("已记录到答疑库"); }
+    modalClose(); refresh();
   }
 
   function dailyReviewModal(date) {
