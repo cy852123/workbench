@@ -947,13 +947,16 @@
     modalOpen("设置「" + sc.name + "」考试时间",
       '<div class="li-sub" style="margin-bottom:10px;">考研官方时间为 12 月倒数第二个周末（自动计算）。手动设置的日期优先，考试结束后可在这里调整。</div>' +
       '<div class="field"><label>考试日期</label><input id="kyDate" type="date" value="' + esc(sc.examDate || kyExamDateLocal(sc) || "") + '"></div>' +
+      '<div class="li-sub" style="margin-top:-4px;margin-bottom:10px;">手机端如无法弹出日期选择器，可手动输入，格式：2026-12-20</div>' +
       '<button class="btn small plain" data-action="reset-ky-date">恢复官方自动时间</button>',
       cancelBtn() + '<button class="btn" data-action="submit-ky-date">' + ICONS.check + "保存</button>");
   }
   function submitKyDate() {
     var sc = kyActiveScheme();
     if (!sc) return;
-    sc.examDate = fval("kyDate") || "";
+    var dv = fval("kyDate") || "";
+    if (dv && !/^\d{4}-\d{2}-\d{2}$/.test(dv)) { toast("日期格式应为 年-月-日", true); return; }
+    sc.examDate = dv;
     modalClose(); refresh(); toast(sc.examDate ? "已手动设置考试时间" : "已恢复官方自动时间");
   }
   function resetKyDate() {
@@ -2316,6 +2319,7 @@
     modalOpen("设置「" + dm.activeExam + "」考试时间",
       '<div class="li-sub" style="margin-bottom:10px;">内置考试默认按官方规则自动计算（四六级：每年 6 月/12 月第三个周六；考研：12 月倒数第二个周末）。手动设置的日期优先，考试结束后可在这里调整。</div>' +
       '<div class="field"><label>考试日期</label><input id="exDate" type="date" value="' + esc(ex.examDate || examDateOfLocal(ex) || "") + '"></div>' +
+      '<div class="li-sub" style="margin-top:-4px;margin-bottom:10px;">手机端如无法弹出日期选择器，可手动输入，格式：2026-12-20</div>' +
       (ex.auto && ex.auto !== "custom" ? '<button class="btn small plain" data-action="reset-exam-date">恢复自动计算</button>' : ""),
       cancelBtn() + '<button class="btn" data-action="submit-exam-date">' + ICONS.check + "保存</button>");
   }
@@ -2323,7 +2327,9 @@
     var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
     var ex = dm && dm.exams && dm.exams[dm.activeExam];
     if (!ex) return;
-    ex.examDate = fval("exDate") || "";
+    var dv = fval("exDate") || "";
+    if (dv && !/^\d{4}-\d{2}-\d{2}$/.test(dv)) { toast("日期格式应为 年-月-日", true); return; }
+    ex.examDate = dv;
     modalClose(); refresh(); toast(ex.examDate ? "已手动设置考试时间" : "已清空，使用自动计算");
   }
   function resetExamDate() {
@@ -2814,6 +2820,7 @@
     var c = id ? data.calendar.filter(function (x) { return x.id === id; })[0] : null;
     modalOpen(c ? "编辑重要日期" : "添加重要日期",
       field("日期", "calDate", "text", "2026-12-26", c ? c.date : "") +
+      '<div class="li-sub" style="margin-top:-4px;margin-bottom:10px;">格式：年-月-日（手机端直接手动输入即可）</div>' +
       field("标题", "calTitle", "text", "如：考研报名 / 六级考试", c ? c.title : "") +
       selField("类型", "calType", [["考试", "考试"], ["报名", "报名"], ["作业", "作业"], ["其他", "其他"]], c ? c.type : "其他") +
       field("备注", "calNote", "text", "", c ? c.note : ""),
@@ -2824,6 +2831,7 @@
     var title = fval("calTitle").trim();
     var date = fval("calDate").trim();
     if (!title || !date) { toast("请填写日期和标题", true); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast("日期格式应为 年-月-日，如 2026-12-26", true); return; }
     var obj = { date: date, title: title, type: fval("calType"), note: fval("calNote").trim() };
     var c = data.calendar.filter(function (x) { return x.id === window.__editCalId; })[0];
     if (c) { Object.assign(c, obj); }
