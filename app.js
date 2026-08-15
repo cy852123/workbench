@@ -114,35 +114,53 @@
           }
         },
         {
-          id: "cet", type: "generic", name: "英语学习", color: "blue", order: 1,
-          subGroups: [
-            {
-              name: "四六级", examDate: "2027-12-12",
-              subjects: [
-                { id: "cet-l1", name: "听力", progress: 30, note: "" },
-                { id: "cet-l2", name: "阅读", progress: 40, note: "" },
-                { id: "cet-l3", name: "写作", progress: 20, note: "" },
-                { id: "cet-l4", name: "翻译", progress: 25, note: "" }
-              ]
+          id: "cet", type: "english", name: "英语学习", color: "blue", order: 1,
+          activeExam: "考研英语",
+          exams: {
+            "考研英语": {
+              examDate: "2027-12-25",
+              subjects: {
+                "词汇": { progress: 25, note: "考研核心词汇，配合艾宾浩斯复习" },
+                "听力": { progress: 20, note: "" },
+                "阅读": { progress: 30, note: "" },
+                "写作": { progress: 15, note: "" },
+                "翻译": { progress: 10, note: "" },
+                "口语": { progress: 5, note: "" }
+              }
+            },
+            "六级": {
+              examDate: "2027-12-12",
+              subjects: {
+                "词汇": { progress: 30, note: "" },
+                "听力": { progress: 30, note: "" },
+                "阅读": { progress: 40, note: "" },
+                "写作": { progress: 20, note: "" },
+                "翻译": { progress: 25, note: "" },
+                "口语": { progress: 10, note: "" }
+              }
+            },
+            "四级": {
+              examDate: "2027-06-12",
+              subjects: {
+                "词汇": { progress: 40, note: "" },
+                "听力": { progress: 35, note: "" },
+                "阅读": { progress: 45, note: "" },
+                "写作": { progress: 25, note: "" },
+                "翻译": { progress: 30, note: "" },
+                "口语": { progress: 15, note: "" }
+              }
             }
-          ],
-          subjects: [
-            { id: "cet-s1", name: "词汇", progress: 25, note: "长期积累" },
-            { id: "cet-s2", name: "听力", progress: 20, note: "" },
-            { id: "cet-s3", name: "口语", progress: 10, note: "" },
-            { id: "cet-s4", name: "阅读", progress: 30, note: "" },
-            { id: "cet-s5", name: "写作", progress: 15, note: "" }
-          ],
+          },
           wordbook: [
             { id: "w1", word: "comprehensive", meaning: "adj. 全面的，综合的", note: "考研高频词", mastered: false, date: "2026-08-14" }
           ]
         },
         {
-          id: "ai", type: "generic", name: "AI 知识学习", color: "green", order: 2,
-          subjects: [
-            { id: "a1", name: "提示词工程", progress: 10, note: "" },
-            { id: "a2", name: "AI 工具实践", progress: 25, note: "工作中台搭建中" }
-          ]
+          id: "ai", type: "ailearn", name: "AI 知识学习", color: "green", order: 2,
+          aiLearn: {
+            today: null,
+            history: []
+          }
         },
         {
           id: "courses", type: "courses", name: "学业课程", color: "blue", order: 3,
@@ -226,18 +244,36 @@
     var cet = (data.domains || []).filter(function (x) { return x.id === "cet"; })[0];
     if (cet) {
       if (cet.name === "四六级") { cet.name = "英语学习"; changed = true; }
-      if (!cet.subGroups && cet.subjects && cet.subjects.length) {
-        cet.subGroups = [{ name: "四六级", examDate: "2027-12-12", subjects: cet.subjects }];
-        cet.subjects = [
-          { id: "cet-s1", name: "词汇", progress: 25, note: "长期积累" },
-          { id: "cet-s2", name: "听力", progress: 20, note: "" },
-          { id: "cet-s3", name: "口语", progress: 10, note: "" },
-          { id: "cet-s4", name: "阅读", progress: 30, note: "" },
-          { id: "cet-s5", name: "写作", progress: 15, note: "" }
-        ];
+      /* 旧结构（subjects 数组 + subGroups）→ 新结构（exams 多套数据） */
+      if (cet.type !== "english" && cet.subjects) {
+        var newExams = { "考研英语": { examDate: "2027-12-25", subjects: {} } };
+        (cet.subjects || []).forEach(function (s) {
+          newExams["考研英语"].subjects[s.name] = { progress: s.progress || 0, note: s.note || "" };
+        });
+        if (cet.subGroups && cet.subGroups[0]) {
+          var sg = cet.subGroups[0];
+          newExams["六级"] = { examDate: sg.examDate || "2027-12-12", subjects: {} };
+          (sg.subjects || []).forEach(function (s) {
+            newExams["六级"].subjects[s.name] = { progress: s.progress || 0, note: s.note || "" };
+          });
+        }
+        newExams["四级"] = { examDate: "2027-06-12", subjects: { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } } };
+        cet.exams = newExams;
+        cet.activeExam = "考研英语";
+        cet.type = "english";
+        delete cet.subjects;
+        delete cet.subGroups;
         changed = true;
       }
+      if (!cet.exams) { cet.exams = { "考研英语": { examDate: "2027-12-25", subjects: { "词汇": { progress: 0, note: "" }, "听力": { progress: 0, note: "" }, "阅读": { progress: 0, note: "" }, "写作": { progress: 0, note: "" }, "翻译": { progress: 0, note: "" }, "口语": { progress: 0, note: "" } } } }; cet.activeExam = "考研英语"; changed = true; }
       if (!cet.wordbook) { cet.wordbook = []; changed = true; }
+    }
+    var aiDom = (data.domains || []).filter(function (x) { return x.id === "ai"; })[0];
+    if (aiDom && aiDom.type !== "ailearn") {
+      aiDom.type = "ailearn";
+      aiDom.aiLearn = { today: null, history: [] };
+      delete aiDom.subjects;
+      changed = true;
     }
     (data.calendar || []).forEach(function (c) {
       if (c.date === "2026-12-26" && c.title.indexOf("考研") >= 0) { c.date = "2027-12-25"; c.title = "2028 考研初试"; changed = true; }
@@ -366,7 +402,20 @@
       accounts: { t: "账号", s: "管理我的平台账号" },
       search: { t: "搜索", s: "一次搜遍全部内容" },
       ai: { t: "AI 帮手", s: "辅助学习与整理" },
-      settings: { t: "设置与数据", s: "说明、备份、更新日志" }
+      settings: { t: "设置与数据", s: "说明、备份、更新日志" },
+      "ky-subjects": { t: "科目进度专区", s: "细窄进度条，可编辑" },
+      "ky-weekly": { t: "周计划专区", s: "完整周计划" },
+      "ky-stats": { t: "统计面板", s: "柱状图与热力图" },
+      "tasks-all": { t: "任务管理专区", s: "全部任务" },
+      "cet-vocab": { t: "词汇专区", s: "生词本与记忆复习" },
+      "cet-listening": { t: "听力专区", s: "真题听力与精听" },
+      "cet-reading": { t: "阅读专区", s: "真题阅读与长难句" },
+      "cet-writing": { t: "写作专区", s: "范文模板与 AI 批改" },
+      "cet-translation": { t: "翻译专区", s: "翻译练习与句式积累" },
+      "cet-speaking": { t: "口语专区", s: "AI 口语对话练习" },
+      "cet-wordbook": { t: "生词本", s: "完整生词管理" },
+      "cet-stats": { t: "英语统计", s: "学习数据" },
+      "ai-history": { t: "AI 学习历史", s: "历史学习资料库" }
     };
     return map[view] || { t: view, s: "" };
   }
@@ -438,6 +487,18 @@
     else if (view === "qa") html = Views.qa();
     else if (view === "calendar") html = Views.calendar();
     else if (view === "settings") html = Views.settings();
+    else if (view === "ky-subjects") html = Views.kySubjects(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
+    else if (view === "ky-weekly") html = Views.kyWeekly(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
+    else if (view === "ky-stats") html = Views.kyStats(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
+    else if (view === "tasks-all") html = Views.tasksAll();
+    else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
+    else if (view === "cet-wordbook") html = Views.cetWordbook(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
+    else if (view === "cet-stats") html = Views.cetStats(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
+    else if (view === "ai-history") html = Views.aiHistory(data.domains.filter(function (x) { return x.id === "ai"; })[0]);
+    else if (view === "cet-listening" || view === "cet-reading" || view === "cet-writing" || view === "cet-translation" || view === "cet-speaking") {
+      var zm = { "cet-listening": "听力", "cet-reading": "阅读", "cet-writing": "写作", "cet-translation": "翻译", "cet-speaking": "口语" }[view];
+      html = Views.englishZone(data.domains.filter(function (x) { return x.id === "cet"; })[0], zm);
+    }
     else html = '<div class="card">' + esc("页面不存在") + "</div>";
     wrap.innerHTML = html;
     closeDrawer();
@@ -545,6 +606,96 @@
     if (cur !== "default") body.className += " bg-" + cur;
   }
 
+  /* ---------- AI 学习内置学习包（每日 30 分钟） ---------- */
+  var AI_PACKS = [
+    {
+      topic: "提示词工程入门：让 AI 听懂你的话",
+      goals: ["理解提示词的基本结构：角色、任务、格式、示例", "掌握 3 个立刻能用的提示技巧", "知道答非所问时第一步该检查什么"],
+      body: "提示词（Prompt）是你和 AI 之间的「说明书」。一份好提示词通常包含四层：\n1. 角色：告诉 AI 它是什么。例：「你是一名考研英语老师」。\n2. 任务：说明要做什么，尽量具体。例：「帮我批改这篇作文，指出语法错误」。\n3. 格式：规定输出形式。例：「先给评分，再列 3 条修改建议，最后给润色版」。\n4. 示例：给一个范例，AI 会模仿它的结构。这是最容易被忽略但最有效的一层。\n\n三个立刻能用的技巧：\n技巧一：给 AI 戴「帽子」（角色设定）——回答质量显著提升。\n技巧二：把大任务拆小——「先列大纲」比「写一篇论文」更容易得到好结果。\n技巧三：不满意就追问——「太笼统了，请举具体例子」比重新提问更高效。\n\n常见误区：只说要求不给上下文；一次塞太多任务；期望一次到位。记住：AI 不是读心者，它只能依据你写出来的内容行动。",
+      questions: ["如果 AI 答非所问，第一步应该检查什么？", "把「写一篇关于猫的文章」改写成包含角色、任务、格式的提示词。"]
+    },
+    {
+      topic: "大模型是怎么工作的（零基础版）",
+      goals: ["理解大模型「预测下一个词」的基本原理", "知道为什么 AI 会一本正经地胡说八道", "学会判断什么时候该相信 AI、什么时候该核实"],
+      body: "大语言模型（如 ChatGPT、DeepSeek）本质上是一个超大型的「接龙游戏选手」：它根据你已经输入的所有文字，预测接下来最可能出现的词。\n\n它读过的文本量极大（相当于整个互联网的公开内容），所以它的「预测」往往非常符合人类的表达习惯——这就是它看起来聪明的来源。\n\n但它有三个天生的局限：\n1. 它是概率预测，不是数据库查询——它可能把没见过的知识编得像真的一样（专业说法叫「幻觉」）。\n2. 它的知识有截止时间——新发生的事情它不知道。\n3. 它不会真正「算数」或「推理」，只是模仿推理的模式。\n\n对你的启示：\n- 学知识、梳理框架、写初稿：可以放心用。\n- 具体数字、引用、法律/医疗建议：必须核实。\n- 把 AI 当「聪明的同学」，不把它当「绝对正确的老师」。",
+      questions: ["为什么 AI 会一本正经地胡说八道？", "「背单词」「问考试时间」这两个场景，哪个更适合直接相信 AI？"]
+    },
+    {
+      topic: "把 AI 用进日常学习：10 个真实场景",
+      goals: ["看到 AI 在背单词、作文、专业课上的具体用法", "学会「先让 AI 出题，再自己作答」的主动学习法", "建立一个可用一整周的小习惯：每天 30 分钟 AI 学习"],
+      body: "场景清单（挑一个今天就用起来）：\n1. 背单词：让 AI 用当天生词编一篇小短文，上下文记忆比死记硬背牢得多。\n2. 作文批改：写完让 AI 打分、找语法错误、给润色版，再对比自己的原文。\n3. 专业课答疑：把不懂的概念讲给 AI 听，让它纠正你理解错的地方（费曼学习法）。\n4. 出题自测：学完一章，让 AI 出 5 道题，先自己做再对照。\n5. 整理笔记：把零散笔记扔给 AI，让它整理成结构化提纲。\n6. 长难句分析：遇到读不懂的句子，让 AI 拆解主干和修饰。\n7. 错题复盘：把错题发给 AI，让它解释错因并出同类题。\n8. 计划生成：告诉 AI 你的目标和时间，让它给一份周计划你再调整。\n9. 模拟面试/复试：让 AI 扮演面试官提问。\n10. 翻译对照：先自己翻，再对比 AI 译文，积累句式。\n\n主动学习法核心：让 AI 出题、你作答、AI 批改——比单纯看 AI 给的答案有效得多。",
+      questions: ["今天你打算用哪个场景？为什么选它？", "「让 AI 出题自己作答」为什么比直接看答案更有效？"]
+    }
+  ];
+  function genAiToday() {
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    if (!dm) return;
+    dm.aiLearn = dm.aiLearn || { today: null, history: [] };
+    var t = todayStr();
+    if (dm.aiLearn.today && dm.aiLearn.today.date === t && dm.aiLearn.today.done) {
+      toast("今日学习已完成，不能重新生成");
+      return;
+    }
+    var prev = dm.aiLearn.today && dm.aiLearn.today.date === t ? dm.aiLearn.today.topic : "";
+    var pack = AI_PACKS[Math.floor(Math.random() * AI_PACKS.length)];
+    var guard = 0;
+    while (pack.topic === prev && guard < 5) { pack = AI_PACKS[Math.floor(Math.random() * AI_PACKS.length)]; guard++; }
+    dm.aiLearn.today = { date: t, topic: pack.topic, goals: pack.goals, body: pack.body, questions: pack.questions, note: (dm.aiLearn.today && dm.aiLearn.today.date === t) ? dm.aiLearn.today.note : "", done: false };
+    refresh();
+    toast("今日学习包已生成");
+  }
+  function aiNoteSave() {
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    var t = todayStr();
+    if (dm && dm.aiLearn && dm.aiLearn.today && dm.aiLearn.today.date === t) {
+      dm.aiLearn.today.note = fval("aiNote").trim();
+      refresh();
+      toast("笔记已保存");
+    }
+  }
+  function aiDone() {
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    var t = todayStr();
+    if (!dm || !dm.aiLearn || !dm.aiLearn.today || dm.aiLearn.today.date !== t) { toast("请先生成今日学习包", true); return; }
+    if (dm.aiLearn.today.done) { toast("今日学习已完成"); return; }
+    var td = dm.aiLearn.today;
+    td.done = true;
+    td.doneAt = nowStr();
+    data.studyLog.push({ date: t, domainId: "ai", subject: "AI知识学习", minutes: 30, ts: nowStr().slice(11) });
+    dm.aiLearn.history = dm.aiLearn.history || [];
+    dm.aiLearn.history.push({ _id: uid(), date: t, topic: td.topic, goals: td.goals, body: td.body, questions: td.questions, note: td.note, doneAt: td.doneAt });
+    refresh();
+    rewardModal("今日 AI 学习完成", "完成 30 分钟「" + td.topic + "」，已记录打卡。", true);
+  }
+  function aiAppendNoteModal() {
+    modalOpen("📝 追加学习笔记", "不完成今日课程，也可以随手记录 AI 学习的零散感悟。" +
+      area("笔记内容", "aiAppend", "今天的感悟、想法、学到的小技巧…"),
+      cancelBtn() + '<button class="btn" data-action="submit-ai-append">' + ICONS.check + "保存到历史</button>");
+  }
+  function submitAiAppend() {
+    var txt = fval("aiAppend").trim();
+    if (!txt) { toast("请填写笔记内容", true); return; }
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    dm.aiLearn = dm.aiLearn || { today: null, history: [] };
+    dm.aiLearn.history = dm.aiLearn.history || [];
+    dm.aiLearn.history.push({ _id: uid(), date: todayStr(), topic: "随笔笔记", goals: [], body: "", questions: [], note: txt, doneAt: nowStr(), kind: "note" });
+    modalClose(); refresh(); toast("笔记已存入历史");
+  }
+  function aiHistEditModal(hid) {
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    var h = dm && dm.aiLearn && (dm.aiLearn.history || []).filter(function (x) { return x._id === hid; })[0];
+    if (!h) return;
+    modalOpen("编辑历史笔记", area("笔记内容", "aiHistNote", "", h.note || ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ai-hist-edit" data-id="' + esc(hid) + '">' + ICONS.check + "保存</button>");
+  }
+  function submitAiHistEdit(hid) {
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    var h = dm && dm.aiLearn && (dm.aiLearn.history || []).filter(function (x) { return x._id === hid; })[0];
+    if (!h) return;
+    h.note = fval("aiHistNote").trim();
+    modalClose(); refresh(); toast("历史笔记已更新");
+  }
+
   /* ---------- AI 本地规则 ---------- */
   function suggestTarget(content) {
     var c = String(content || "").toLowerCase();
@@ -607,6 +758,21 @@
   }
 
   /* ---------- AI 对话（需配置 API） ---------- */
+  function callAI(messages, cb) {
+    var s = data.settings;
+    if (!s.apiKey || !s.apiBase) { cb("对话式 AI 未启用：请先在「设置与数据 → AI 配置」填入 API 地址、模型和密钥。"); return; }
+    var url = String(s.apiBase).replace(/\/+$/, "") + "/chat/completions";
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.apiKey },
+      body: JSON.stringify({ model: s.apiModel || "deepseek-chat", messages: messages, temperature: 0.6 })
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      var reply = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+      cb(reply || "AI 返回了空结果，可能密钥或地址配置有误。");
+    }).catch(function () {
+      cb("请求失败：网络不通或 API 地址错误。请检查配置后重试。");
+    });
+  }
   function aiSend(text) {
     var s = data.settings;
     var chat = $id("aiChat");
@@ -630,34 +796,76 @@
     }
     chat.appendChild(mk("bot", "思考中…"));
     chat.scrollTop = chat.scrollHeight;
-    var url = String(s.apiBase).replace(/\/+$/, "") + "/chat/completions";
-    var body = {
-      model: s.apiModel || "deepseek-chat",
-      messages: W.ui.aiChat.concat([{ role: "user", content: text }]),
-      temperature: 0.6
+    callAI(W.ui.aiChat.concat([{ role: "user", content: text }]), function (reply) {
+      chat.removeChild(chat.lastChild);
+      W.ui.aiChat.push({ role: "user", content: text });
+      W.ui.aiChat.push({ role: "assistant", content: reply });
+      var idx = W.ui.aiChat.length - 1;
+      chat.appendChild(mk("bot", reply, idx));
+      if (W.ui.aiChat.length > 20) W.ui.aiChat = W.ui.aiChat.slice(-20);
+      chat.scrollTop = chat.scrollHeight;
+    });
+  }
+  /* AI 英语专区功能 */
+  function aiEssay() {
+    var txt = fval("aiEssay").trim();
+    if (!txt) { toast("请先粘贴作文", true); return; }
+    var box = $id("essayResult");
+    var m = document.createElement("div");
+    m.className = "msg bot";
+    m.textContent = "批改中…";
+    box.appendChild(m);
+    callAI([
+      { role: "system", content: "你是英语作文批改老师。请用中文回复，给出：1. 总体评价（2-3句）2. 评分（满分100）3. 3-5条具体修改建议 4. 润色后的完整版本。" },
+      { role: "user", content: txt }
+    ], function (reply) {
+      box.innerHTML = "";
+      var d = document.createElement("div");
+      d.className = "msg bot";
+      d.style.whiteSpace = "pre-wrap";
+      d.textContent = reply;
+      box.appendChild(d);
+      var bar = document.createElement("div");
+      bar.style.cssText = "margin-top:8px;";
+      bar.innerHTML = '<button class="btn small plain" data-action="ai-save-qa" data-txt="' + esc(reply.slice(0, 120)) + '">' + ICONS.folder + "保存批改到答疑库</button>";
+      box.appendChild(bar);
+    });
+  }
+  function aiSpeak() {
+    var txt = fval("speakInput").trim();
+    if (!txt) { return; }
+    var box = $id("speakChat");
+    var mk = function (cls, t) {
+      var d = document.createElement("div");
+      d.className = "msg " + cls;
+      d.textContent = t;
+      box.appendChild(d);
+      box.scrollTop = box.scrollHeight;
     };
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.apiKey },
-      body: JSON.stringify(body)
-    }).then(function (r) { return r.json(); }).then(function (j) {
-      chat.removeChild(chat.lastChild);
-      var reply = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
-      if (!reply) {
-        chat.appendChild(mk("bot", "AI 返回了空结果，可能密钥或地址配置有误。"));
-        toast("AI 请求失败，请检查配置", true);
-      } else {
-        W.ui.aiChat.push({ role: "user", content: text });
-        W.ui.aiChat.push({ role: "assistant", content: reply });
-        var idx = W.ui.aiChat.length - 1;
-        chat.appendChild(mk("bot", reply, idx));
-        if (W.ui.aiChat.length > 20) W.ui.aiChat = W.ui.aiChat.slice(-20);
-      }
-      chat.scrollTop = chat.scrollHeight;
-    }).catch(function () {
-      chat.removeChild(chat.lastChild);
-      chat.appendChild(mk("bot", "请求失败：网络不通或 API 地址错误。请检查配置后重试。"));
-      chat.scrollTop = chat.scrollHeight;
+    mk("user", txt);
+    $id("speakInput").value = "";
+    W.ui.speakChat = W.ui.speakChat || [];
+    W.ui.speakChat.push({ role: "user", content: txt });
+    callAI([{ role: "system", content: "你是英语口语陪练。请用英文与你对话，句子简短自然；每次对话后用简短中文指出 1-2 处表达可以改进的地方。" }].concat(W.ui.speakChat.slice(-10)), function (reply) {
+      mk("bot", reply);
+      W.ui.speakChat.push({ role: "assistant", content: reply });
+    });
+  }
+  function aiTranslate() {
+    var txt = fval("trText").trim();
+    if (!txt) { toast("请输入要翻译的文本", true); return; }
+    var box = $id("trResult");
+    box.innerHTML = '<div class="msg bot">翻译中…</div>';
+    callAI([
+      { role: "system", content: "你是专业翻译。根据源语言自动判断，提供准确自然的中英互译。回复格式：译文（另起一行）+ 关键句式解析 1-2 条。" },
+      { role: "user", content: txt }
+    ], function (reply) {
+      box.innerHTML = "";
+      var d = document.createElement("div");
+      d.className = "msg bot";
+      d.style.whiteSpace = "pre-wrap";
+      d.textContent = reply;
+      box.appendChild(d);
     });
   }
   /* AI 回答 → 保存到工作台（分类存放） */
@@ -863,6 +1071,7 @@
 
     switch (act) {
       case "nav": go(view); break;
+      case "go-view": go(view); break;
       case "help": showHelp(key || W.ui.view); break;
       case "modal-close": modalClose(); break;
       case "open-drawer": openDrawer(); break;
@@ -1076,6 +1285,15 @@
         toast("背景已切换");
         break;
       }
+      case "set-exam": {
+        var cdm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+        if (cdm && cdm.exams && cdm.exams[v]) {
+          cdm.activeExam = v;
+          refresh();
+          toast("已切换为" + v + "（各考试进度相互独立）");
+        }
+        break;
+      }
 
       /* AI */
       case "ai-send": {
@@ -1085,6 +1303,26 @@
       }
       case "ai-save": aiSaveModal(parseInt(id, 10)); break;
       case "submit-ai-save": submitAiSave(parseInt(id, 10)); break;
+      case "ai-essay": aiEssay(); break;
+      case "ai-speak": aiSpeak(); break;
+      case "ai-translate": aiTranslate(); break;
+      case "ai-save-qa": {
+        var txt = el.getAttribute("data-txt");
+        if (txt) {
+          data.qa.push({ id: uid(), subject: "英语", question: "AI 作文批改", answer: txt, date: todayStr() });
+          refresh();
+          toast("已存入答疑库");
+        }
+        break;
+      }
+      /* AI 学习 */
+      case "gen-ai-today": genAiToday(); break;
+      case "ai-note-save": aiNoteSave(); break;
+      case "ai-done": aiDone(); break;
+      case "ai-append-note": aiAppendNoteModal(); break;
+      case "submit-ai-append": submitAiAppend(); break;
+      case "ai-hist-edit": aiHistEditModal(id); break;
+      case "submit-ai-hist-edit": submitAiHistEdit(id); break;
 
       /* 模态提交 */
       case "submit-task": submitTask(); break;
@@ -1120,6 +1358,10 @@
       if (e.target && e.target.id === "aiInput") {
         var txt = e.target.value.trim();
         if (txt) { aiSend(txt); e.target.value = ""; }
+      }
+      if (e.target && e.target.id === "speakInput") {
+        var st = e.target.value.trim();
+        if (st) { aiSpeak(); }
       }
     }
     if (e.key === "Escape") { modalClose(); closeHelp(); closeDrawer(); }
@@ -1273,8 +1515,13 @@
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
     var s = null;
     if (dm) {
-      (dm.subjects || []).forEach(function (x) { if (x.id === sid) s = x; });
-      if (!s && dm.subGroups) dm.subGroups.forEach(function (sg) { (sg.subjects || []).forEach(function (x) { if (x.id === sid) s = x; }); });
+      if (dm.type === "english" && dm.exams) {
+        var ex = dm.exams[dm.activeExam];
+        if (ex && ex.subjects && ex.subjects[sid]) s = { name: sid, progress: ex.subjects[sid].progress, note: ex.subjects[sid].note };
+      } else {
+        (dm.subjects || []).forEach(function (x) { if (x.id === sid || x.name === sid) s = x; });
+        if (!s && dm.subGroups) dm.subGroups.forEach(function (sg) { (sg.subjects || []).forEach(function (x) { if (x.id === sid) s = x; }); });
+      }
     }
     if (!s) return;
     modalOpen("更新进度：" + s.name,
@@ -1286,8 +1533,13 @@
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
     var s = null;
     if (dm) {
-      (dm.subjects || []).forEach(function (x) { if (x.id === sid) s = x; });
-      if (!s && dm.subGroups) dm.subGroups.forEach(function (sg) { (sg.subjects || []).forEach(function (x) { if (x.id === sid) s = x; }); });
+      if (dm.type === "english" && dm.exams) {
+        var ex = dm.exams[dm.activeExam];
+        if (ex && ex.subjects && ex.subjects[sid]) s = ex.subjects[sid];
+      } else {
+        (dm.subjects || []).forEach(function (x) { if (x.id === sid || x.name === sid) s = x; });
+        if (!s && dm.subGroups) dm.subGroups.forEach(function (sg) { (sg.subjects || []).forEach(function (x) { if (x.id === sid) s = x; }); });
+      }
     }
     if (!s) return;
     s.progress = Math.max(0, Math.min(100, parseInt(fval("sProg"), 10) || 0));
@@ -1345,7 +1597,17 @@
     if (min <= 0) { toast("请填写有效时长", true); return; }
     var todayLogs = (data.studyLog || []).filter(function (x) { return x.date === todayStr(); });
     var isFirstToday = todayLogs.length === 0;
-    data.studyLog.push({ date: todayStr(), domainId: fval("pDomain"), subject: fval("pSubject"), minutes: min, ts: nowStr().slice(11) });
+    var pDomain = fval("pDomain");
+    var pSubject = fval("pSubject");
+    data.studyLog.push({ date: todayStr(), domainId: pDomain, subject: pSubject, minutes: min, ts: nowStr().slice(11) });
+    /* 半自动累加进度：英语学习打卡时，对应考试下该科目进度 +1（封顶 100） */
+    if (pDomain === "cet") {
+      var cdm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+      if (cdm && cdm.exams && cdm.exams[cdm.activeExam] && cdm.exams[cdm.activeExam].subjects && cdm.exams[cdm.activeExam].subjects[pSubject]) {
+        var sub = cdm.exams[cdm.activeExam].subjects[pSubject];
+        sub.progress = Math.min(100, (sub.progress || 0) + 1);
+      }
+    }
     modalClose(); refresh();
     if (isFirstToday) {
       rewardModal("今日打卡成功", "今天第一次打卡，学起来就有状态了。", true);
@@ -1899,6 +2161,16 @@
     if (e.target && e.target.id === "importFile") {
       var f = e.target.files && e.target.files[0];
       if (f) handleImportFile(f);
+    }
+    var el = e.target;
+    if (el && el.getAttribute && el.getAttribute("data-action") === "set-exam") {
+      var v = el.value;
+      var cdm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
+      if (cdm && cdm.exams && cdm.exams[v]) {
+        cdm.activeExam = v;
+        refresh();
+        toast("已切换为" + v + "（各考试进度相互独立）");
+      }
     }
   });
   function resetExampleConfirm() {
