@@ -624,28 +624,17 @@
     var exd = exdStr ? daysDiff(exdStr) : null;
     var exNames = Object.keys(dm.exams || {}).filter(function (k) { return !dm.exams[k].archived; });
 
-    /* 区块1：顶部总览栏（倒计时卡可点击改时间 + 考试切换/新增） */
-    var countdownHtml;
-    if (exd == null) {
-      countdownHtml = '<div class="li-sub">未设置考试时间</div><button class="btn small plain" data-action="set-exam-date" style="margin-top:8px;">设置考试时间</button>';
-    } else if (exd < 0) {
-      countdownHtml = '<div class="li-sub" style="color:var(--danger);">该考试已结束</div><button class="btn small plain" data-action="set-exam-date" style="margin-top:8px;">修改时间</button>';
-    } else {
-      countdownHtml = '<div class="countdown"><span class="cd-num">' + exd + '</span><span class="cd-label">天 · ' + esc(exdStr) + "</span></div>" +
-        (exd <= 30 ? '<div class="li-sub" style="color:var(--danger);margin-top:6px;">距离考试不足 30 天，进入冲刺阶段</div>' : "") +
-        '<button class="btn small plain" data-action="set-exam-date" style="margin-top:8px;">修改考试时间</button>';
-    }
-    html += '<div class="grid grid-2" style="grid-template-columns:1.4fr 1fr;align-items:stretch;">' +
-      '<div class="card tint-blue"><div class="card-head"><h3>📅 ' + esc(dm.activeExam || "考研英语") + ' 倒计时</h3></div>' + countdownHtml + "</div>" +
-      '<div class="card"><div class="card-head"><h3>🎯 切换考试</h3></div>' +
-      '<select id="examSwitch" data-action="set-exam" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;">' +
+    /* 考试信息条（Notion 风） */
+    html += '<div class="en-bar">' +
+      '<span class="en-name">' + esc(dm.activeExam || "考研英语") + "</span>" +
+      (exd != null && exd >= 0 ? '<span class="en-days">' + exd + " 天</span>" : (exd != null ? '<span class="en-days" style="color:var(--danger);">已结束</span>' : '<span class="en-days" style="color:var(--sub);">未设置</span>')) +
+      '<span class="en-meta">' + (exdStr ? esc(exdStr) : "未设置考试时间") + (exd != null && exd >= 0 && exd <= 30 ? ' · <span style="color:var(--danger);">冲刺</span>' : "") + "</span>" +
+      '<span class="en-switch"><select id="examSwitch" data-action="set-exam">' +
       exNames.map(function (k) { return '<option value="' + esc(k) + '"' + ((dm.activeExam || "") === k ? " selected" : "") + ">" + esc(k) + "</option>"; }).join("") +
-      '</select>' +
-      '<button class="btn small plain" data-action="add-exam" style="margin-top:8px;width:100%;">＋ 新增考试（专四/专八/雅思…）</button>' +
-      '<button class="btn small ghost" data-action="go-view" data-view="cet-exams" style="margin-top:6px;width:100%;">🗂 考试管理（归档/删除）</button>' +
-      '<div class="li-sub" style="margin-top:6px;">切换不会删除历史数据，各考试进度与生词本独立</div></div></div>';
+      '</select><button class="btn small plain" data-action="set-exam-date">改时间</button>' +
+      '<button class="btn small plain" data-action="add-exam">＋考试</button></span></div>';
 
-    /* 区块2：专项导航面板（文字状态，无进度条） */
+    /* 今日任务：按专区进度最低 3 项建议 */
     var zones = [
       { id: "cet-vocab", emoji: "📖", name: "词汇", desc: "考研核心词汇、遗忘复习、生词本" },
       { id: "cet-listening", emoji: "🎧", name: "听力", desc: "真题听力、精听训练、听力素材" },
@@ -654,43 +643,44 @@
       { id: "cet-translation", emoji: "🌐", name: "翻译", desc: "真题翻译练习、句式积累" },
       { id: "cet-speaking", emoji: "🗣️", name: "口语", desc: "AI 口语对话练习" }
     ];
-    html += '<div class="card"><div class="card-head"><h3>🧩 专项导航</h3><span class="hint">点击卡片进入对应专区</span></div>' +
-      '<div class="grid grid-3">' + zones.map(function (z) {
+    var low3 = zones.slice().sort(function (a, b) {
+      return (examSubj(dm, a.name).progress || 0) - (examSubj(dm, b.name).progress || 0);
+    }).slice(0, 3);
+    html += '<div class="en-today"><div class="card-head" style="margin-bottom:4px;"><h3>📌 今日英语任务</h3>' +
+      '<button class="btn small ghost" data-action="punch" data-domain="cet">⏱ 打卡学习</button></div>' +
+      low3.map(function (z) {
         var s = examSubj(dm, z.name);
-        return '<div class="card" style="margin-bottom:0;border-left:3px solid var(--accent);"><div class="card-head"><h3 style="font-size:15px;">' + z.emoji + " " + esc(z.name) + ' 模块</h3></div>' +
-          '<div class="li-sub" style="margin-bottom:8px;">' + esc(z.desc) + "</div>" +
-          '<div class="li-sub" style="margin-bottom:10px;">状态：<span class="tag">' + esc(progressText(s ? s.progress : 0)) + "</span></div>" +
-          '<button class="btn small block" data-action="go-view" data-view="' + z.id + '">打开' + esc(z.name) + "专区</button></div>";
-      }).join("") + "</div></div>";
+        var done = (s.progress || 0) > 60;
+        return '<div class="en-task" data-action="go-view" data-view="' + z.id + '">' +
+          '<span class="en-box' + (done ? " on" : "") + '"></span>' +
+          '<span class="en-task-name">' + z.emoji + " " + esc(z.name) + "：" + esc(progressText(s ? s.progress : 0)) + '</span>' +
+          '<span class="en-task-tag">' + (done ? "已完成" : "去学习 →") + "</span></div>";
+      }).join("") + "</div>";
 
-    /* 区块3：学习状态（极简文字摘要，无图表） */
+    /* 学习专区：行列表 */
+    html += '<div class="en-sec">学习专区</div><div class="en-skill-list">' +
+      zones.map(function (z) {
+        var s = examSubj(dm, z.name);
+        return '<div class="en-skill" data-action="go-view" data-view="' + z.id + '">' +
+          '<span class="en-skill-ic">' + z.emoji + "</span>" +
+          '<span class="en-skill-name">' + esc(z.name) + "</span>" +
+          '<span class="en-skill-sub">' + esc(progressText(s ? s.progress : 0)) + "</span>" +
+          '<span class="en-skill-arrow">›</span></div>';
+      }).join("") + "</div>";
+
+    /* 底部入口 */
+    var wb = examWordbook(dm);
+    var wP = wb.filter(function (w) { return !w.mastered; }).length;
     var weekLog = (d.studyLog || []).filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6 && x.domainId === "cet"; });
     var weekMin = weekLog.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
-    html += '<div class="grid grid-2">' +
-      card(cardHead("⏱ 本周学习", "文字摘要", "stats"),
-        '<div class="li-sub" style="margin-bottom:8px;">本周累计学习 ' + fmtMin(weekMin) + "，打卡 " + weekLog.length + " 天</div>" +
-        '<button class="btn small block" data-action="punch" data-domain="cet">⏱ 打卡学习</button>' +
-        '<div class="li-sub" style="margin-top:8px;">打卡时选择学习内容标签，对应科目进度自动小幅累加。</div>' +
-        '<button class="btn small ghost" data-action="go-view" data-view="cet-stats" style="margin-top:8px;">📈 查看统计回顾（热力图/图表）</button>') +
-      card(cardHead("📒 生词本", "与当前考试独立存储", "wordbook"),
-        (function () {
-          var wb = examWordbook(dm);
-          var wP = wb.filter(function (w) { return !w.mastered; }).length;
-          var wM = wb.filter(function (w) { return w.mastered; }).length;
-          var wRecent = wb.slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; }).slice(0, 3);
-          return '<div class="li-sub" style="margin-bottom:8px;">待复习 ' + wP + " ｜ 已掌握 " + wM + "</div>" +
-            (wRecent.length === 0 ? '<div class="li-sub" style="margin-bottom:8px;">还没有生词</div>' :
-              '<div class="list" style="margin-bottom:8px;">' + wRecent.map(function (w) {
-                return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(w.word) + "</div>" +
-                  '<div class="li-sub">' + esc((w.meaning || "").slice(0, 30)) + "</div></div></div>";
-              }).join("") + "</div>") +
-            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-            '<button class="btn small" data-action="go-view" data-view="cet-wordbook">前往完整生词本</button>' +
-            '<button class="btn small plain" data-action="add-word" data-domain="cet">快速添加生词</button></div>';
-        })()) +
+    var examCount = Object.keys(dm.exams || {}).filter(function (k) { return !dm.exams[k].archived; }).length;
+    html += '<div class="en-entry-row">' +
+      '<div class="en-entry" data-action="go-view" data-view="cet-wordbook">📒 生词本<br><b style="color:var(--accent);">' + wP + "</b> 待复习</div>" +
+      '<div class="en-entry" data-action="go-view" data-view="cet-stats">📊 统计回顾<br><b style="color:var(--accent);">' + fmtMin(weekMin) + "</b></div>" +
+      '<div class="en-entry" data-action="go-view" data-view="cet-exams">🎓 考试管理<br><b style="color:var(--accent);">' + examCount + '</b> 套考试</div>' +
       "</div>";
 
-    /* 区块5：AI 英语工具箱 */
+    /* AI 英语工具箱 */
     var hasKey = !!(d.settings.apiKey);
     var tools = [
       { id: "ai", emoji: "🧠", name: "AI 答疑", desc: "英语题目答疑" },
@@ -705,9 +695,9 @@
           (hasKey ? '<button class="btn small block" data-action="go-view" data-view="' + t.id + '">使用</button>'
             : '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看（未启用）</button>') + "</div>";
       }).join("") + "</div>" +
-      (!hasKey ? '<div class="li-sub" style="margin-top:10px;">未配置 API 密钥，AI 功能置灰。到「设置与数据 → AI 配置」填入密钥后启用；基础打卡、生词、查词功能不受影响。</div>' : ""));
+      (!hasKey ? '<div class="li-sub" style="margin-top:10px;">未配置 API 密钥，AI 功能置灰。到「设置与数据 → AI 配置」填入密钥后启用；基础打卡、生词功能不受影响。</div>' : ""));
 
-    /* 区块6：关联资料 */
+    /* 关联资料 */
     var cetRes = (d.resources || []).filter(function (r) { return r.domainId === "cet"; });
     html += card(cardHead("📎 关联学习资料", cetRes.length + " 份", "resources"),
       cetRes.length === 0 ? empty("还没有关联资料", "点下方新增，或到资料库选择关联到英语学习") :
@@ -720,6 +710,7 @@
 
     return html;
   }
+
 
   /* ==================== 二级概览页：考研备考 ==================== */
   function kyActive(dm) {

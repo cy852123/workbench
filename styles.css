@@ -179,7 +179,41 @@ body.font-large { --fs-base: 16px; --fs-sm: 14px; --fs-h3: 16px; }
 .sentence-en { font-size: 13.5px; font-weight: 600; line-height: 1.6; }
 .sentence-ans { font-size: 12.5px; color: var(--sub); margin-top: 6px; line-height: 1.6; }
 
-/* ===== 可选页面背景（设置里切换，卡片与文字不受影响） ===== */
+/* ===== 英语学习（变体B Notion 暖极简） ===== */
+.en-bar { display: flex; align-items: baseline; gap: 16px; padding: 8px 4px 18px; border-bottom: 1px solid #EFEEE9; margin-bottom: 16px; flex-wrap: wrap; }
+.en-name { font-size: 22px; font-weight: 700; font-family: Georgia, "Songti SC", "SimSun", serif; }
+.en-days { font-size: 22px; font-weight: 700; color: var(--accent); }
+.en-meta { font-size: 13px; color: var(--sub); }
+.en-switch { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.en-switch select { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; background: #fff; }
+.en-today { background: #fff; border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, .05); }
+.en-task { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px dashed #EFEEE9; font-size: 14px; cursor: pointer; }
+.en-task:last-child { border: none; }
+.en-box { width: 15px; height: 15px; border: 1.5px solid #C9C9C2; border-radius: 3px; flex-shrink: 0; }
+.en-box.on { background: var(--accent); border-color: var(--accent); }
+.en-task-name { flex: 1; }
+.en-task-tag { font-size: 12px; color: var(--sub); }
+.en-sec { font-size: 13px; color: var(--sub); margin: 18px 0 8px; }
+.en-skill-list { background: #fff; border-radius: 12px; padding: 4px 18px; box-shadow: 0 1px 4px rgba(0, 0, 0, .05); margin-bottom: 16px; }
+.en-skill { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #F4F3EF; cursor: pointer; }
+.en-skill:last-child { border: none; }
+.en-skill:hover { background: #FAFAF7; margin: 0 -8px; padding-left: 20px; padding-right: 20px; border-radius: 8px; }
+.en-skill-ic { font-size: 17px; width: 30px; text-align: center; }
+.en-skill-name { font-size: 14.5px; flex: 1; font-weight: 600; }
+.en-skill-sub { font-size: 12px; color: var(--sub); }
+.en-skill-arrow { color: #C9C9C2; font-size: 15px; }
+.en-entry-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.en-entry { flex: 1; background: #fff; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--sub); box-shadow: 0 1px 4px rgba(0, 0, 0, .05); cursor: pointer; text-align: center; line-height: 1.6; }
+.en-entry:hover { box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+@media (max-width: 768px) {
+  .en-bar { gap: 8px; }
+  .en-name { font-size: 19px; }
+  .en-days { font-size: 19px; }
+  .en-switch { margin-left: 0; width: 100%; }
+  .en-switch select { flex: 1; }
+  .en-entry-row { gap: 8px; }
+  .en-entry { padding: 10px 8px; font-size: 12px; }
+}
 body.bg-default { background-color: #F7F7F5; background-image: none; }
 body.bg-dots {
   background-color: #F7F7F5;
