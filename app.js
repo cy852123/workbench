@@ -4183,8 +4183,8 @@
     }
   });
   function resetExampleConfirm() {
-    modalOpen("清空示例数据", '<p style="font-size:14px;color:var(--sub);">将删除开始时预置的示例内容（示例课程、示例资料、示例任务等），你自己的数据不会动。当前数据会自动备份。</p>',
-      cancelBtn() + '<button class="btn danger" data-action="reset-example-ok">' + ICONS.trash + "确认清空</button>");
+    modalOpen("清空所有数据（开始新使用）", '<p style="font-size:14px;color:var(--sub);line-height:1.9;">将删除<b>所有记录</b>：任务、错题、答疑、资料、收集箱、复盘、健康记录、日历、课程、账号等全部清空。<br><b>保留</b>：设置（考研日期、主题色、字体、云端同步、AI 配置）。<br>当前数据会自动备份到浏览器（键 wb_data_v1_pre_reset）。</p>',
+      cancelBtn() + '<button class="btn danger" data-action="reset-example-ok">' + ICONS.trash + "确认清空，开始使用</button>");
   }
   document.addEventListener("click", function (e) {
     var el = e.target.closest ? e.target.closest("[data-action]") : null;
