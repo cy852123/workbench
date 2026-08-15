@@ -2140,6 +2140,9 @@
     var hasWordbook = !!cetDm;
     var typeOpts = '<option value="mistake">错题本（自动归类）</option>' +
       '<option value="qa">答疑记录（问题+解答）</option>' +
+      '<option value="task">今日任务（AI 建议要做的事）</option>' +
+      '<option value="review">复盘记录（AI 帮做的复盘）</option>' +
+      '<option value="calendar">日历事件（AI 安排的日程）</option>' +
       '<option value="inbox">收集箱（先收着）</option>' +
       '<option value="resource">学习资料（存入资料库）</option>' +
       (hasWordbook ? '<option value="word">生词（存入英语生词本）</option>' : "");
@@ -2159,6 +2162,8 @@
       "</div>" +
       '<div class="field" id="asCatWrap" style="display:none;"><label>资料分类</label><select id="asCat">' +
       '<option value="考研">考研</option><option value="课程">课程</option><option value="课外">课外</option><option value="其他">其他</option></select></div>' +
+      '<div class="field" id="asCalWrap" style="display:none;"><label>日期（日历事件）</label><input id="asCalDate" value="' + todayStr() + '" placeholder="年-月-日">' +
+      '<div class="li-sub" style="margin-top:4px;">AI 安排的日程存到日历，可改日期。</div></div>' +
       '<div class="field"><label>备注（可选）</label><input id="asNote" placeholder="来源：AI 对话"></div>',
       cancelBtn() + '<button class="btn" data-action="submit-ai-save" data-id="' + idx + '">' + ICONS.check + "确认存入</button>");
     var typeSel = $id("asType");
@@ -2166,6 +2171,7 @@
       var v = typeSel.value;
       $id("asMistakeWrap").style.display = v === "mistake" ? "" : "none";
       $id("asCatWrap").style.display = v === "resource" ? "" : "none";
+      $id("asCalWrap").style.display = v === "calendar" ? "" : "none";
     });
   }
   function submitAiSave(idx) {
@@ -2187,6 +2193,17 @@
     } else if (type === "inbox") {
       data.inbox.push({ id: uid(), content: m.content, status: "待分拣", date: todayStr(), source: "AI 对话", suggestion: "来源：AI 对话" });
       toast("已存入收集箱（待分拣）");
+    } else if (type === "task") {
+      data.tasks.push({ id: uid(), title: m.content.slice(0, 50), domainId: data.settings.primaryDomain || "kaoyan", date: todayStr(), due: "", done: false, note: "AI 生成", createdAt: nowStr() });
+      toast("已存入今日任务");
+    } else if (type === "review") {
+      data.reviews.push({ id: uid(), date: todayStr(), type: "daily", done: m.content.slice(0, 200), undone: "", adjust: "（AI 生成）" });
+      toast("已存入今日复盘");
+    } else if (type === "calendar") {
+      var cdate = fval("asCalDate").trim() || todayStr();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(cdate)) { toast("日期格式应为 年-月-日", true); return; }
+      data.calendar.push({ id: uid(), date: cdate, title: m.content.slice(0, 30), type: "其他", note: m.content.slice(0, 100), source: "AI 对话" });
+      toast("已存入日历");
     } else if (type === "qa") {
       data.qa.push({ id: uid(), subject: subject, question: "AI 解答（" + subject + "）", answer: m.content, date: todayStr(), status: "待解决", starred: false, mastered: false, source: "AI 对话", tags: "", aiMarked: true });
       toast("已存入答疑库（标记为 AI 回答）");
