@@ -308,6 +308,20 @@ h1, h2, h3, h4 { font-weight: 700; }
 
 .view-wrap { padding: 10px 28px 40px; flex: 1; }
 
+/* ===== 课程卡片方块 ===== */
+.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.course-card { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: all .12s; position: relative; overflow: hidden; }
+.course-card:hover { border-color: var(--accent); box-shadow: 0 4px 12px rgba(0, 0, 0, .06); transform: translateY(-1px); }
+.cc-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.cc-name { font-size: 14.5px; font-weight: 800; margin: 6px 0 4px; line-height: 1.4; }
+.cc-sub { font-size: 12px; color: var(--sub); line-height: 1.6; }
+.cc-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.cc-tag { font-size: 11px; color: var(--sub); background: #F5F5F3; border-radius: 6px; padding: 2px 8px; }
+.cc-tag.link { color: var(--accent); background: #EDF3F0; }
+.cc-tag.note { color: #B07D0E; background: #FCF5E5; }
+.cc-empty { color: var(--sub); font-size: 13px; padding: 8px 2px; }
+@media (max-width: 768px) { .course-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+
 /* ===== 通用卡片与网格 ===== */
 .card {
   background: var(--card); border: 1px solid var(--border);

@@ -2426,6 +2426,7 @@
       case "del-word": delWord(domain, id); break;
 
       /* 课程 */
+      case "open-course-detail": courseDetailModal(id, domain); break;
       case "add-course": courseModal(null, domain); break;
       case "edit-course": courseModal(id, domain); break;
       case "del-course": delCourse(domain, id); break;
@@ -3301,6 +3302,19 @@
       area("课程笔记（期末复习用，可选）", "cNote", "重点、进度、疑惑…", c ? (c.note || "") : ""),
       cancelBtn() + '<button class="btn" data-action="submit-course" data-domain="' + esc(did) + '" data-id="' + esc(id || "") + '">' + ICONS.check + "保存</button>");
     window.__editCourseId = id || "";
+  }
+  function courseDetailModal(id, did) {
+    var dm = data.domains.filter(function (x) { return x.id === did; })[0];
+    var c = dm && (dm.courses || []).filter(function (x) { return x.id === id; })[0];
+    if (!c) return;
+    modalOpen(esc(c.name),
+      '<div class="li-sub" style="margin-bottom:8px;">' + esc(c.day || "") + (c.time ? " · " + esc(c.time) : "") + (c.place ? " · " + esc(c.place) : "") + (c.teacher ? " · " + esc(c.teacher) : "") + "</div>" +
+      (c.note ? '<div class="formula-block"><div class="formula-title">📝 课程笔记</div><div class="formula-line" style="white-space:pre-wrap;">' + esc(c.note) + "</div></div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
+      (c.url ? '<a class="btn small" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + ICONS.link + "打开资料链接</a>" : "") +
+      '<button class="btn small plain" data-action="edit-course" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">编辑</button>' +
+      '<button class="btn small plain" data-action="del-course" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">删除</button>' +
+      "</div>");
   }
   function submitCourse(did, id) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];

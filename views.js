@@ -1317,44 +1317,41 @@
   }
 
   /* ==================== 学业课程 ==================== */
+  var COURSE_COLORS = ["#5B8DD9", "#4DB6AC", "#E8A0BF", "#9CCC65", "#FFB74D", "#BA68C8", "#F06292", "#7986CB"];
+  function courseCard(c, did) {
+    var color = COURSE_COLORS[String(c.id || c.name).length % COURSE_COLORS.length] || COURSE_COLORS[0];
+    return '<div class="course-card" data-action="open-course-detail" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">' +
+      '<div class="cc-bar" style="background:' + color + ';"></div>' +
+      '<div class="cc-name">' + esc(c.name) + "</div>" +
+      '<div class="cc-sub">' + esc(c.day || "") + (c.time ? " " + esc(c.time) : "") + (c.place ? " · " + esc(c.place) : "") + "</div>" +
+      '<div class="cc-tags">' +
+      (c.teacher ? '<span class="cc-tag">' + esc(c.teacher) + "</span>" : "") +
+      (c.url ? '<span class="cc-tag link">' + ic("link") + " 资料</span>" : "") +
+      (c.note ? '<span class="cc-tag note">📝 笔记</span>' : "") +
+      "</div></div>";
+  }
   function coursesView(dm) {
     var W = window.W, d = W.data;
     var days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
     var html = "";
 
-    /* 今日课程卡 */
+    /* 今日课程卡（方块卡片） */
     var todayName = days[(new Date().getDay() + 6) % 7];
     var todayCourses = (dm.courses || []).filter(function (c) { return c.day === todayName; })
       .sort(function (a, b) { return (a.time || "") > (b.time || "") ? 1 : -1; });
     html += card(cardHead("📅 今日课程", todayName + " · " + todayCourses.length + " 节", "courses-today"),
       todayCourses.length === 0 ? '<div class="li-sub">今天没有课，可以安排考研学习。</div>' :
-      '<div class="list">' + todayCourses.map(function (c) {
-        return '<div class="list-item">' +
-          '<div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>' +
-          '<div class="li-main"><div class="li-title">' + esc(c.name) + "</div>" +
-          '<div class="li-sub">' + (c.teacher ? esc(c.teacher) + " · " : "") + (c.place || "") + (c.note ? " · 📝 有笔记" : "") + "</div></div>" +
-          '<span class="li-meta">' + esc(c.time || "") + "</span>" +
-          '<button class="icon-btn" data-action="edit-course" data-domain="' + esc(dm.id) + '" data-id="' + esc(c.id) + '">' + ic("edit") + "</button></div>";
+      '<div class="course-grid">' + todayCourses.map(function (c) {
+        return courseCard(c, dm.id);
       }).join("") + "</div>");
 
-    html += card(cardHead("本学期课程", "点击课程可补资料链接和笔记", "courses"),
+    html += card(cardHead("本学期课程", "点方块看详情 · 资料/笔记都在里面", "courses"),
       '<button class="btn ghost small" data-action="add-course" data-domain="' + esc(dm.id) + '" style="margin-bottom:10px;">' + ic("plus") + "添加课程</button>" +
-      '<div class="list">' + days.map(function (day) {
-        var list = (dm.courses || []).filter(function (c) { return c.day === day; });
-        if (list.length === 0) return "";
-        return '<div style="padding:8px 2px 2px;font-size:13px;color:var(--sub);font-weight:600;">' + day + (day === todayName ? "（今天）" : "") + "</div>" +
-          list.map(function (c) {
-            return '<div class="list-item"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;"></div>' +
-              '<div class="li-main"><div class="li-title">' + esc(c.name) + (c.note ? ' <span class="tag">📝 笔记</span>' : "") + "</div>" +
-              '<div class="li-sub">' + (c.teacher ? esc(c.teacher) + " · " : "") + (c.place || "") + "</div>" +
-              (c.note ? '<div class="li-sub" style="color:var(--accent);">' + esc(c.note.slice(0, 40)) + (c.note.length > 40 ? "…" : "") + "</div>" : "") +
-              "</div>" +
-              '<span class="li-meta">' + esc(c.time || "") + "</span>" +
-              (c.url ? '<a class="btn small plain" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + ic("link") + "资料</a>" : "") +
-              '<button class="icon-btn" data-action="edit-course" data-domain="' + esc(dm.id) + '" data-id="' + esc(c.id) + '">' + ic("edit") + "</button>" +
-              '<button class="icon-btn" data-action="del-course" data-domain="' + esc(dm.id) + '" data-id="' + esc(c.id) + '">' + ic("trash") + "</button></div>";
-          }).join("");
-      }).join("") + "</div>");
+      '<div class="course-grid">' + (dm.courses || []).map(function (c) {
+        return courseCard(c, dm.id);
+      }).join("") +
+      ((dm.courses || []).length === 0 ? '<div class="cc-empty">还没有课程，点上方「添加课程」录入第一门课（可填资料链接和笔记）。</div>' : "") +
+      "</div>");
 
     var as = (dm.assignments || []).slice().sort(function (a, b) { return a.due > b.due ? 1 : -1; });
     html += card(cardHead("作业与考试", "按截止日期排序", "assignments"),
