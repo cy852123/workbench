@@ -397,6 +397,65 @@
     } catch (e) {
       toast("保存失败：浏览器存储空间可能已满", true);
     }
+    scheduleSync();
+  }
+
+  /* ---------- 云端同步（Cloudflare Worker + KV，需在设置里填地址与密钥） ---------- */
+  var syncTimer = null, syncTodayCount = 0, syncDay = "";
+  function syncConfig() { return data.settings.sync || {}; }
+  function scheduleSync() {
+    var sc = syncConfig();
+    if (!sc.auto || !sc.url || !sc.key) return;
+    /* 每天最多自动同步 50 次，30 秒防抖 */
+    var t = todayStr();
+    if (syncDay !== t) { syncDay = t; syncTodayCount = 0; }
+    if (syncTodayCount >= 50) return;
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(function () { syncTodayCount++; syncPush(true); }, 30000);
+  }
+  function syncPush(silent) {
+    var sc = syncConfig();
+    if (!sc.url || !sc.key) { if (!silent) toast("请先在设置里填写云端同步地址和密钥", true); return; }
+    fetch(String(sc.url).replace(/\/+$/, "") + "/data", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "X-Sync-Key": sc.key },
+      body: JSON.stringify(data)
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      data.settings.sync.lastPush = nowStr();
+      save(true);
+      if (!silent) toast("已上传到云端（" + (data.settings.sync.lastPush || "").slice(11) + "）");
+    }).catch(function (e) {
+      if (!silent) toast("上传失败：" + e.message, true);
+    });
+  }
+  function syncPull() {
+    var sc = syncConfig();
+    if (!sc.url || !sc.key) { toast("请先在设置里填写云端同步地址和密钥", true); return; }
+    fetch(String(sc.url).replace(/\/+$/, "") + "/data", {
+      method: "GET",
+      headers: { "X-Sync-Key": sc.key }
+    }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    }).then(function (remote) {
+      if (!remote || typeof remote !== "object" || !remote.meta) throw new Error("云端没有有效数据");
+      /* 下载前先备份本地数据（安全兜底） */
+      try {
+        localStorage.setItem(STORE_KEY + "_backup_" + todayStr(), JSON.stringify(data));
+      } catch (e) { /* 备份失败不阻塞 */ }
+      /* 原地替换 data 内容（保持引用，其他闭包不受影响） */
+      Object.keys(data).forEach(function (k) { delete data[k]; });
+      Object.assign(data, remote);
+      data.settings.sync = data.settings.sync || {};
+      data.settings.sync.lastPull = nowStr();
+      save(true);
+      applyFont(); applyTheme(data.settings && data.settings.primaryDomain);
+      renderAll();
+      toast("已从云端下载，本地已备份（" + todayStr() + "）");
+    }).catch(function (e) {
+      toast("下载失败：" + e.message, true);
+    });
   }
   function refresh() {
     renderAll();
@@ -2664,8 +2723,19 @@
         data.settings.focusMode = data.settings.focusMode === "b" ? "a" : "b";
         save(true); renderView(); break;
 
-      /* 账号 */
-      case "add-account": accountModal(null); break;
+      case "sync-push": syncPush(false); break;
+      case "sync-pull": syncPull(); break;
+      case "sync-save": {
+        var sc = data.settings.sync = data.settings.sync || {};
+        sc.url = fval("syncUrl").trim();
+        sc.key = fval("syncKey").trim();
+        sc.auto = !!(document.getElementById("syncAuto") || {}).checked;
+        save();
+        modalClose();
+        toast(sc.url ? "云端同步设置已保存" : "已清除云端同步设置");
+        renderAll();
+        break;
+      }
       case "del-account": {
         var a = data.accounts.filter(function (x) { return x.id === id; })[0];
         if (a) {

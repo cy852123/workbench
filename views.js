@@ -2242,12 +2242,25 @@
     html += card(cardHead("使用说明", "怎么看这个工作台", "guide"),
       '<div style="font-size:14px;color:var(--sub);line-height:1.9;">' +
       "<b style=\"color:var(--text);\">这是什么</b>：你的个人工作台，一个网页，电脑和手机打开同一个地址。它帮你管学习、任务、资料、复盘和健康。<br>" +
-      "<b style=\"color:var(--text);\">数据存在哪</b>：目前存在<b>你使用的那台设备的浏览器本地</b>（localStorage）。电脑上记的，手机浏览器里看不到——跨设备同步将在升级版本提供，当前未启用。<br>" +
+      "<b style=\"color:var(--text);\">数据存在哪</b>：目前存在<b>你使用的那台设备的浏览器本地</b>（localStorage）。跨设备同步：填好下方「云端同步」的地址和密钥后，可手动上传/下载，或开启自动同步。<br>" +
       "<b style=\"color:var(--text);\">怎么备份</b>：本页下方「导出数据」会下载一个 JSON 文件，存好它=备份。换设备或清浏览器前先导出。<br>" +
       "<b style=\"color:var(--text);\">各模块怎么用</b>：每个页面右上角有圆圈问号「?」，鼠标悬停（电脑）或点击（手机）看该页说明。<br>" +
       "<b style=\"color:var(--text);\">删除的东西</b>：删除的内容先进回收站，可在本页恢复，不会直接消失。<br>" +
       "<b style=\"color:var(--text);\">AI</b>：本地规则功能（收集箱建议、周复盘草稿、学习摘要）免费可用；对话式 AI 需要在「AI 配置」填入你自己的 API 密钥才启用。<br>" +
       "<b style=\"color:var(--text);\">费用</b>：工作台本身免费。对话式 AI 用你的 API 按量计费，密钥由你自己提供。</div>");
+
+    html += card(cardHead("云端同步", "电脑手机数据互通（Cloudflare 免费）", "sync"),
+      '<div class="li-sub" style="margin-bottom:10px;">把数据存到云端，另一台设备（手机/电脑）填同样的地址和密钥就能同步。自动同步开启后，每次改动会在 30 秒后上传（每天最多 50 次）。</div>' +
+      '<div class="field"><label>同步地址（Worker 地址，如 https://xxx.workers.dev）</label>' +
+      '<input id="syncUrl" value="' + esc((d.settings.sync || {}).url || "") + '" placeholder="https://xxx.workers.dev"></div>' +
+      '<div class="field"><label>同步密钥（部署时设置的密钥）</label>' +
+      '<input id="syncKey" type="password" value="' + esc((d.settings.sync || {}).key || "") + '" placeholder="云端同步密钥"></div>' +
+      '<label class="checkline"><input type="checkbox" id="syncAuto"' + ((d.settings.sync || {}).auto ? " checked" : "") + "> 开启自动同步（改动后自动上传）</label>" +
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
+      '<button class="btn" data-action="sync-save">保存设置</button>' +
+      '<button class="btn plain" data-action="sync-push">↑ 立即上传本地数据</button>' +
+      '<button class="btn plain" data-action="sync-pull">↓ 从云端下载（覆盖本地）</button></div>' +
+      '<div class="li-sub" style="margin-top:10px;">最近上传：' + esc((d.settings.sync || {}).lastPush || "无") + " ｜ 最近下载：" + esc((d.settings.sync || {}).lastPull || "无") + "</div>");
 
     html += card(cardHead("AI 配置", "对话式 AI 的密钥只存本机浏览器", "api"),
       '<div class="field"><label>API 地址（OpenAI 兼容格式）</label>' +
