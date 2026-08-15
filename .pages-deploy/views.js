@@ -152,6 +152,9 @@
       (overDue.length ? '<span class="ht-late" style="align-self:center;">另有 ' + overDue.length + " 条逾期</span>" : "") +
       "</div></div>";
 
+    /* AI 下发任务卡（Hermes 每天早上写入云端，这里异步拉取展示） */
+    html += '<div class="card" id="aiTasksBox"><div class="c-head"><span class="c-emoji">🤖</span><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div><div class="li-sub">加载中…</div></div>';
+
     /* 学科入口 5 卡（紧凑） */
     html += '<div class="card"><div class="card-head"><h3>📚 学习领域</h3></div>' +
       '<div class="home-domains">' + d.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).map(homeDomainCard).join("") + "</div></div>";
@@ -450,10 +453,10 @@
     /* 区块1：今日学习（核心） */
     if (!td) {
       html += card(cardHead("📅 今日学习", "还没生成今日学习包", "ai-today"),
-        empty("今日学习包未生成", "点击下方按钮，生成今天 30 分钟的 AI 学习内容（内置学习包；每日自动推送将在云端升级后由 Hermes 定时提供）") +
+        empty("今日学习包未生成", "每天早上 7 点 Hermes 会根据你的学习数据（错题、答疑、进度）生成个性化学习包；也可以点下方按钮立即用内置模板生成。") +
         '<button class="btn block" data-action="gen-ai-today">🔄 生成今日学习包</button>');
     } else {
-      html += '<div class="card"><div class="card-head"><h3>📅 今日学习</h3>' + (td.done ? '<span class="tag state-done">已完成</span>' : '<span class="tag state-doing">进行中</span>') + '</div>' +
+      html += '<div class="card"><div class="card-head"><h3>📅 今日学习</h3>' + (td.aiPush ? '<span class="tag">🤖 Hermes 个性化</span>' : '') + (td.done ? '<span class="tag state-done">已完成</span>' : '<span class="tag state-doing">进行中</span>') + '</div>' +
         '<div style="font-size:17px;font-weight:800;margin-bottom:10px;">' + esc(td.topic) + "</div>" +
         '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">✨ 学习目标</div>' +
         '<ul style="padding-left:20px;margin-bottom:12px;">' + (td.goals || []).map(function (g) { return "<li style=\"font-size:14px;margin-bottom:3px;\">" + esc(g) + "</li>"; }).join("") + "</ul>" +
@@ -641,16 +644,18 @@
       { id: "cet-reading", emoji: "📝", name: "阅读", desc: "真题阅读、长难句、错题记录" },
       { id: "cet-writing", emoji: "✍️", name: "写作", desc: "范文、模板、AI 批改、作文素材" },
       { id: "cet-translation", emoji: "🌐", name: "翻译", desc: "真题翻译练习、句式积累" },
-      { id: "cet-speaking", emoji: "🗣️", name: "口语", desc: "AI 口语对话练习" }
+      { id: "cet-speaking", emoji: "🗣️", name: "口语", desc: "AI 口语对话练习" },
+      { id: "cet-grammar", emoji: "📚", name: "语法", desc: "语法检查器、知识点库" }
     ];
     var low3 = zones.slice().sort(function (a, b) {
-      return (examSubj(dm, a.name).progress || 0) - (examSubj(dm, b.name).progress || 0);
+      var sa = examSubj(dm, a.name), sb = examSubj(dm, b.name);
+      return ((sa && sa.progress) || 0) - ((sb && sb.progress) || 0);
     }).slice(0, 3);
     html += '<div class="en-today"><div class="card-head" style="margin-bottom:4px;"><h3>📌 今日英语任务</h3>' +
       '<button class="btn small ghost" data-action="punch" data-domain="cet">⏱ 打卡学习</button></div>' +
       low3.map(function (z) {
         var s = examSubj(dm, z.name);
-        var done = (s.progress || 0) > 60;
+        var done = (s && s.progress || 0) > 60;
         return '<div class="en-task" data-action="go-view" data-view="' + z.id + '">' +
           '<span class="en-box' + (done ? " on" : "") + '"></span>' +
           '<span class="en-task-name">' + z.emoji + " " + esc(z.name) + "：" + esc(progressText(s ? s.progress : 0)) + '</span>' +
@@ -680,22 +685,20 @@
       '<div class="en-entry" data-action="go-view" data-view="cet-exams">🎓 考试管理<br><b style="color:var(--accent);">' + examCount + '</b> 套考试</div>' +
       "</div>";
 
-    /* AI 英语工具箱 */
-    var hasKey = !!(d.settings.apiKey);
+    /* AI 英语工具箱（已切换微信直连） */
     var tools = [
-      { id: "ai", emoji: "🧠", name: "AI 答疑", desc: "英语题目答疑" },
-      { id: "cet-writing", emoji: "✍️", name: "作文批改", desc: "粘贴作文，AI 修改打分润色" },
-      { id: "cet-speaking", emoji: "💬", name: "口语对话", desc: "AI 口语练习会话" },
-      { id: "cet-translation", emoji: "🌐", name: "翻译工具", desc: "文本翻译" }
+      { id: "ai", emoji: "🧠", name: "AI 答疑", desc: "发微信问 Hermes" },
+      { id: "cet-writing", emoji: "✍️", name: "作文批改", desc: "微信发作文批改" },
+      { id: "cet-speaking", emoji: "💬", name: "口语对话", desc: "微信练口语" },
+      { id: "cet-translation", emoji: "🌐", name: "翻译工具", desc: "微信发句翻译" }
     ];
-    html += card(cardHead("🧰 AI 英语工具箱", hasKey ? "AI 已启用" : "配置 AI 密钥后启用", "ai-tools"),
+    html += card(cardHead("🧰 AI 英语工具箱", "微信直连 Hermes", "ai-tools"),
       '<div class="grid grid-4">' + tools.map(function (t) {
-        return '<div class="card" style="margin-bottom:0;' + (hasKey ? "" : "opacity:0.55;") + '"><div class="card-head"><h3 style="font-size:15px;">' + t.emoji + " " + esc(t.name) + '</h3></div>' +
+        return '<div class="card" style="margin-bottom:0;"><div class="card-head"><h3 style="font-size:15px;">' + t.emoji + " " + esc(t.name) + '</h3></div>' +
           '<div class="li-sub" style="margin-bottom:10px;">' + esc(t.desc) + "</div>" +
-          (hasKey ? '<button class="btn small block" data-action="go-view" data-view="' + t.id + '">使用</button>'
-            : '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看（未启用）</button>') + "</div>";
+          '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看说明</button></div>';
       }).join("") + "</div>" +
-      (!hasKey ? '<div class="li-sub" style="margin-top:10px;">未配置 API 密钥，AI 功能置灰。到「设置与数据 → AI 配置」填入密钥后启用；基础打卡、生词功能不受影响。</div>' : ""));
+      '<div class="li-sub" style="margin-top:10px;">以上功能已统一改为微信直连（见「AI 帮手」页说明）。网页不再内置 AI 对话。</div>');
 
     /* 关联资料 */
     var cetRes = (d.resources || []).filter(function (r) { return r.domainId === "cet"; });
@@ -1228,6 +1231,62 @@
     if (zone.extra) html += zone.extra(dm);
     return html;
   }
+  /* 语法学习专区（v0.1.18）：语法检查器（LanguageTool）+ 知识点库（分类/自定义/掌握标记） */
+  function cetGrammar(dm) {
+    var W = window.W, d = W.data;
+    var html = backBar("domain:cet", "英语学习");
+    html += card(cardHead("🔍 语法检查器", "粘贴英文，自动找出语法错误", "grammar-check"),
+      '<div class="li-sub" style="margin-bottom:8px;">粘贴一段英文（作文/句子），点击检查后会标注语法错误并给出修改建议。免费在线检查，无需配置。</div>' +
+      '<textarea id="grammarText" rows="4" placeholder="粘贴英文作文或句子…" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:var(--fs-base);resize:vertical;"></textarea>' +
+      '<button class="btn block" style="margin-top:8px;" data-action="grammar-check">检查语法错误</button>' +
+      '<div id="grammarResult" style="margin-top:10px;"></div>');
+    /* 知识点库：列表只显示标题，点击单开一页看内容 */
+    var pts = (d.grammar && d.grammar.points) || [];
+    var cats = [];
+    pts.forEach(function (p) { if (cats.indexOf(p.cat) < 0) cats.push(p.cat); });
+    var done = pts.filter(function (p) { return p.mastered; }).length;
+    html += card(cardHead("📚 语法知识点", pts.length + " 条 ｜ 已掌握 " + done, "grammar-points"),
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+      '<button class="btn ghost small" data-action="grammar-add">' + ic("plus") + "添加知识点</button>" +
+      '<button class="btn ghost small" data-action="grammar-export">' + ic("download") + "导出知识点</button></div>" +
+      (pts.length === 0 ? '<div class="li-sub">还没有知识点，点上方按钮添加。</div>' :
+        cats.map(function (c) {
+          var list = pts.filter(function (p) { return p.cat === c; });
+          return '<div class="li-sub" style="font-weight:600;margin:10px 0 4px;">' + esc(c) + "（" + list.length + "）</div>" +
+            '<div class="list">' + list.map(function (p, i) {
+              return '<div class="list-item" data-action="grammar-open" data-idx="' + i + '" style="cursor:pointer;">' +
+                '<div class="li-main"><div class="li-title">' + esc(p.title) + (p.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + (p.custom ? ' <span class="tag">自定义</span>' : "") + "</div>" +
+                '<div class="li-sub">' + esc(p.cat) + " ｜ 点击查看详情</div></div>" +
+                '<span class="en-skill-arrow">›</span></div>';
+            }).join("") + "</div>";
+        }).join("")) +
+      '<div class="li-sub" style="margin-top:10px;">内置示例知识点只是示范，点「添加知识点」可以写自己的内容。</div>');
+    return html;
+  }
+  /* 知识点详情页：单开一页显示完整内容 */
+  function grammarDetail(dm) {
+    var W = window.W, d = W.data;
+    var pts = (d.grammar && d.grammar.points) || [];
+    var i = W.ui.grammarIdx != null ? W.ui.grammarIdx : 0;
+    var p = pts[i];
+    if (!p) return '<div class="card">' + esc("知识点不存在或已删除") + "</div>";
+    var html = backBar("cet-grammar", "语法专区");
+    html += card(cardHead(esc(p.title), esc(p.cat) + (p.mastered ? " ｜ 已掌握" : " ｜ 未掌握"), "grammar-detail"),
+      '<div class="li-sub" style="margin-bottom:8px;">分类：' + esc(p.cat) + (p.custom ? ' <span class="tag">自定义</span>' : ' <span class="tag">内置示例</span>') + "</div>" +
+      '<div style="white-space:pre-wrap;line-height:1.7;font-size:var(--fs-base);color:var(--text);">' + esc(p.content) + "</div>" +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      '<button class="btn small ' + (p.mastered ? "plain" : "") + '" data-action="grammar-toggle" data-idx="' + i + '">' + ic("check") + (p.mastered ? "已掌握（点此取消）" : "标记掌握") + "</button>" +
+      '<button class="btn small ghost" data-action="grammar-del" data-idx="' + i + '">' + ic("trash") + "删除</button>" +
+      "</div>");
+    /* 上一条 / 下一条切换 */
+    if (pts.length > 1) {
+      html += '<div style="display:flex;gap:8px;margin-top:10px;">' +
+        (i > 0 ? '<button class="btn ghost small" data-action="grammar-nav" data-dir="-1">← 上一条</button>' : '<span></span>') +
+        (i < pts.length - 1 ? '<button class="btn ghost small" data-action="grammar-nav" data-dir="1" style="margin-left:auto;">下一条 →</button>' : "") +
+        "</div>";
+    }
+    return html;
+  }
   function cetWordbook(dm) {
     var html = backBar("domain:cet", "英语学习");
     var wb = examWordbook(dm);
@@ -1286,34 +1345,21 @@
     return html;
   }
   function zoneWriting(dm) {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
-    return card(cardHead("✍️ AI 作文批改", hasKey ? "AI 已启用" : "当前未启用（需配置 AI 密钥）", "ai-writing"),
-      '<div class="field"><label>粘贴你的作文</label><textarea id="aiEssay" placeholder="把作文粘贴到这里…" style="min-height:120px;"></textarea></div>' +
-      (hasKey ? '<button class="btn block" data-action="ai-essay">提交批改（AI 修改、打分、润色）</button>'
-        : '<div class="li-sub">配置 AI 密钥后，这里会调用模型做修改、打分、润色。到「设置与数据 → AI 配置」启用。</div>') +
-      '<div class="ai-chat" id="essayResult" style="margin-top:12px;"></div>');
+    return card(cardHead("✍️ 作文批改", "已改用微信 AI", "ai-writing"),
+      '<div class="li-sub">网页内置批改已停用。把作文发到微信「Hermes」，会帮你修改、打分、润色，批改结果可保存到答疑库。</div>');
   }
   /* 阅读专区 */
   function zoneReading(dm) {
     return '<div class="li-sub" style="padding:8px 0;">阅读专区：记录阅读打卡与学习时长。</div>';
   }
   function zoneSpeaking(dm) {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
-    return card(cardHead("🗣️ AI 口语对话", hasKey ? "AI 已启用" : "当前未启用（需配置 AI 密钥）", "ai-speaking"),
-      hasKey ? '<div class="ai-chat" id="speakChat"><div class="msg bot">开始口语练习吧，用英文和我对话，我会帮你纠正表达。</div></div>' +
-        '<div class="ai-input"><input id="speakInput" placeholder="用英语说点什么…"><button class="btn" data-action="ai-speak">' + ic("send") + "发送</button></div>"
-        : '<div class="li-sub">配置 AI 密钥后可开启口语对话练习。到「设置与数据 → AI 配置」启用。</div>');
+    return card(cardHead("🗣️ 口语练习", "已改用微信 AI", "ai-speaking"),
+      '<div class="li-sub">网页内置口语对话已停用。在微信「Hermes」里用英文说话（可发语音或文字），会陪你练口语并纠正表达。</div>');
   }
   function zoneTranslation(dm) {
-    var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
-    return card(cardHead("🌐 翻译工具", hasKey ? "AI 已启用" : "当前未启用（需配置 AI 密钥）", "ai-translate"),
-      '<div class="field"><label>输入要翻译的文本</label><textarea id="trText" placeholder="中译英 / 英译中…" style="min-height:80px;"></textarea></div>' +
-      (hasKey ? '<button class="btn block" data-action="ai-translate">翻译</button><div class="ai-chat" id="trResult" style="margin-top:12px;"></div>'
-        : '<div class="li-sub">配置 AI 密钥后可用。到「设置与数据 → AI 配置」启用。</div>') +
-      '<div class="li-sub" style="margin-top:10px;">翻译练习建议：先自己翻，再对比 AI 译文，把好句式记到答疑库。</div>');
+    return card(cardHead("🌐 翻译工具", "已改用微信 AI", "ai-translate"),
+      '<div class="li-sub">网页内置翻译已停用。把要翻的句子发到微信「Hermes」即可。</div>' +
+      '<div class="li-sub" style="margin-top:10px;">翻译练习建议：先自己翻，再让 AI 对比译文，把好句式记到答疑库。</div>');
   }
 
   /* ==================== 学业课程 ==================== */
@@ -1435,7 +1481,7 @@
       list.length === 0 ? empty("没有符合条件的资料", "点「新建资料」添加，支持粘贴 B站/网盘/小红书/抖音等链接") :
       '<div class="list">' + list.map(function (r) {
         return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main"><div class="li-title">' + esc(r.title) + "</div>" +
+          '<div class="li-main"><div class="li-title" data-action="lib-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">' + esc(r.title) + "</div>" +
           '<div class="li-sub">' +
           (r.platform ? '<span class="tag platform">' + esc(r.platform) + "</span>" : "") +
           stateTag(r.status) +
@@ -1443,17 +1489,38 @@
           (r.domainId ? '<span class="tag">' + esc(domainName(r.domainId)) + "</span>" : "") +
           (r.tags || []).map(function (t) { return '<span class="tag">#' + esc(t) + "</span>"; }).join("") +
           (r.extractCode ? '<span class="tag">提取码 ' + esc(r.extractCode) + "</span>" : "") +
-          "</div>" +
-          (r.note ? '<div class="li-sub">' + esc(r.note) + "</div>" : "") +
+          " ｜ 点击查看详情</div>" +
           "</div>" +
           '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
           (r.url ? '<a class="btn small plain" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + ic("link") + "打开</a>" : "") +
-          '<button class="btn small plain" data-action="set-status" data-id="' + esc(r.id) + '">' + ic("refresh") + "状态</button>" +
-          '<div style="display:flex;gap:2px;">' +
-          '<button class="icon-btn" data-action="edit-resource" data-id="' + esc(r.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-resource" data-id="' + esc(r.id) + '">' + ic("trash") + "</button></div></div></div>";
+          '<span class="en-skill-arrow" data-action="lib-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">›</span></div></div>';
       }).join("") + "</div>");
 
+    return html;
+  }
+  /* 资料详情页：单开一页显示完整信息 */
+  function libraryDetail() {
+    var W = window.W, d = W.data;
+    var r = (d.resources || []).filter(function (x) { return x.id === W.ui.libId; })[0];
+    if (!r) return '<div class="card">' + esc("该资料不存在或已删除") + "</div>";
+    var html = backBar("library", "资料库");
+    html += card(cardHead(esc(r.title), stateTag(r.status) + " " + esc(r.category || "其他"), "lib-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      (r.platform ? '<span class="tag platform">' + esc(r.platform) + "</span>" : "") +
+      stateTag(r.status) +
+      '<span class="tag">' + esc(r.category || "其他") + "</span>" +
+      (r.domainId ? '<span class="tag">' + esc(domainName(r.domainId)) + "</span>" : "") +
+      (r.tags || []).map(function (t) { return '<span class="tag">#' + esc(t) + "</span>"; }).join("") +
+      (r.extractCode ? '<span class="tag">提取码 ' + esc(r.extractCode) + "</span>" : "") +
+      "</div>" +
+      (r.note ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">备注</div><div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(r.note) + "</div>" : '<div class="li-sub" style="margin-bottom:14px;">没有备注。点「编辑」补充。</div>') +
+      (r.url ? '<div class="li-sub" style="margin-bottom:10px;">链接：<a href="' + esc(r.url) + '" target="_blank" rel="noopener" style="color:var(--accent);">' + esc(r.url) + "</a></div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      (r.url ? '<a class="btn" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + ic("link") + "打开链接</a>" : "") +
+      '<button class="btn small plain" data-action="set-status" data-id="' + esc(r.id) + '">' + ic("refresh") + "切换状态</button>" +
+      '<button class="btn small ghost" data-action="edit-resource" data-id="' + esc(r.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-resource" data-id="' + esc(r.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -1471,12 +1538,14 @@
     html += card(cardHead("待分拣", pending.length + " 条，决定放哪", "inbox"),
       pending.length === 0 ? empty("收集箱是空的", "想到什么先扔进来，稍后统一整理") :
       '<div class="list">' + pending.map(function (x) {
+        var title = String(x.content || x.url || "无标题");
         return '<div class="list-item" style="align-items:flex-start;">' +
-          '<div class="li-main"><div class="li-title">' + esc(x.content || x.url || "无标题") + "</div>" +
+          '<div class="li-main"><div class="li-title" data-action="inbox-open" data-id="' + esc(x.id) + '" style="cursor:pointer;">' + esc(title.length > 40 ? title.slice(0, 40) + "…" : title) + "</div>" +
           '<div class="li-sub">' +
           (x.platform ? '<span class="tag platform">' + esc(x.platform) + "</span>" : "") +
           '<span class="tag">' + esc(x.type || "文字") + "</span>" +
-          '<span class="tag">' + esc(x.createdAt || "") + "</span></div>" +
+          '<span class="tag">' + esc(x.createdAt || "") + "</span>" +
+          '<span class="tag" style="cursor:pointer;" data-action="inbox-open" data-id="' + esc(x.id) + '">查看全文</span></div>' +
           (x.suggestion ? '<div class="li-sub" style="color:var(--accent);">AI 建议：' + esc(x.suggestion) + "</div>" : "") +
           "</div>" +
           '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
@@ -1492,6 +1561,29 @@
           '<div class="li-sub">已移动到 ' + esc(x.movedTo || "资料库") + "</div></div></div>";
       }).join("") + "</div>");
 
+    return html;
+  }
+  /* 收集箱详情页：单开一页显示全文 + 操作 */
+  function inboxDetail() {
+    var W = window.W, d = W.data;
+    var x = (d.inbox || []).filter(function (y) { return y.id === W.ui.inboxId; })[0];
+    if (!x) return '<div class="card">' + esc("该条内容不存在或已删除") + "</div>";
+    var html = backBar("inbox", "收集箱");
+    html += card(cardHead("📥 收集内容", x.status === "待分拣" ? "待分拣" : "已分拣 · " + esc(x.movedTo || "资料库"), "inbox-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      (x.platform ? '<span class="tag platform">' + esc(x.platform) + "</span>" : "") +
+      '<span class="tag">' + esc(x.type || "文字") + "</span>" +
+      '<span class="tag">' + esc(x.createdAt || "") + "</span>" +
+      "</div>" +
+      '<div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(x.content || x.url || "无标题") + "</div>" +
+      (x.url ? '<div class="li-sub" style="margin-bottom:10px;">链接：<a href="' + esc(x.url) + '" target="_blank" rel="noopener" style="color:var(--accent);">' + esc(x.url) + "</a></div>" : "") +
+      (x.suggestion ? '<div class="li-sub" style="color:var(--accent);margin-bottom:10px;">AI 建议：' + esc(x.suggestion) + "</div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      (x.status === "待分拣"
+        ? '<button class="btn" data-action="sort-inbox" data-id="' + esc(x.id) + '">' + ic("check") + "确认去向</button>"
+        : "") +
+      '<button class="btn small ghost" data-action="del-inbox" data-id="' + esc(x.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -1555,26 +1647,27 @@
   /* ==================== AI 帮手 ==================== */
   function ai() {
     var W = window.W, d = W.data;
-    var hasKey = !!(d.settings.apiKey);
     var html = "";
     html += '<div class="ai-banner">' + ic("spark") +
-      "<span><b>AI 帮手状态</b>：本地规则能力（收集箱建议 / 周复盘草稿 / 学习摘要）已启用，免费。<br>" +
-      (hasKey ? "对话式 AI：已配置 API，可以答疑和生成复习资料。<br>" : "对话式 AI：<b>当前未启用</b>——在「设置」中配置 API 密钥后启用（密钥只存本机浏览器）。<br>") +
-      "<b>AI 接管</b>：对话式 AI 的每条回答下方有「保存到工作台」按钮——可存入错题本 / 答疑库 / 今日任务 / 复盘 / 日历 / 收集箱 / 资料库 / 生词本（自动识别归类，确认后才会写入）。</span></div>";
+      "<span><b>AI 帮手状态</b>：网页内置对话已停用。<br>" +
+      "所有 AI 功能（答疑、拍照分析、计划调整、复盘、写作批改）改由 <b>Hermes 微信助手（daily agent）</b> 直接处理——打开微信给「Hermes」发消息即可，支持发照片、发文字、提问。分析结果会自动写回工作台（错题本 / 答疑库 / 复盘 / 任务）。</span></div>";
+
+    /* 微信直连引导 */
+    html += card(cardHead("📱 用微信直接找 AI", "比网页更准确、更灵活", "ai-wechat"),
+      '<div style="font-size:14.5px;line-height:1.8;color:var(--text);">' +
+      "<b>怎么用：</b>手机微信 → 找到「Hermes」联系人 → 像聊天一样发消息。<br>" +
+      "<b>能做什么：</b><br>" +
+      "· 发纸质书照片 → 拍照分析、讲题、标注重点<br>" +
+      "· 问不会的题 → 详细解答（可存入错题本 / 答疑库）<br>" +
+      "· 汇报今天学了什么 → 帮你复盘、调整明日计划<br>" +
+      "· 发作文 / 题目截图 → 批改、点评<br><br>" +
+      "<b>前提：</b>电脑（Hermes 所在设备）需联网并开机。寝室没网时微信 AI 不可用，记录功能（任务、打卡、笔记）不受影响。</div>");
 
     /* 本地工具 */
     html += card(cardHead("本地工具", "免费可用，不依赖外部 API", "ai-local"), '<div style="display:flex;flex-direction:column;gap:10px;">' +
       '<button class="btn plain block" data-action="ai-sort-all">' + ic("inbox") + "给收集箱待分拣内容批量建议去向</button>" +
       '<button class="btn plain block" data-action="ai-draft-week">' + ic("refresh") + "生成本周复盘草稿（汇总学习数据）</button>" +
       '<button class="btn plain block" data-action="ai-summary">' + ic("trending") + "生成学习情况摘要（本月各领域时长）</button></div>");
-
-    /* 对话 */
-    html += card(cardHead("对话式 AI", hasKey ? "已启用" : "当前未启用", "ai-chat"),
-      '<div class="ai-chat" id="aiChat">' +
-      (hasKey ? '<div class="msg bot">你好，我是你的 AI 帮手。可以问我学习问题、让我帮你安排任务、生成复习提纲。注意：我只会修改你确认过的内容。</div>' :
-        '<div class="msg bot">对话式 AI 当前未启用。启用方法：设置与数据 → AI 配置 → 填入 API 地址、模型和密钥。未配置时，上方本地工具仍可正常使用。</div>') +
-      "</div>" +
-      (hasKey ? '<div class="ai-input"><input id="aiInput" placeholder="输入问题…"><button class="btn" data-action="ai-send">' + ic("send") + "</button></div>" : ""));
 
     return html;
   }
@@ -1969,17 +2062,30 @@
     html += card(cardHead("复盘历史", list.length + " 次记录", "review-history"),
       list.length === 0 ? empty("还没有复盘记录", "从今天的每日复盘开始") :
       '<div>' + list.map(function (r) {
-        return '<div class="review-item"><div class="ri-head"><span class="ri-date">' + esc(r.date) + "</span>" +
+        return '<div class="review-item" data-action="review-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">' +
+          '<div class="ri-head"><span class="ri-date">' + esc(r.date) + "</span>" +
           '<span class="ri-type">' + (r.type === "weekly" ? "周复盘" : "日复盘") + "</span>" +
-          '<span style="margin-left:auto;">' +
-          '<button class="icon-btn" data-action="edit-review" data-id="' + esc(r.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-review" data-id="' + esc(r.id) + '">' + ic("trash") + "</button></span></div>" +
-          (r.done ? '<p style="font-size:13.5px;margin-top:6px;">完成：' + esc(r.done) + "</p>" : "") +
-          (r.undone ? '<p style="font-size:13.5px;">未完成：' + esc(r.undone) + "</p>" : "") +
-          (r.adjust ? '<p style="font-size:13.5px;color:var(--accent);">调整：' + esc(r.adjust) + "</p>" : "") +
+          '<span style="margin-left:auto;color:var(--accent);">查看 →</span></div>' +
+          (r.done ? '<p style="font-size:13px;margin-top:4px;color:var(--sub);">完成：' + esc(String(r.done).slice(0, 30)) + (String(r.done).length > 30 ? "…" : "") + "</p>" : "") +
           "</div>";
       }).join("") + "</div>");
 
+    return html;
+  }
+  /* 复盘详情页：单开一页显示完整复盘 */
+  function reviewDetail() {
+    var W = window.W, d = W.data;
+    var r = (d.reviews || []).filter(function (x) { return x.id === W.ui.reviewId; })[0];
+    if (!r) return '<div class="card">' + esc("该复盘不存在或已删除") + "</div>";
+    var html = backBar("reviews", "复盘");
+    html += card(cardHead((r.type === "weekly" ? "📗 周复盘" : "📘 日复盘") + " · " + esc(r.date), esc(r.date), "review-detail"),
+      (r.done ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">完成的</div><div style="white-space:pre-wrap;line-height:1.7;margin-bottom:12px;">' + esc(r.done) + "</div>" : "") +
+      (r.undone ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">没完成 / 原因</div><div style="white-space:pre-wrap;line-height:1.7;margin-bottom:12px;">' + esc(r.undone) + "</div>" : "") +
+      (r.adjust ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">明天调整</div><div style="white-space:pre-wrap;line-height:1.7;background:#EEF0ED;border-radius:10px;padding:12px 14px;">' + esc(r.adjust) + "</div>" : "") +
+      '<div style="display:flex;gap:8px;margin-top:14px;">' +
+      '<button class="btn small ghost" data-action="edit-review" data-id="' + esc(r.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-review" data-id="' + esc(r.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2109,7 +2215,50 @@
       '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
     html += card(cardHead("📚 错题", list.length + " 道", "mk-list"),
       list.length === 0 ? empty("没有符合条件的错题", "") :
-      '<div class="list">' + list.map(function (m) { return mistakeCard(m, true); }).join("") + "</div>");
+      '<div class="list">' + list.map(function (m) {
+        return '<div class="list-item" data-action="mk-open" data-id="' + esc(m.id) + '" style="cursor:pointer;">' +
+          '<div class="li-main"><div class="li-title">' + esc(m.title) + (m.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + "</div>" +
+          '<div class="li-sub">' +
+          '<span class="tag">' + esc(m.subject || "未分类") + "</span>" +
+          (m.topic ? '<span class="tag">' + esc(m.topic) + "</span>" : "") +
+          (m.type ? '<span class="tag">' + esc(m.type) + "</span>" : "") +
+          '<span class="tag">' + esc(m.cause || "未填错因") + "</span>" +
+          (m.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+          (m.reviewCount ? '<span class="tag">复习 ' + m.reviewCount + " 次</span>" : "") +
+          (m.nextReview && !m.mastered ? (m.nextReview <= t ? '<span class="tag state-todo">待复习</span>' : '<span class="tag">下次 ' + esc(m.nextReview) + "</span>") : "") +
+          " ｜ 点击查看详情</div></div>" +
+          '<span class="en-skill-arrow">›</span></div>';
+      }).join("") + "</div>");
+    return html;
+  }
+  /* 错题详情页：单开一页显示完整错题 + 复习/掌握/编辑/删除 */
+  function mkDetail() {
+    var W = window.W, d = W.data;
+    var m = (d.mistakes || []).filter(function (x) { return x.id === W.ui.mistakeId; })[0];
+    if (!m) return '<div class="card">' + esc("该错题不存在或已删除") + "</div>";
+    var html = backBar("mk-list", "错题列表");
+    html += card(cardHead(esc(m.title), esc(m.subject || "未分类") + (m.mastered ? " ｜ 已掌握" : " ｜ 未掌握"), "mk-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      '<span class="tag">' + esc(m.subject || "未分类") + "</span>" +
+      (m.topic ? '<span class="tag">' + esc(m.topic) + "</span>" : "") +
+      (m.type ? '<span class="tag">' + esc(m.type) + "</span>" : "") +
+      '<span class="tag">' + esc(m.cause || "未填错因") + "</span>" +
+      (m.source ? '<span class="tag">' + esc(m.source) + "</span>" : "") +
+      (m.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+      (m.date ? '<span class="tag">' + esc(m.date) + "</span>" : "") +
+      "</div>" +
+      '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">错题</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(m.title) + "</div>" +
+      (m.solution ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">解法</div>' +
+        '<div style="white-space:pre-wrap;line-height:1.7;background:#EEF0ED;border-radius:10px;padding:12px 14px;">' + esc(m.solution) + "</div>"
+        : '<div class="li-sub">还没有解法。点下方「编辑」补充。</div>') +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      (m.mastered
+        ? '<button class="btn small plain" data-action="toggle-master" data-id="' + esc(m.id) + '">取消掌握</button>'
+        : '<button class="btn small" data-action="mistake-review" data-id="' + esc(m.id) + '">开始复习</button>') +
+      '<button class="btn small ghost" data-action="edit-mistake" data-id="' + esc(m.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-mistake" data-id="' + esc(m.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2173,7 +2322,7 @@
       "</div>" +
       (filtered.length === 0 ? empty("还没有答疑记录", "学习时遇到不懂的，得到解答后记到这里") :
       '<div class="list">' + filtered.map(function (q) {
-        return '<div class="list-item" style="align-items:flex-start;">' +
+        return '<div class="list-item" data-action="qa-open" data-id="' + esc(q.id) + '" style="cursor:pointer;">' +
           '<div class="li-main"><div class="li-title">' + (q.starred ? "⭐ " : "") + esc(q.question) + (q.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + "</div>" +
           '<div class="li-sub">' +
           (q.subject ? '<span class="tag">' + esc(q.subject) + "</span>" : "") +
@@ -2181,17 +2330,38 @@
           (q.source ? '<span class="tag">' + esc(q.source) + "</span>" : "") +
           (q.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
           (q.status === "待解决" ? '<span class="tag state-todo">待解决</span>' : '<span class="tag state-done">已解决</span>') +
+          " ｜ 点击查看完整解答</div>" +
           "</div>" +
-          (q.answer ? '<div class="li-sub" style="white-space:pre-wrap;margin-top:4px;">' + esc(q.answer.slice(0, 120)) + (q.answer.length > 120 ? "…" : "") + "</div>" : "") +
-          "</div>" +
-          '<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">' +
-          '<button class="icon-btn" data-action="toggle-qa-star" data-id="' + esc(q.id) + '">' + (q.starred ? "⭐" : "☆") + "</button>" +
-          '<button class="btn small plain" data-action="toggle-qa-status" data-id="' + esc(q.id) + '">' + (q.status === "待解决" ? "标记已解决" : "改回待解决") + "</button>" +
-          '<button class="btn small plain" data-action="toggle-qa-master" data-id="' + esc(q.id) + '">' + (q.mastered ? "取消掌握" : "标记掌握") + "</button>" +
-          '<div style="display:flex;gap:2px;">' +
-          '<button class="icon-btn" data-action="edit-qa" data-id="' + esc(q.id) + '">' + ic("edit") + "</button>" +
-          '<button class="icon-btn" data-action="del-qa" data-id="' + esc(q.id) + '">' + ic("trash") + "</button></div></div></div>";
+          '<span class="en-skill-arrow">›</span></div>';
       }).join("") + "</div>"));
+    return html;
+  }
+  /* 答疑详情页：单开一页显示完整问答 */
+  function qaDetail() {
+    var W = window.W, d = W.data;
+    var q = (d.qa || []).filter(function (x) { return x.id === W.ui.qaId; })[0];
+    if (!q) return '<div class="card">' + esc("该问题不存在或已删除") + "</div>";
+    var html = backBar("qa", "答疑库");
+    html += card(cardHead((q.starred ? "⭐ " : "") + esc(q.question), esc(q.subject || "未分类") + (q.mastered ? " ｜ 已掌握" : " ｜ 未掌握") + (q.status === "待解决" ? " ｜ 待解决" : " ｜ 已解决"), "qa-detail"),
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
+      (q.subject ? '<span class="tag">' + esc(q.subject) + "</span>" : "") +
+      (q.tags ? '<span class="tag">' + esc(q.tags) + "</span>" : "") +
+      (q.source ? '<span class="tag">' + esc(q.source) + "</span>" : "") +
+      (q.aiMarked ? '<span class="tag">AI 回答</span>' : "") +
+      (q.date ? '<span class="tag">' + esc(q.date) + "</span>" : "") +
+      "</div>" +
+      '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">问题</div>' +
+      '<div style="white-space:pre-wrap;line-height:1.7;margin-bottom:14px;">' + esc(q.question) + "</div>" +
+      (q.answer ? '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">解答</div>' +
+        '<div style="white-space:pre-wrap;line-height:1.7;background:#EEF0ED;border-radius:10px;padding:12px 14px;">' + esc(q.answer) + "</div>"
+        : '<div class="li-sub">还没有解答。点下方「编辑」补充解答。</div>') +
+      '<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">' +
+      '<button class="btn small ' + (q.starred ? "plain" : "") + '" data-action="toggle-qa-star" data-id="' + esc(q.id) + '">' + (q.starred ? "⭐ 已收藏" : "☆ 收藏") + "</button>" +
+      '<button class="btn small ' + (q.status === "待解决" ? "" : "plain") + '" data-action="toggle-qa-status" data-id="' + esc(q.id) + '">' + (q.status === "待解决" ? "标记已解决" : "改回待解决") + "</button>" +
+      '<button class="btn small ' + (q.mastered ? "plain" : "") + '" data-action="toggle-qa-master" data-id="' + esc(q.id) + '">' + ic("check") + (q.mastered ? "已掌握（点此取消）" : "标记掌握") + "</button>" +
+      '<button class="btn small ghost" data-action="edit-qa" data-id="' + esc(q.id) + '">' + ic("edit") + "编辑</button>" +
+      '<button class="btn small ghost" data-action="del-qa" data-id="' + esc(q.id) + '">' + ic("trash") + "删除</button>" +
+      "</div>");
     return html;
   }
 
@@ -2246,8 +2416,8 @@
       "<b style=\"color:var(--text);\">怎么备份</b>：本页下方「导出数据」会下载一个 JSON 文件，存好它=备份。换设备或清浏览器前先导出。<br>" +
       "<b style=\"color:var(--text);\">各模块怎么用</b>：每个页面右上角有圆圈问号「?」，鼠标悬停（电脑）或点击（手机）看该页说明。<br>" +
       "<b style=\"color:var(--text);\">删除的东西</b>：删除的内容先进回收站，可在本页恢复，不会直接消失。<br>" +
-      "<b style=\"color:var(--text);\">AI</b>：本地规则功能（收集箱建议、周复盘草稿、学习摘要）免费可用；对话式 AI 需要在「AI 配置」填入你自己的 API 密钥才启用。<br>" +
-      "<b style=\"color:var(--text);\">费用</b>：工作台本身免费。对话式 AI 用你的 API 按量计费，密钥由你自己提供。</div>");
+      "<b style=\"color:var(--text);\">AI</b>：网页内置 AI 对话已停用，所有 AI 功能（答疑、拍照分析、计划调整、复盘、批改）通过微信直连 Hermes 助手处理（见「AI 帮手」页说明）。本地规则工具（收集箱建议、周复盘草稿、学习摘要）仍免费可用。<br>" +
+      "<b style=\"color:var(--text);\">费用</b>：工作台本身免费。</div>");
 
     html += card(cardHead("云端同步", "电脑手机数据互通（Cloudflare 免费）", "sync"),
       '<div class="li-sub" style="margin-bottom:10px;">把数据存到云端，另一台设备（手机/电脑）填同样的地址和密钥就能同步。自动同步开启后，每次改动会在 30 秒后上传（每天最多 50 次）。</div>' +
@@ -2262,16 +2432,14 @@
       '<button class="btn plain" data-action="sync-pull">↓ 从云端下载（覆盖本地）</button></div>' +
       '<div class="li-sub" style="margin-top:10px;">最近上传：' + esc((d.settings.sync || {}).lastPush || "无") + " ｜ 最近下载：" + esc((d.settings.sync || {}).lastPull || "无") + "</div>");
 
-    html += card(cardHead("AI 配置", "对话式 AI 的密钥只存本机浏览器", "api"),
-      '<div class="field"><label>API 地址（OpenAI 兼容格式）</label>' +
-      '<input id="apiBase" placeholder="如 https://api.deepseek.com/v1" value="' + esc(d.settings.apiBase || "") + '"></div>' +
-      '<div class="field"><label>模型名称</label>' +
-      '<input id="apiModel" placeholder="如 deepseek-chat" value="' + esc(d.settings.apiModel || "") + '"></div>' +
-      '<div class="field"><label>API 密钥（' + (d.settings.apiKey ? "已配置（" + String(d.settings.apiKey).slice(0, 6) + "…）" : "未配置") + "）</label>" +
-      '<input id="apiKey" type="password" placeholder="粘贴你的密钥"><div class="li-sub" style="margin-top:4px;">密钥只保存在你浏览器的本地存储里，不会上传到任何公开仓库或服务器。配置后对话式 AI 才启用。</div></div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-      '<button class="btn" data-action="save-api">' + ic("check") + "保存配置</button>" +
-      (d.settings.apiKey ? '<button class="btn danger" data-action="clear-api">清除密钥</button>' : "") + "</div>");
+    html += card(cardHead("🤖 AI 助手", "已切换到微信直连", "api"),
+      '<div class="li-sub" style="margin-bottom:10px;">网页内置 AI 对话已停用（准确率和灵活性不足）。现在所有 AI 功能通过微信直连 Hermes 助手：</div>' +
+      '<div style="font-size:14px;line-height:1.9;color:var(--text);">' +
+      "· 发纸质书照片 → 拍照分析、讲题<br>" +
+      "· 问不会的题 → 详细解答（可自动存入错题本 / 答疑库）<br>" +
+      "· 汇报学习情况 → 帮你复盘、调整明日计划<br>" +
+      "· 发作文 / 截图 → 批改、点评<br><br>" +
+      "<b>前提：</b>电脑（Hermes 所在设备）联网并开机。寝室没网时微信 AI 不可用，工作台记录功能不受影响。</div>");
 
     html += card(cardHead("数据管理", "导出 / 导入 / 备份", "data"),
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
@@ -2348,6 +2516,28 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · AI 切换微信直连<span class="log-tag">升级</span></div>' +
+      '<p>🤖 网页内置 AI 对话已停用（准确率和灵活性不足）。所有 AI 功能改由微信直连 Hermes 助手：发纸质书照片可拍照分析讲题、问不会的题可存入错题本/答疑库、汇报学习可复盘调计划、发作文可批改点评。网页保留本地规则工具（收集箱建议/复盘草稿/学习摘要）。</p>' +
+      '<p>影响范围：AI 帮手 / 设置 / 英语专区 AI 工具。数据：无影响。你需要的操作：电脑联网并开机，微信找到「Hermes」发消息。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-16 · AI 个性化学习包<span class="log-tag">升级</span></div>' +
+      '<p>🤖 AI 知识学习升级：每天早上 7 点 Hermes 会读取你的学习数据（错题本、答疑库、进度），针对薄弱点生成一份个性化学习包（约 30 分钟），自动推送到 AI 知识学习板块（带「Hermes 个性化」标记）。没推送时仍可用「生成今日学习包」按钮用内置模板。</p>' +
+      '<p>影响范围：AI 知识学习板块。数据：新增云端推送，不删旧数据。你需要的操作：无。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-16 · 全站列表改单页详情<span class="log-tag">升级</span></div>' +
+      '<p>📄 全站列表统一改为「短列表 + 单页详情」：答疑库、错题本、复盘、收集箱、资料库的列表都只显示标题/摘要，点任意一条单开一页看完整内容（不再把所有内容摊在长页面里）。列表页都保留了快捷操作按钮。</p>' +
+      '<p>影响范围：答疑库 / 错题本 / 复盘 / 收集箱 / 资料库。数据：无影响。你需要的操作：无。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-16 · 语法知识点优化<span class="log-tag">升级</span></div>' +
+      '<p>📚 语法知识点改为「列表 + 单页详情」：列表只显示标题（不拉长页面），点任意知识点单开一页看完整内容，可上一条/下一条切换。新增「导出知识点」按钮：弹窗勾选想导出的知识点（或导出全部），保存为 txt 文件。</p>' +
+      '<p>影响范围：英语学习 → 语法专区。数据：无影响。你需要的操作：无。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-16 · 语法学习专区<span class="log-tag">升级</span></div>' +
+      '<p>📚 英语学习新增「语法」专区：①语法检查器——粘贴英文作文/句子，自动找出语法错误并给修改建议（在线免费服务）；②语法知识点库——内置 8 个高频语法点示例（时态/从句/虚拟语气/非谓语/主谓一致/倒装），可自己添加、标记掌握。</p>' +
+      '<p>影响范围：英语学习板块。数据：自动初始化，不删旧数据。你需要的操作：无。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-16 · AI 全屏对话<span class="log-tag">升级</span></div>' +
+      '<p>💬 对话式 AI 改为全屏对话页：在 AI 帮手页点「进入全屏对话」打开，消息区更大、输入框固定在底部，手机端更好用。对话历史保留，AI 回答下方仍有「保存到工作台」按钮。</p>' +
+      '<p>影响范围：AI 帮手板块。数据：无影响。你需要的操作：无。</p></div>' +
+      '<div class="log-item"><div class="log-date">2026-08-16 · 数据自愈修复<span class="log-tag">修复</span></div>' +
+      '<p>📖 修复「英语学习打不开」：个别设备上考试数据被写坏（考试列表变成纯文字），页面加载时会崩溃。现在加载时自动检测并修复，考试名称、生词本全部保留，不影响其他数据。</p>' +
+      '<p>🤖 对话式 AI 可用：在「设置与数据 → AI 配置」勾选「云端 AI 代理模式」，地址填 https://workbench-sync-c9e.pages.dev，密钥填同步密钥即可（云端代理已实测可用）。</p>' +
+      '<p>影响范围：全局数据加载。你需要的操作：手机端如果还打不开，做一次「设置 → 云端同步 → 下载」，或强制刷新（手机关闭页面重开）。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-15 · v0.1.9 学科学习页<span class="log-tag">升级</span></div>' +
       '<p>考研 5 科卡片点进去是完整的学科学习页（不再只是计时器）：</p>' +
       '<p>📖 英语：今日任务 + 精读库 + 长难句练习 + 作文模板库（小/大作文高分句式+手动批注）+ 翻译每日一句 + 阅读复盘（错题类型+定位句分析：没看懂句子/逻辑替换没识别）。</p>' +
@@ -2451,11 +2641,15 @@
     cetVocab: cetVocab,
     cetWordbook: cetWordbook,
     cetExams: cetExams,
+    cetGrammar: cetGrammar,
+    grammarDetail: grammarDetail,
     cetStats: cetStats,
     englishZone: englishZone,
     aiHistory: aiHistory,
     library: library,
+    libraryDetail: libraryDetail,
     inbox: inbox,
+    inboxDetail: inboxDetail,
     search: search,
     ai: ai,
     accounts: accounts,
@@ -2463,11 +2657,14 @@
     focus: focus,
     activity: activity,
     reviews: reviews,
+    reviewDetail: reviewDetail,
     mistakes: mistakes,
     mkTopics: mkTopics,
     mkTypes: mkTypes,
     mkList: mkList,
+    mkDetail: mkDetail,
     qa: qa,
+    qaDetail: qaDetail,
     calendar: calendar,
     settings: settings
   };
