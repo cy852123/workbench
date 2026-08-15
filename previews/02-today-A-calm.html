@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日首页 · 变体A 暖极简（Notion 风）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #F7F6F3; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #37352F; font-size: 15px; line-height: 1.6; padding: 40px 32px; max-width: 1080px; margin: 0 auto; }
+  .serif { font-family: Georgia, "Songti SC", "SimSun", serif; }
+  .muted { color: #787774; }
+  .card { background: #FFFFFF; border: 1px solid #EDEBE6; border-radius: 10px; padding: 22px 26px; margin-bottom: 18px; }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .card-head h2 { font-size: 17px; font-weight: 600; letter-spacing: .2px; }
+  .card-head .more { font-size: 13px; color: #787774; cursor: pointer; }
+  .card-head .more:hover { color: #37352F; }
+
+  /* 问候 */
+  .hello { margin-bottom: 26px; }
+  .hello .greet { font-size: 26px; font-weight: 600; letter-spacing: .5px; }
+  .hello .meta { font-size: 13.5px; color: #787774; margin-top: 6px; display: flex; gap: 14px; align-items: center; }
+  .hello .meta .count { color: #B07D0E; background: #FCF5E5; border-radius: 6px; padding: 2px 10px; font-size: 13px; }
+
+  /* 今日目标 */
+  .goal { display: flex; align-items: center; gap: 12px; }
+  .goal .ph { color: #ADABA7; font-size: 14.5px; flex: 1; }
+  .goal .set { font-size: 14px; color: #37352F; background: #FFFFFF; border: 1px solid #D3D1CB; border-radius: 7px; padding: 6px 14px; cursor: pointer; }
+  .goal .set:hover { background: #F7F6F3; }
+
+  /* 待办 */
+  .task { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid #F1F0EC; }
+  .task:last-child { border-bottom: none; }
+  .task .box { width: 18px; height: 18px; border: 1.5px solid #C9C7C2; border-radius: 5px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+  .task .t { flex: 1; font-size: 14.5px; }
+  .task .tag { font-size: 12px; color: #787774; background: #F1F0EC; border-radius: 5px; padding: 2px 9px; }
+  .task .late { font-size: 12.5px; color: #D44C47; }
+
+  /* 学科 */
+  .domains { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .d { background: #FFFFFF; border: 1px solid #EDEBE6; border-radius: 10px; padding: 18px 16px; cursor: pointer; transition: box-shadow .15s; }
+  .d:hover { box-shadow: 0 2px 10px rgba(55,53,47,.06); }
+  .d .e { font-size: 24px; margin-bottom: 10px; }
+  .d .n { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .d .s { font-size: 12.5px; color: #787774; margin-bottom: 12px; line-height: 1.55; min-height: 40px; }
+  .d .b { font-size: 11.5px; border-radius: 5px; padding: 2px 8px; display: inline-block; margin-right: 4px; margin-bottom: 3px; }
+
+  /* 快捷 */
+  .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .tt { background: #FFFFFF; border: 1px solid #EDEBE6; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .tt:hover { box-shadow: 0 2px 10px rgba(55,53,47,.06); }
+  .tt .ti { font-size: 19px; }
+  .tt .tn { font-size: 14.5px; font-weight: 600; }
+  .tt .ts { font-size: 12.5px; color: #787774; }
+  .tt .go { margin-left: auto; font-size: 13px; color: #37352F; }
+
+  .foot { text-align: center; font-size: 12px; color: #B5B3AE; margin-top: 26px; }
+</style>
+</head>
+<body>
+
+<div class="hello">
+  <div class="greet serif">晚上好，今天也要加油</div>
+  <div class="meta">
+    <span>2026-08-15 星期六</span>
+    <span class="count">距 2028 考研 · 497 天</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="serif">今日目标</h2><span class="more">改</span></div>
+  <div class="goal">
+    <span class="ph">尚未设置今日小目标 —— 写一句话，今天就有方向</span>
+    <button class="set">设定今日目标</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="serif">今日待办</h2><span class="more">查看全部 →</span></div>
+  <div class="task"><span class="box" style="background:#2F6B57;border-color:#2F6B57;">✓</span><span class="t" style="text-decoration:line-through;color:#ADABA7;">数学：高数第 3 章习题 1-20</span><span class="tag">考研</span></div>
+  <div class="task"><span class="box"></span><span class="t">英语：真题阅读 2 篇精读</span><span class="tag">英语</span><span class="late">已逾期</span></div>
+  <div class="task"><span class="box"></span><span class="t">材料科学基础：第 4 章笔记</span><span class="tag">课程</span></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2 class="serif">学习领域</h2><span class="more">管理 →</span></div>
+  <div class="domains">
+    <div class="d"><div class="e">🎓</div><div class="n">考研备考</div><div class="s">基础期 · 今日完成率 40%</div><div><span class="b" style="background:#FCF5E5;color:#B07D0E;">数学 2/5</span><span class="b" style="background:#FCF5E5;color:#B07D0E;">英语 1/2</span></div></div>
+    <div class="d"><div class="e">📖</div><div class="n">英语学习</div><div class="s">考研英语 · 距考试 497 天</div><div><span class="b" style="background:#EBF4FB;color:#2980B9;">词汇 25%</span><span class="b" style="background:#EBF4FB;color:#2980B9;">阅读 30%</span></div></div>
+    <div class="d"><div class="e">🤖</div><div class="n">AI 知识学习</div><div class="s">今日 30 分钟 · 提示词工程</div><div><span class="b" style="background:#EAF3FD;color:#3498DB;">今日待学</span></div></div>
+    <div class="d"><div class="e">📝</div><div class="n">论文写作</div><div class="s">进行到：文献综述阶段</div><div><span class="b" style="background:#FDF0F8;color:#C0392B;">待办 2 条</span></div></div>
+    <div class="d"><div class="e">📘</div><div class="n">学业课程</div><div class="s">3 门课程 · 作业 5 个待交</div><div><span class="b" style="background:#F4EEFA;color:#8E44AD;">材料科学基础</span></div></div>
+  </div>
+</div>
+
+<div class="tools">
+  <div class="tt"><span class="ti">📥</span><div><div class="tn">收集箱</div><div class="ts">待确认 2 项</div></div><span class="go">→</span></div>
+  <div class="tt"><span class="ti">⏱️</span><div><div class="tn">快速打卡</div><div class="ts">本周累计 3.5 小时</div></div><span class="go">→</span></div>
+  <div class="tt"><span class="ti">📂</span><div><div class="tn">最近继续</div><div class="ts">数学真题集 · 阅读精读</div></div><span class="go">→</span></div>
+</div>
+
+<div class="foot">变体 A · 暖极简（Notion 风）：安静、信任、留白多 —— 像一本自己的学习笔记</div>
+</body>
+</html>

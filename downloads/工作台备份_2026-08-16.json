@@ -1,0 +1,620 @@
+{
+  "v": 1,
+  "meta": {
+    "created": "2026-08-16 02:16",
+    "updated": "2026-08-16 02:16"
+  },
+  "settings": {
+    "apiKey": "",
+    "apiBase": "",
+    "apiModel": "",
+    "primaryDomain": "kaoyan",
+    "kaoyanDate": "2027-12-25",
+    "background": "default",
+    "fontSize": "normal"
+  },
+  "domains": [
+    {
+      "id": "kaoyan",
+      "type": "kaoyan",
+      "name": "考研备考",
+      "color": "yellow",
+      "order": 0,
+      "schemes": {
+        "activeId": "ky1",
+        "list": [
+          {
+            "id": "ky1",
+            "name": "2027 专硕考研",
+            "examDate": "",
+            "stage": "base",
+            "archived": false,
+            "subjects": [
+              {
+                "id": "m1",
+                "name": "数学",
+                "custom": false
+              },
+              {
+                "id": "m2",
+                "name": "英语",
+                "custom": false
+              },
+              {
+                "id": "m3",
+                "name": "政治",
+                "custom": false
+              },
+              {
+                "id": "m4",
+                "name": "专业课",
+                "custom": false
+              }
+            ],
+            "tasks": [
+              {
+                "id": "kt1",
+                "name": "数学：高数第 3 章习题 1-20",
+                "subjectId": "m1",
+                "type": "daily",
+                "done": false,
+                "costMinutes": 60,
+                "date": "",
+                "createTime": "2026-08-16 02:16",
+                "finishTime": ""
+              },
+              {
+                "id": "kt2",
+                "name": "英语：单词 50 个",
+                "subjectId": "m2",
+                "type": "daily",
+                "done": false,
+                "costMinutes": 30,
+                "date": "",
+                "createTime": "2026-08-16 02:16",
+                "finishTime": ""
+              },
+              {
+                "id": "kt3",
+                "name": "政治：马原基础学习",
+                "subjectId": "m3",
+                "type": "weekly",
+                "done": false,
+                "costMinutes": 60,
+                "date": "",
+                "createTime": "2026-08-16 02:16",
+                "finishTime": ""
+              },
+              {
+                "id": "kt4",
+                "name": "专业课：材料科学基础第 1 章",
+                "subjectId": "m4",
+                "type": "longterm",
+                "done": false,
+                "costMinutes": 60,
+                "date": "",
+                "createTime": "2026-08-16 02:16",
+                "finishTime": ""
+              }
+            ],
+            "files": [],
+            "gen": {
+              "targetEnglish": 70,
+              "targetMath": 70,
+              "targetPolitics": 70,
+              "targetMajor": 100,
+              "stageStart": "2026-08-16",
+              "stars": 0,
+              "coupon10": false,
+              "readingLog": [],
+              "noteLog": [],
+              "reviewLog": [],
+              "chapterIndex": 1,
+              "wordProgress": {
+                "date": "",
+                "done": 0
+              },
+              "dailyDone": {
+                "date": "",
+                "count": 0,
+                "subjects": []
+              },
+              "backlog": 0,
+              "aiBrief": {
+                "date": "2026-08-16",
+                "text": "昨日没有学习记录，今天从 30 分钟开始吧"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "cet",
+      "type": "english",
+      "name": "英语学习",
+      "color": "blue",
+      "order": 1,
+      "activeExam": "考研英语",
+      "exams": {
+        "考研英语": {
+          "auto": "kaoyan",
+          "examDate": "",
+          "archived": false,
+          "wordbook": [
+            {
+              "id": "w1",
+              "word": "comprehensive",
+              "meaning": "adj. 全面的，综合的",
+              "note": "考研高频词",
+              "mastered": false,
+              "date": "2026-08-14"
+            }
+          ],
+          "subjects": {
+            "词汇": {
+              "progress": 25,
+              "note": "考研核心词汇，配合艾宾浩斯复习"
+            },
+            "听力": {
+              "progress": 20,
+              "note": ""
+            },
+            "阅读": {
+              "progress": 30,
+              "note": ""
+            },
+            "写作": {
+              "progress": 15,
+              "note": ""
+            },
+            "翻译": {
+              "progress": 10,
+              "note": ""
+            },
+            "口语": {
+              "progress": 5,
+              "note": ""
+            }
+          }
+        },
+        "大学英语六级": {
+          "auto": "cet6",
+          "examDate": "",
+          "archived": false,
+          "wordbook": [],
+          "subjects": {
+            "词汇": {
+              "progress": 30,
+              "note": ""
+            },
+            "听力": {
+              "progress": 30,
+              "note": ""
+            },
+            "阅读": {
+              "progress": 40,
+              "note": ""
+            },
+            "写作": {
+              "progress": 20,
+              "note": ""
+            },
+            "翻译": {
+              "progress": 25,
+              "note": ""
+            },
+            "口语": {
+              "progress": 10,
+              "note": ""
+            }
+          }
+        },
+        "大学英语四级": {
+          "auto": "cet4",
+          "examDate": "",
+          "archived": false,
+          "wordbook": [],
+          "subjects": {
+            "词汇": {
+              "progress": 40,
+              "note": ""
+            },
+            "听力": {
+              "progress": 35,
+              "note": ""
+            },
+            "阅读": {
+              "progress": 45,
+              "note": ""
+            },
+            "写作": {
+              "progress": 25,
+              "note": ""
+            },
+            "翻译": {
+              "progress": 30,
+              "note": ""
+            },
+            "口语": {
+              "progress": 15,
+              "note": ""
+            }
+          }
+        }
+      },
+      "wordbook": []
+    },
+    {
+      "id": "ai",
+      "type": "ailearn",
+      "name": "AI 知识学习",
+      "color": "green",
+      "order": 2,
+      "aiLearn": {
+        "today": null,
+        "history": []
+      }
+    },
+    {
+      "id": "courses",
+      "type": "courses",
+      "name": "学业课程",
+      "color": "blue",
+      "order": 3,
+      "courses": [
+        {
+          "id": "c1",
+          "name": "材料科学基础",
+          "teacher": "王老师",
+          "day": "周一",
+          "time": "8:00-9:40",
+          "place": "A101"
+        },
+        {
+          "id": "c2",
+          "name": "高分子化学",
+          "teacher": "李老师",
+          "day": "周三",
+          "time": "10:00-11:40",
+          "place": "B203"
+        },
+        {
+          "id": "c3",
+          "name": "材料分析测试",
+          "teacher": "张老师",
+          "day": "周五",
+          "time": "14:00-15:40",
+          "place": "实验楼 305"
+        }
+      ],
+      "assignments": [
+        {
+          "id": "a1",
+          "title": "材料科学基础 作业 3",
+          "type": "作业",
+          "due": "2026-08-20",
+          "done": false
+        },
+        {
+          "id": "a2",
+          "title": "材料分析测试 实验报告",
+          "type": "作业",
+          "due": "2026-08-28",
+          "done": false
+        },
+        {
+          "id": "a3",
+          "title": "英语六级模拟考试",
+          "type": "考试",
+          "due": "2026-12-12",
+          "done": false
+        }
+      ]
+    },
+    {
+      "id": "paper",
+      "type": "paper",
+      "name": "论文写作",
+      "color": "pink",
+      "order": 4,
+      "deadline": "2026-10-15",
+      "stages": [
+        "选题",
+        "文献调研",
+        "实验数据",
+        "初稿",
+        "修改",
+        "定稿"
+      ],
+      "currentStage": 1,
+      "refs": [
+        {
+          "id": "r1",
+          "title": "多孔碳材料吸附性能研究综述",
+          "note": "重点：第 3 章制备方法",
+          "url": ""
+        },
+        {
+          "id": "r2",
+          "title": "材料表征技术（XRD / SEM）基础",
+          "note": "与实验部分相关",
+          "url": ""
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "title": "数学：高数第 3 章习题 1-20",
+      "domainId": "kaoyan",
+      "date": "",
+      "due": "",
+      "done": true,
+      "note": "",
+      "createdAt": "2026-08-16 02:16",
+      "doneAt": "2026-08-16 02:16"
+    },
+    {
+      "id": "t2",
+      "title": "英语：背诵单词 50 个",
+      "domainId": "kaoyan",
+      "date": "",
+      "due": "",
+      "done": false,
+      "note": "",
+      "createdAt": "2026-08-16 02:16"
+    },
+    {
+      "id": "t3",
+      "title": "整理文献调研笔记",
+      "domainId": "paper",
+      "date": "",
+      "due": "",
+      "done": false,
+      "note": "",
+      "createdAt": "2026-08-16 02:16"
+    },
+    {
+      "title": "交互测试任务：复习高数第三章",
+      "domainId": "kaoyan",
+      "date": "",
+      "due": "",
+      "done": false,
+      "note": "",
+      "createdAt": "2026-08-16 02:16",
+      "id": "idmsup68jjjdvtr"
+    }
+  ],
+  "studyLog": [
+    {
+      "date": "2026-08-11",
+      "domainId": "kaoyan",
+      "subject": "数学",
+      "minutes": 120
+    },
+    {
+      "date": "2026-08-12",
+      "domainId": "kaoyan",
+      "subject": "英语",
+      "minutes": 90
+    },
+    {
+      "date": "2026-08-13",
+      "domainId": "kaoyan",
+      "subject": "数学",
+      "minutes": 150
+    },
+    {
+      "date": "2026-08-14",
+      "domainId": "kaoyan",
+      "subject": "专业课",
+      "minutes": 60
+    },
+    {
+      "date": "2026-08-16",
+      "domainId": "kaoyan",
+      "subject": "数学",
+      "minutes": 4560,
+      "ts": "02:16"
+    }
+  ],
+  "focusSessions": [],
+  "goals": [],
+  "mistakes": [
+    {
+      "id": "m1",
+      "subject": "数学",
+      "title": "极限计算：洛必达适用条件判断错误",
+      "reason": "粗心，未验证 0/0 型",
+      "answer": "先判断型再使用洛必达",
+      "reviewed": false,
+      "date": "2026-08-14"
+    }
+  ],
+  "qa": [
+    {
+      "id": "q1",
+      "subject": "英语",
+      "question": "as 引导的定语从句和状语从句怎么区分？",
+      "answer": "看 as 在从句中是否充当成分：作成分（主语/宾语）是定语从句；不作成分、表示原因/时间等是状语从句。",
+      "date": "2026-08-13"
+    }
+  ],
+  "resources": [
+    {
+      "id": "r1",
+      "title": "【考研数学】汤家凤 高等数学基础班（示例）",
+      "category": "考研",
+      "tags": [
+        "高数"
+      ],
+      "url": "https://www.bilibili.com/video/BV1bW411n7xE",
+      "platform": "哔哩哔哩",
+      "extractCode": "",
+      "status": "在看",
+      "note": "跟着第 3 章，配合习题",
+      "domainId": "kaoyan",
+      "createdAt": "2026-08-16 02:16",
+      "updatedAt": "2026-08-16 02:16"
+    },
+    {
+      "id": "r2",
+      "title": "材料科学基础 复习资料合集（示例）",
+      "category": "课程",
+      "tags": [
+        "专业课"
+      ],
+      "url": "https://pan.baidu.com/s/example123",
+      "platform": "百度网盘",
+      "extractCode": "a1b2",
+      "status": "未看",
+      "note": "",
+      "domainId": "courses",
+      "createdAt": "2026-08-16 02:16",
+      "updatedAt": "2026-08-16 02:16"
+    },
+    {
+      "id": "r3",
+      "title": "AI 入门学习路线（示例）",
+      "category": "课外",
+      "tags": [
+        "AI"
+      ],
+      "url": "https://zhuanlan.zhihu.com/p/example",
+      "platform": "知乎",
+      "extractCode": "",
+      "status": "未看",
+      "note": "",
+      "domainId": "ai",
+      "createdAt": "2026-08-16 02:16",
+      "updatedAt": "2026-08-16 02:16"
+    },
+    {
+      "title": "测试资料标题",
+      "url": "https://www.bilibili.com/video/BV1GJ411x7h7",
+      "platform": "哔哩哔哩",
+      "extractCode": "",
+      "category": "其他",
+      "status": "未看",
+      "domainId": "",
+      "tags": [],
+      "note": "",
+      "updatedAt": "2026-08-16 02:16",
+      "id": "idmsup6cc895iwj",
+      "createdAt": "2026-08-16 02:16"
+    },
+    {
+      "id": "idmsup6e48bbiv5",
+      "title": "https://www.bilibili.com/video/BV1GJ411x7h7",
+      "url": "https://www.bilibili.com/video/BV1GJ411x7h7",
+      "platform": "哔哩哔哩",
+      "extractCode": "",
+      "category": "其他",
+      "status": "未看",
+      "domainId": "",
+      "tags": [],
+      "note": "",
+      "createdAt": "2026-08-16 02:16",
+      "updatedAt": "2026-08-16 02:16"
+    }
+  ],
+  "inbox": [
+    {
+      "id": "i1",
+      "type": "link",
+      "content": "",
+      "url": "https://www.bilibili.com/video/BV1GJ411x7h7",
+      "platform": "哔哩哔哩",
+      "status": "已分拣",
+      "suggestion": "看起来是学习视频，建议放入「考研备考」或资料库",
+      "createdAt": "2026-08-16 02:16",
+      "movedTo": "资料库"
+    },
+    {
+      "id": "i2",
+      "type": "text",
+      "content": "看到一篇讲记忆曲线的文章，待会细读",
+      "url": "",
+      "platform": "",
+      "status": "待分拣",
+      "suggestion": "文字笔记，建议放入资料库（课外分类）",
+      "createdAt": "2026-08-16 02:16"
+    },
+    {
+      "id": "idmsup6dj2ar7nz",
+      "type": "text",
+      "content": "https://pan.baidu.com/s/abcdefg123 提取码: x9y8",
+      "url": "https://pan.baidu.com/s/abcdefg123 提取码: x9y8",
+      "platform": "百度网盘",
+      "status": "待分拣",
+      "suggestion": "建议放入：AI 知识学习",
+      "createdAt": "2026-08-16 02:16"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "v1",
+      "date": "2026-08-14",
+      "type": "daily",
+      "done": "完成了高数第三章习题，整理了文献笔记",
+      "undone": "英语单词只背了 30 个",
+      "adjust": "明天早起 30 分钟补单词",
+      "aiDraft": ""
+    }
+  ],
+  "health": {
+    "sleep": [
+      {
+        "date": "2026-08-14",
+        "bed": "23:30",
+        "wake": "7:00",
+        "minutes": 450
+      }
+    ],
+    "sport": [],
+    "state": [],
+    "settings": {
+      "remindMin": 50
+    }
+  },
+  "accounts": [
+    {
+      "id": "ac1",
+      "platform": "哔哩哔哩",
+      "name": "我的学习账号",
+      "note": "关注考研数学、材料类 UP 主"
+    },
+    {
+      "id": "ac2",
+      "platform": "小红书",
+      "name": "我的账号",
+      "note": "记录学习日常"
+    }
+  ],
+  "calendar": [
+    {
+      "id": "cal1",
+      "date": "2027-12-25",
+      "title": "2028 考研初试",
+      "type": "考试",
+      "note": ""
+    },
+    {
+      "id": "cal2",
+      "date": "2027-12-12",
+      "title": "英语六级考试",
+      "type": "考试",
+      "note": ""
+    },
+    {
+      "id": "cal3",
+      "date": "2026-08-20",
+      "title": "材料作业 3 截止",
+      "type": "作业",
+      "note": ""
+    }
+  ],
+  "deleted": []
+}

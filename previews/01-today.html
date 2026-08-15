@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设计预览 01 · 今日首页</title>
+<style>
+  :root {
+    --bg: #F7F7F5; --card: #FFFFFF; --text: #202124; --sub: #6F7277;
+    --border: #E6E7E4; --accent: #2F6B57; --gold: #F5B041; --gold-bg: #FCF5E5;
+    --blue: #2980B9; --red: #E74C3C; --purple: #8E44AD; --green: #27AE60; --pink: #E9A8CF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; font-size: 15px; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .topbar .title { font-size: 18px; font-weight: 800; }
+  .topbar .tag { background: var(--gold-bg); color: #B07D0E; border: 1px solid #F3E3B8; border-radius: 8px; padding: 4px 12px; font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card-head h3 { font-size: 15px; font-weight: 800; }
+  .card-head .hint { font-size: 12px; color: var(--sub); }
+
+  /* 问候横幅 */
+  .hello { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #FFFFFF 0%, #F4F9F6 100%); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; }
+  .hello .greet { font-size: 20px; font-weight: 800; }
+  .hello .date { font-size: 13px; color: var(--sub); margin-top: 4px; }
+  .hello .countdown { background: var(--gold-bg); border: 1px solid #F3E3B8; border-radius: 10px; padding: 8px 16px; text-align: center; }
+  .hello .countdown .num { font-size: 22px; font-weight: 800; color: var(--gold); }
+  .hello .countdown .lbl { font-size: 12px; color: #B07D0E; }
+
+  /* 今日目标 */
+  .goal-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #F9FAF8; border: 1px dashed var(--border); border-radius: 10px; }
+  .goal-row .g-icon { font-size: 18px; }
+  .goal-row .g-text { flex: 1; font-size: 14px; }
+  .goal-row .g-empty { color: var(--sub); font-size: 14px; flex: 1; }
+  .btn { border: none; border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; background: var(--accent); color: #fff; }
+  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--sub); font-weight: 600; }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* 今日待办 */
+  .task-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; }
+  .task-item:hover { background: #F9FAF8; }
+  .task-check { width: 20px; height: 20px; border: 2px solid #C9CCCB; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+  .task-title { flex: 1; font-size: 14px; }
+  .task-domain { font-size: 12px; color: var(--sub); background: #F1F2F0; border-radius: 6px; padding: 2px 8px; }
+  .task-overdue { font-size: 12px; color: var(--red); }
+
+  /* 学科入口卡 */
+  .domains { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .d-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: all .15s; }
+  .d-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); border-color: #D8DBD7; }
+  .d-emoji { font-size: 22px; margin-bottom: 8px; }
+  .d-name { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+  .d-sub { font-size: 12px; color: var(--sub); line-height: 1.5; margin-bottom: 10px; min-height: 36px; }
+  .d-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+  .d-badge { font-size: 11px; border-radius: 6px; padding: 2px 7px; font-weight: 600; }
+  .b-kaoyan { background: var(--gold-bg); color: #B07D0E; }
+  .b-cet { background: #EBF4FB; color: var(--blue); }
+  .b-ai { background: #EAF3FD; color: #3498DB; }
+  .b-paper { background: #FDF0F8; color: #C0392B; }
+  .b-courses { background: #F4EEFA; color: var(--purple); }
+
+  /* 快捷工具 */
+  .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .t-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all .15s; }
+  .t-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .t-icon { font-size: 18px; }
+  .t-main { flex: 1; }
+  .t-name { font-size: 14px; font-weight: 700; }
+  .t-sub { font-size: 12px; color: var(--sub); }
+  .t-btn { font-size: 12px; color: var(--accent); font-weight: 700; }
+
+  .note { text-align: center; font-size: 12px; color: #B9BCB8; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title">📱 设计预览 01 · 今日首页</div>
+  <div class="tag">预览稿 · 非正式版</div>
+</div>
+
+<!-- 问候横幅 -->
+<div class="hello">
+  <div>
+    <div class="greet">🌙 晚上好，今天也要加油</div>
+    <div class="date">2026-08-15 星期六 · 距 2028 考研还有 497 天</div>
+  </div>
+  <div class="countdown">
+    <div class="num">497</div>
+    <div class="lbl">天 · 距考研初试</div>
+  </div>
+</div>
+
+<!-- 今日目标 -->
+<div class="card">
+  <div class="card-head"><h3>🎯 今日目标</h3><span class="hint">每日一句，给自己定个小目标</span></div>
+  <div class="goal-row">
+    <span class="g-icon">✏️</span>
+    <span class="g-empty">尚未设置今日小目标，点右边设定一个吧</span>
+    <button class="btn">设定今日目标</button>
+  </div>
+</div>
+
+<!-- 今日待办 -->
+<div class="card">
+  <div class="card-head"><h3>✅ 今日待办</h3><button class="btn ghost">查看全部任务</button></div>
+  <div class="task-item">
+    <span class="task-check">✓</span>
+    <span class="task-title">数学：高数第 3 章习题 1-20</span>
+    <span class="task-domain">考研</span>
+  </div>
+  <div class="task-item">
+    <span class="task-check"></span>
+    <span class="task-title">英语：真题阅读 2 篇精读</span>
+    <span class="task-domain">英语</span>
+    <span class="task-overdue">已逾期</span>
+  </div>
+  <div class="task-item">
+    <span class="task-check"></span>
+    <span class="task-title">材料科学基础：第 4 章笔记</span>
+    <span class="task-domain">课程</span>
+  </div>
+</div>
+
+<!-- 学科入口卡 -->
+<div class="card">
+  <div class="card-head"><h3>📚 我的学习领域</h3><span class="hint">点击进入对应板块</span></div>
+  <div class="domains">
+    <div class="d-card">
+      <div class="d-emoji">🎓</div>
+      <div class="d-name">考研备考</div>
+      <div class="d-sub">当前：基础期 ｜ 今日完成率 40%</div>
+      <div class="d-badges">
+        <span class="d-badge b-kaoyan">数学 2/5</span>
+        <span class="d-badge b-kaoyan">英语 1/2</span>
+      </div>
+    </div>
+    <div class="d-card">
+      <div class="d-emoji">📖</div>
+      <div class="d-name">英语学习</div>
+      <div class="d-sub">考研英语 · 距考试 497 天</div>
+      <div class="d-badges">
+        <span class="d-badge b-cet">词汇 25%</span>
+        <span class="d-badge b-cet">阅读 30%</span>
+      </div>
+    </div>
+    <div class="d-card">
+      <div class="d-emoji">🤖</div>
+      <div class="d-name">AI 知识学习</div>
+      <div class="d-sub">今日 30 分钟专题：提示词工程</div>
+      <div class="d-badges">
+        <span class="d-badge b-ai">今日待学</span>
+      </div>
+    </div>
+    <div class="d-card">
+      <div class="d-emoji">📝</div>
+      <div class="d-name">论文写作</div>
+      <div class="d-sub">进行到：文献综述阶段</div>
+      <div class="d-badges">
+        <span class="d-badge b-paper">待办 2 条</span>
+      </div>
+    </div>
+    <div class="d-card">
+      <div class="d-emoji">📘</div>
+      <div class="d-name">学业课程</div>
+      <div class="d-sub">3 门课程 · 作业 5 个待交</div>
+      <div class="d-badges">
+        <span class="d-badge b-courses">材料科学基础</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 快捷工具 -->
+<div class="tools">
+  <div class="t-card">
+    <span class="t-icon">📥</span>
+    <div class="t-main"><div class="t-name">收集箱</div><div class="t-sub">待确认 2 项</div></div>
+    <span class="t-btn">打开 →</span>
+  </div>
+  <div class="t-card">
+    <span class="t-icon">⏱️</span>
+    <div class="t-main"><div class="t-name">快速打卡</div><div class="t-sub">本周累计 3.5 小时</div></div>
+    <span class="t-btn">打卡 →</span>
+  </div>
+  <div class="t-card">
+    <span class="t-icon">📂</span>
+    <div class="t-main"><div class="t-name">最近继续</div><div class="t-sub">数学真题集 · 阅读精读</div></div>
+    <span class="t-btn">查看更多 →</span>
+  </div>
+</div>
+
+<div class="note">这是设计预览稿 · 您拍板后我会把它做进工作台</div>
+</body>
+</html>

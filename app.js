@@ -1382,9 +1382,8 @@
     modalOpen("今日单词（新词 80 + 复习 120）",
       '<div class="li-sub" style="margin-bottom:8px;">点击已记住的词划掉（每 10 个自动保存）。当前进度：' + gen.wordProgress.done + " / 200</div>" +
       '<div class="ky-words">' + KY_WORDS.map(function (w, i) {
-        var entry = (window.WB_DICT || {})[w] || {};
         return '<div class="ky-word' + (gen.wordProgress.done > i ? " done" : "") + '" data-action="ky-word-toggle" data-idx="' + i + '">' +
-          "<span class=\"kw-w\">" + w + '</span><span class="kw-m">' + esc((entry.t || "").slice(0, 26)) + "</span></div>";
+          "<span class=\"kw-w\">" + w + "</span></div>";
       }).join("") + "</div>" +
       '<div class="li-sub" style="margin-top:8px;">这是示例词组（12 词一组），完整 200 词进度由学习记录累计。</div>',
       cancelBtn() + '<button class="btn block" data-action="ky-word-done">今日单词完成</button>');
@@ -1894,37 +1893,6 @@
     gen.customHats = gen.customHats || [];
     gen.customHats.push({ q: q, a: a });
     modalClose(); refresh(); toast("自定义帽子题已保存");
-  }
-
-  /* 内置查词模态（ECDICT，可加入真题生词本） */
-  function kyDictModal() {
-    modalOpen("🔍 内置查词（ECDICT 8000 词）",
-      '<div class="field"><label>输入英文单词</label><input id="kyDictInput" placeholder="如 comprehensive"></div>' +
-      '<div id="kyDictResult"></div>',
-      cancelBtn() + '<button class="btn" data-action="ky-dict-lookup">查词</button>');
-  }
-  function kyDictLookup() {
-    var word = (fval("kyDictInput") || "").trim().toLowerCase();
-    var box = $id("kyDictResult");
-    if (!word) { toast("请输入单词", true); return; }
-    var entry = (window.WB_DICT || {})[word];
-    if (!entry) {
-      box.innerHTML = '<div class="li-sub" style="margin-top:10px;">词库未收录「' + esc(word) + "」（词库为考研高频 8000 词，未收录不代表不重要，可手动加入生词本）</div>";
-      return;
-    }
-    box.innerHTML = '<div class="formula-block"><div class="formula-title">' + esc(word) + (entry.p ? "  " + esc(entry.p) : "") + "</div>" +
-      '<div class="formula-line">' + esc(entry.t || entry.d || "") + "</div>" +
-      (entry.c ? '<div class="li-sub">柯林斯星级：' + entry.c + "</div>" : "") + "</div>" +
-      '<button class="btn small" data-action="ky-dict-add" data-word="' + esc(word) + '" style="margin-top:8px;">＋ 加入真题生词本</button>';
-  }
-  function kyDictAdd(word) {
-    var gen = kyActiveScheme().gen || {};
-    word = (word || "").toLowerCase();
-    if (!word) return;
-    gen.examWords = gen.examWords || [];
-    if (gen.examWords.some(function (x) { return x.word === word; })) { toast("该词已在真题生词本中", true); return; }
-    gen.examWords.push({ word: word, year: "", sentence: "", mastered: false, date: todayStr() });
-    modalClose(); refresh(); toast("已加入真题生词本");
   }
 
   /* ---------- AI 本地规则 ---------- */
@@ -2588,10 +2556,7 @@
       case "del-exam": delExamConfirm(v); break;
       case "del-exam-ok": delExamOk(); break;
 
-      /* 查词 */
-      case "lookup-word": lookupWordIn("dictInput", "dictResult"); break;
-      case "lookup-word2": lookupWordIn("dictInput2", "dictResult2"); break;
-      case "dict-add-word": dictAddWord(el ? el.getAttribute("data-word") : ""); break;
+      /* 模态提交 */
 
       /* 考研方案 */
       case "ky-scheme-create": kySchemeCreateModal(); break;
@@ -2693,10 +2658,6 @@
       case "submit-ky-formula": submitKyFormula(); break;
       case "ky-hat-add": kyHatAddModal(); break;
       case "submit-ky-hat": submitKyHat(); break;
-      case "ky-dict-modal": kyDictModal(); break;
-      case "ky-dict-lookup": kyDictLookup(); break;
-      case "ky-dict-add": kyDictAdd(el.getAttribute("data-word")); break;
-      case "ky-close": modalClose(); break;
 
       /* 模态提交 */
       case "submit-task": submitTask(); break;
@@ -3081,7 +3042,7 @@
     ex.wordbook = ex.wordbook || [];
     var raw = fval("iwText") || "";
     var lines = raw.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
-    var dict = window.WB_DICT || {};
+    var dict = {};
     var parsed = [], skipped = 0;
     lines.forEach(function (line) {
       line = line.trim();
@@ -3197,43 +3158,6 @@
       }
     }
     modalClose(); refresh(); toast("已删除");
-  }
-  /* 查词（内置词库 ECDICT 精简版） */
-  function lookupWordIn(inputId, resultId) {
-    var word = (fval(inputId) || "").trim().toLowerCase();
-    if (!word) { toast("请输入要查询的单词", true); return; }
-    var box = $id(resultId);
-    var dict = window.WB_DICT || {};
-    var entry = dict[word] || (word.length > 1 ? dict[word[0].toUpperCase() + word.slice(1)] : null) || null;
-    var ex = activeExamObj();
-    var examName = ex ? (data.domains.filter(function (x) { return x.id === "cet"; })[0].activeExam) : "";
-    if (!entry) {
-      box.innerHTML = '<div class="li-sub">词库未收录「' + esc(word) + '」（词库覆盖常用高频词，不含人名地名等专有名词）。可以加入生词本，用 AI 帮手查询。</div>' +
-        '<button class="btn small plain" data-action="dict-add-word" data-word="' + esc(word) + '">加入生词本</button>';
-      return;
-    }
-    var html = '<div class="list-item"><div class="li-main">' +
-      '<div class="li-title" style="font-size:16px;">' + esc(word) + (entry.p ? ' <span style="color:var(--sub);font-weight:400;font-size:13px;">/' + esc(entry.p) + "/</span>" : "") + "</div>" +
-      '<div class="li-sub" style="white-space:pre-wrap;">' + esc(entry.t || entry.d || "暂无释义") + "</div>" +
-      (entry.c ? '<div class="li-sub">柯林斯星级：' + "★".repeat(Math.max(1, Math.min(5, entry.c))) + "</div>" : "") +
-      "</div></div>" +
-      '<div style="margin-top:10px;"><button class="btn small" data-action="dict-add-word" data-word="' + esc(word) + '">加入「' + esc(examName) + '」生词本</button></div>';
-    box.innerHTML = html;
-  }
-  function dictAddWord(wordArg) {
-    var word = (wordArg || fval("dictInput") || fval("dictInput2") || "").trim();
-    if (!word) { toast("没有可添加的单词", true); return; }
-    var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
-    var ex = dm && dm.exams && dm.exams[dm.activeExam];
-    if (!ex) return;
-    ex.wordbook = ex.wordbook || [];
-    if (ex.wordbook.some(function (w) { return w.word.toLowerCase() === word.toLowerCase(); })) { toast("该单词已在生词本中"); return; }
-    var entry = (window.WB_DICT || {})[word] || {};
-    ex.wordbook.push({ id: uid(), word: word, meaning: (entry.t || entry.d || "").slice(0, 80), note: "查词加入", mastered: false, date: todayStr() });
-    save();
-    toast("已加入「" + dm.activeExam + "」生词本");
-    var box = $id("dictResult");
-    if (box) box.innerHTML = '<div class="li-sub" style="color:var(--accent);">已加入生词本：' + esc(word) + "</div>";
   }
 
   function courseModal(id, did) {

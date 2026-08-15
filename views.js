@@ -690,14 +690,6 @@
         })()) +
       "</div>";
 
-    /* 区块4：内置查词插件 */
-    html += card(cardHead("🔍 单词查询", "内置词库，离线可用，可一键加入生词本", "dict"),
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
-      '<input id="dictInput" placeholder="输入英文单词或短语…" style="flex:1;min-width:180px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;">' +
-      '<button class="btn" data-action="lookup-word">查询</button></div>' +
-      '<div id="dictResult" style="margin-top:10px;"></div>' +
-      '<div class="li-sub" style="margin-top:8px;">词库来源：ECDICT 开源词典（GitHub 免费项目）高频词精简版；查询后可将单词一键加入当前考试的独立生词本。</div>');
-
     /* 区块5：AI 英语工具箱 */
     var hasKey = !!(d.settings.apiKey);
     var tools = [
@@ -1046,7 +1038,7 @@
     var t = todayStr();
     var html = backBar("domain:kaoyan", "考研备考");
     html += '<div class="page-head-row"><div><div class="page-title">🔤 单词学科页</div>' +
-      '<div class="li-sub">考研提分专供 4 项 + 内置查词</div></div>' +
+      '<div class="li-sub">考研提分专供 4 项</div></div>' +
       '<button class="btn small ghost" data-action="ky-word-add">＋ 添加</button></div>';
     html += kyAiBriefCard(gen);
     var ew = gen.examWords || [];
@@ -1057,7 +1049,6 @@
       toolBtn("📚", "真题生词本", "单词 + 年份 + 所在短句", "ky-examword-modal", "") +
       toolBtn("🎭", "熟词僻义专项", "如 address → 处理/演讲", "ky-oddword-modal", "") +
       toolBtn("🖊", "写作替换词库", "important → crucial", "ky-replace-modal", "") +
-      toolBtn("🔍", "内置查词", "ECDICT 8000 词 · 快捷查义", "ky-dict-modal", "") +
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">生词掌握度看板：下方列表一键切换 待复习/已掌握</div>');
     var all = ew.concat(om).concat(wr).map(function (x, i) { x._i = i; return x; });
@@ -1312,14 +1303,9 @@
         : '<div class="li-sub">配置 AI 密钥后，这里会调用模型做修改、打分、润色。到「设置与数据 → AI 配置」启用。</div>') +
       '<div class="ai-chat" id="essayResult" style="margin-top:12px;"></div>');
   }
-  /* 阅读专区：内置查词快捷框 */
+  /* 阅读专区 */
   function zoneReading(dm) {
-    return card(cardHead("🔍 阅读查词", "内置词库，遇到生词随时查", "dict"),
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
-      '<input id="dictInput2" placeholder="输入单词，回车查询…" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">' +
-      '<button class="btn small" data-action="lookup-word2">查询</button></div>' +
-      '<div id="dictResult2" style="margin-top:10px;"></div>' +
-      '<div class="li-sub" style="margin-top:8px;">查到的单词可一键加入「' + esc(dm.activeExam) + '」生词本。</div>');
+    return '<div class="li-sub" style="padding:8px 0;">阅读专区：记录阅读打卡与学习时长。</div>';
   }
   function zoneSpeaking(dm) {
     var W = window.W, d = W.data;

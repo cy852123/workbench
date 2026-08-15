@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>设计预览 03 · 考研英语学科页</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #FAFAF9; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1A1A1A; font-size: 14px; line-height: 1.55; padding: 24px 30px; max-width: 1100px; margin: 0 auto; }
+  .muted { color: #888; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: #666; margin-bottom: 14px; cursor: pointer; }
+  .back:hover { color: #2F6B57; }
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .head .t { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+  .head .t .tag { font-size: 12px; background: #FCF5E5; color: #B07D0E; border-radius: 999px; padding: 3px 12px; font-weight: 600; }
+  .head .r { font-size: 13px; color: #666; }
+
+  .card { background: #fff; border: 1px solid #E8E8E5; border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-head h3 { font-size: 15px; font-weight: 800; }
+  .card-head .hint { font-size: 12px; color: #888; }
+  .card-head .link { font-size: 12.5px; color: #2F6B57; font-weight: 700; cursor: pointer; }
+
+  /* 今日任务 */
+  .t-list { display: flex; flex-direction: column; gap: 8px; }
+  .t-item { display: flex; align-items: center; gap: 12px; border: 1px solid #EEEEEA; border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: all .12s; }
+  .t-item:hover { border-color: #2F6B57; }
+  .t-item .check { width: 22px; height: 22px; border: 2px solid #C9CCCB; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; }
+  .t-item .check.on { background: #2F6B57; border-color: #2F6B57; }
+  .t-item .tn { flex: 1; font-size: 14.5px; font-weight: 600; }
+  .t-item .meta { font-size: 12px; color: #888; }
+  .t-item .go { font-size: 13px; color: #2F6B57; font-weight: 700; }
+  .t-item.done .tn { text-decoration: line-through; color: #B0B3AF; }
+
+  /* 工具箱 */
+  .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tool { border: 1px solid #E8E8E5; border-radius: 12px; padding: 16px; cursor: pointer; transition: all .12s; }
+  .tool:hover { box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+  .tool .ic { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 10px; }
+  .tool .n { font-size: 14.5px; font-weight: 800; margin-bottom: 4px; }
+  .tool .s { font-size: 12.5px; color: #888; min-height: 38px; }
+  .tool .cnt { font-size: 12px; color: #2F6B57; font-weight: 700; margin-top: 6px; }
+
+  /* 阅读列表（精读库展开示例） */
+  .read-item { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid #F3F3F0; cursor: pointer; }
+  .read-item:last-child { border-bottom: none; }
+  .read-item .y { font-size: 12px; font-weight: 800; color: #fff; background: #2F6B57; border-radius: 6px; padding: 3px 8px; flex-shrink: 0; }
+  .read-item .r { flex: 1; font-size: 14px; }
+  .read-item .st { font-size: 12px; }
+  .st.done { color: #27AE60; } .st.todo { color: #B0B3AF; } .st.wrong { color: #E74C3C; }
+
+  /* 最近记录 */
+  .rec { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+  .bar { display: flex; align-items: flex-end; gap: 6px; height: 70px; padding-top: 6px; }
+  .bar i { flex: 1; background: #EBF4FB; border-radius: 4px 4px 0 0; position: relative; }
+  .bar i span { position: absolute; bottom: -16px; left: 0; right: 0; text-align: center; font-size: 10px; color: #999; font-style: normal; }
+  .wrong { display: flex; flex-wrap: wrap; gap: 8px; }
+  .w-chip { font-size: 12.5px; border: 1px solid #E8E8E5; border-radius: 999px; padding: 5px 14px; }
+  .w-chip b { color: #2F6B57; }
+
+  .foot { text-align: center; font-size: 12px; color: #B5B3AE; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="back">← 返回考研备考</div>
+
+<div class="head">
+  <div class="t">📖 英语学科页 <span class="tag">基础期 · 今日任务 2 项</span></div>
+  <div class="r">距考试 497 天 · 目标分 70</div>
+</div>
+
+<!-- 今日任务 -->
+<div class="card">
+  <div class="card-head"><h3>📌 今日任务</h3><span class="hint">自动生成 · 点击开始做题</span></div>
+  <div class="t-list">
+    <div class="t-item">
+      <span class="check on">✓</span>
+      <span class="tn">精读 2011 Text2（已读，待记录）</span>
+      <span class="meta">用时 28 分</span>
+      <span class="go">记正确率 →</span>
+    </div>
+    <div class="t-item">
+      <span class="check"></span>
+      <span class="tn">精读 2011 Text3</span>
+      <span class="meta">预计 30 分钟</span>
+      <span class="go">开始 →</span>
+    </div>
+    <div class="t-item">
+      <span class="check"></span>
+      <span class="tn">长难句 5 句</span>
+      <span class="meta">预计 20 分钟</span>
+      <span class="go">开始 →</span>
+    </div>
+  </div>
+</div>
+
+<!-- 工具箱 -->
+<div class="card">
+  <div class="card-head"><h3>🧰 学科工具箱</h3><span class="hint">常用工具都在这里</span></div>
+  <div class="tools">
+    <div class="tool">
+      <div class="ic" style="background:#EBF4FB;">📚</div>
+      <div class="n">精读库</div>
+      <div class="s">真题原文 + 查词 + 答题记录</div>
+      <div class="cnt">已读 12 / 40 篇 →</div>
+    </div>
+    <div class="tool">
+      <div class="ic" style="background:#EAF6F0;">📝</div>
+      <div class="n">长难句练习</div>
+      <div class="s">每日 5 句 · 句子拆解 + 解析</div>
+      <div class="cnt">今日 0 / 5 →</div>
+    </div>
+    <div class="tool">
+      <div class="ic" style="background:#F4EEFA;">📒</div>
+      <div class="n">生词本</div>
+      <div class="s">考研英语 · 待复习 23 / 已掌握 41</div>
+      <div class="cnt">去复习 →</div>
+    </div>
+  </div>
+</div>
+
+<!-- 精读库（展开示例） -->
+<div class="card">
+  <div class="card-head"><h3>📚 精读库（2010-2019 真题）</h3><span class="hint">正确率 ≥60% 得 1⭐</span></div>
+  <div class="read-item"><span class="y">2011</span><span class="r">Text2 · 己所不欲勿施于人</span><span class="st done">✓ 82%</span></div>
+  <div class="read-item"><span class="y">2011</span><span class="r">Text3 · 营销与消费者</span><span class="st todo">未读</span></div>
+  <div class="read-item"><span class="y">2012</span><span class="r">Text1 · 群体行为</span><span class="st wrong">✗ 55%</span></div>
+  <div class="read-item"><span class="y">2012</span><span class="r">Text2 · 社会信任</span><span class="st done">✓ 75%</span></div>
+</div>
+
+<!-- 最近记录 -->
+<div class="rec">
+  <div class="card">
+    <div class="card-head"><h3>📈 正确率趋势</h3><span class="hint">最近 8 篇</span></div>
+    <div class="bar">
+      <i style="height:55%;background:#E9A8CF;"><span>62%</span></i>
+      <i style="height:70%;background:#EBF4FB;"><span>75%</span></i>
+      <i style="height:45%;background:#E9A8CF;"><span>55%</span></i>
+      <i style="height:80%;background:#EBF4FB;"><span>82%</span></i>
+      <i style="height:60%;background:#E9A8CF;"><span>65%</span></i>
+      <i style="height:75%;background:#EBF4FB;"><span>78%</span></i>
+      <i style="height:85%;background:#EBF4FB;"><span>88%</span></i>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h3>💡 薄弱环节</h3><span class="hint">错题类型统计</span></div>
+    <div class="wrong">
+      <span class="w-chip">细节题 <b>5 次</b></span>
+      <span class="w-chip">主旨题 <b>3 次</b></span>
+      <span class="w-chip">推理题 <b>2 次</b></span>
+      <span class="w-chip">词汇题 <b>1 次</b></span>
+    </div>
+    <div style="margin-top:12px;font-size:13px;color:#2F6B57;font-weight:600;">建议：明天精读优先练「细节题」定位技巧</div>
+  </div>
+</div>
+
+<div class="foot">设计预览 03 · 考研英语学科页（方案 C 混合式：今日任务 + 工具箱 + 精读库 + 记录）</div>
+</body>
+</html>
