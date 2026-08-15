@@ -1458,7 +1458,8 @@
     var html = "";
     html += card("", '<button class="btn block" data-action="add-inbox">' + ic("plus") + "添加收集（文字 / 链接 / 任务 / 文件）</button>" +
       '<div class="ai-banner" style="margin-top:14px;">' + ic("spark") +
-      '<span>粘贴 B站 / 网盘 / 小红书 / 抖音等链接会自动识别平台。AI 会给出去向建议，<b>确认后才会移动</b>，不会擅自搬走内容。</span></div>');
+      '<span>粘贴 B站 / 网盘 / 小红书 / 抖音等链接会自动识别平台。AI 会给出去向建议，<b>确认后才会移动</b>，不会擅自搬走内容。</span></div>' +
+      (pending.length ? '<div class="li-sub" style="margin-top:10px;">今日待整理 ' + pending.length + " 条，建议集中处理。</div>" : ""));
 
     html += card(cardHead("待分拣", pending.length + " 条，决定放哪", "inbox"),
       pending.length === 0 ? empty("收集箱是空的", "想到什么先扔进来，稍后统一整理") :
@@ -1551,7 +1552,8 @@
     var html = "";
     html += '<div class="ai-banner">' + ic("spark") +
       "<span><b>AI 帮手状态</b>：本地规则能力（收集箱建议 / 周复盘草稿 / 学习摘要）已启用，免费。<br>" +
-      (hasKey ? "对话式 AI：已配置 API，可以答疑和生成复习资料。" : "对话式 AI：<b>当前未启用</b>——在「设置」中配置 API 密钥后启用（密钥只存本机浏览器）。") + "</span></div>";
+      (hasKey ? "对话式 AI：已配置 API，可以答疑和生成复习资料。<br>" : "对话式 AI：<b>当前未启用</b>——在「设置」中配置 API 密钥后启用（密钥只存本机浏览器）。<br>") +
+      "<b>AI 接管</b>：对话式 AI 的每条回答下方有「保存到工作台」按钮——可存入错题本 / 答疑库 / 今日任务 / 复盘 / 日历 / 收集箱 / 资料库 / 生词本（自动识别归类，确认后才会写入）。</span></div>";
 
     /* 本地工具 */
     html += card(cardHead("本地工具", "免费可用，不依赖外部 API", "ai-local"), '<div style="display:flex;flex-direction:column;gap:10px;">' +
@@ -2118,9 +2120,9 @@
       (upcoming.length === 0 ? empty("还没有重要日期") :
       '<div class="list">' + upcoming.slice(0, 12).map(function (c) {
         var dd = daysDiff(c.date);
-        return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(c.title) + "</div>" +
+        return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(c.title) + (dd >= 0 && dd <= 7 ? ' <span class="tag state-todo">临近</span>' : "") + "</div>" +
           '<div class="li-sub">' + esc(c.date) + (c.note ? " · " + esc(c.note) : "") + "</div></div>" +
-          '<span class="li-meta">' + (dd === 0 ? "今天" : dd < 0 ? "已过 " + (-dd) + " 天" : "还有 " + dd + " 天") + "</span>" +
+          '<span class="li-meta"' + (dd >= 0 && dd <= 7 ? ' style="color:var(--danger);font-weight:700;"' : "") + ">" + (dd === 0 ? "今天" : dd < 0 ? "已过 " + (-dd) + " 天" : dd <= 7 ? "仅剩 " + dd + " 天" : "还有 " + dd + " 天") + "</span>" +
           '<button class="icon-btn" data-action="del-calendar" data-id="' + esc(c.id) + '">' + ic("trash") + "</button></div>";
       }).join("") + "</div>"));
 
