@@ -453,10 +453,10 @@
     /* 区块1：今日学习（核心） */
     if (!td) {
       html += card(cardHead("📅 今日学习", "还没生成今日学习包", "ai-today"),
-        empty("今日学习包未生成", "点击下方按钮，生成今天 30 分钟的 AI 学习内容（内置学习包；每日自动推送将在云端升级后由 Hermes 定时提供）") +
+        empty("今日学习包未生成", "每天早上 7 点 Hermes 会根据你的学习数据（错题、答疑、进度）生成个性化学习包；也可以点下方按钮立即用内置模板生成。") +
         '<button class="btn block" data-action="gen-ai-today">🔄 生成今日学习包</button>');
     } else {
-      html += '<div class="card"><div class="card-head"><h3>📅 今日学习</h3>' + (td.done ? '<span class="tag state-done">已完成</span>' : '<span class="tag state-doing">进行中</span>') + '</div>' +
+      html += '<div class="card"><div class="card-head"><h3>📅 今日学习</h3>' + (td.aiPush ? '<span class="tag">🤖 Hermes 个性化</span>' : '') + (td.done ? '<span class="tag state-done">已完成</span>' : '<span class="tag state-doing">进行中</span>') + '</div>' +
         '<div style="font-size:17px;font-weight:800;margin-bottom:10px;">' + esc(td.topic) + "</div>" +
         '<div class="li-sub" style="font-weight:600;margin-bottom:4px;">✨ 学习目标</div>' +
         '<ul style="padding-left:20px;margin-bottom:12px;">' + (td.goals || []).map(function (g) { return "<li style=\"font-size:14px;margin-bottom:3px;\">" + esc(g) + "</li>"; }).join("") + "</ul>" +
@@ -2566,6 +2566,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · AI 个性化学习包<span class="log-tag">升级</span></div>' +
+      '<p>🤖 AI 知识学习升级：每天早上 7 点 Hermes 会读取你的学习数据（错题本、答疑库、进度），针对薄弱点生成一份个性化学习包（约 30 分钟），自动推送到 AI 知识学习板块（带「Hermes 个性化」标记）。没推送时仍可用「生成今日学习包」按钮用内置模板。</p>' +
+      '<p>影响范围：AI 知识学习板块。数据：新增云端推送，不删旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · 全站列表改单页详情<span class="log-tag">升级</span></div>' +
       '<p>📄 全站列表统一改为「短列表 + 单页详情」：答疑库、错题本、复盘、收集箱、资料库的列表都只显示标题/摘要，点任意一条单开一页看完整内容（不再把所有内容摊在长页面里）。列表页都保留了快捷操作按钮。</p>' +
       '<p>影响范围：答疑库 / 错题本 / 复盘 / 收集箱 / 资料库。数据：无影响。你需要的操作：无。</p></div>' +

@@ -670,6 +670,28 @@
     body.className = body.className.replace(/\s*font-(small|normal|large)/g, "").trim();
     if (fs !== "normal") body.className += (body.className ? " " : "") + "font-" + fs;
   }
+  /* AI 个性化学习包：Hermes 每天早上 7 点基于云端学习数据生成，这里拉取 */
+  function aiLearnPull() {
+    var dm = data.domains.filter(function (x) { return x.id === "ai"; })[0];
+    if (!dm) return;
+    var sc = data.settings.sync || {};
+    if (!sc.url || !sc.key) return;
+    fetch(String(sc.url).replace(/\/+$/, "") + "/api/learnpack", { headers: { "X-Sync-Key": sc.key } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var t = todayStr();
+        if (!j || !j.pack || j.date !== t) return; // 今天还没推送，用本地模板
+        var p = j.pack;
+        if (!dm.aiLearn) dm.aiLearn = { today: null, history: [] };
+        var cur = dm.aiLearn.today;
+        // 仅当今天还没有学习包（或与推送的不同）时应用；已完成的不覆盖
+        if (!cur || cur.date !== t) {
+          dm.aiLearn.today = { date: t, topic: p.topic, goals: p.goals || [], body: p.body || "", questions: p.questions || [], note: "", done: false, aiPush: true };
+          save(true); refresh();
+        }
+      })
+      .catch(function () { /* 拉取失败静默，不影响本地使用 */ });
+  }
   function renderAll() {
     ensureBrief();
     renderNav();
@@ -678,6 +700,7 @@
     applyBg();
     applyFont();
     if (W.ui.view === "today") aiTasksLoad();
+    if (W.ui.view === "today" || W.ui.view === "domain:ai") aiLearnPull();
   }
   function renderNav() {
     var nav = $id("sideNav");
