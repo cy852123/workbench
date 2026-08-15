@@ -3310,12 +3310,7 @@
     var c = id ? (dm.courses || []).filter(function (x) { return x.id === id; })[0] : null;
     modalOpen(c ? "编辑课程" : "添加课程",
       field("课程名称", "cName", "text", "材料科学基础", c ? c.name : "") +
-      field("老师", "cTeacher", "text", "", c ? c.teacher : "") +
-      selField("星期", "cDay", [["周一", "周一"], ["周二", "周二"], ["周三", "周三"], ["周四", "周四"], ["周五", "周五"], ["周六", "周六"], ["周日", "周日"]], c ? c.day : "周一") +
-      field("上课时间（节次或时间都行）", "cTime", "text", "8:00-9:40 或 1-2节", c ? c.time : "") +
-      field("地点", "cPlace", "text", "A101", c ? c.place : "") +
-      field("资料链接（课件/网盘/PDF，可选）", "cUrl", "text", "https://", c ? (c.url || "") : "") +
-      area("课程笔记（期末复习用，可选）", "cNote", "重点、进度、疑惑…", c ? (c.note || "") : ""),
+      '<div class="li-sub" style="margin-top:4px;">资料、笔记、照片在课程方块里点进去后随时添加。</div>',
       cancelBtn() + '<button class="btn" data-action="submit-course" data-domain="' + esc(did) + '" data-id="' + esc(id || "") + '">' + ICONS.check + "保存</button>");
     window.__editCourseId = id || "";
   }
@@ -3343,7 +3338,7 @@
     if (!c) return;
     var photos = c.photos || [];
     modalOpen(esc(c.name),
-      '<div class="li-sub" style="margin-bottom:8px;">' + esc(c.day || "") + (c.time ? " · " + esc(c.time) : "") + (c.place ? " · " + esc(c.place) : "") + (c.teacher ? " · " + esc(c.teacher) : "") + "</div>" +
+      '<div class="li-sub" style="margin-bottom:8px;">资料 · 笔记 · 照片都在这里</div>' +
       (c.note ? '<div class="formula-block"><div class="formula-title">📝 课程笔记</div><div class="formula-line" style="white-space:pre-wrap;">' + esc(c.note) + "</div></div>" : "") +
       '<div class="formula-block"><div class="formula-title">📷 课程照片（' + photos.length + '）</div>' +
       (photos.length ? '<div class="course-photos">' + photos.map(function (ph, i) {

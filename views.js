@@ -1323,12 +1323,12 @@
     return '<div class="course-card" data-action="open-course-detail" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">' +
       '<div class="cc-bar" style="background:' + color + ';"></div>' +
       '<div class="cc-name">' + esc(c.name) + "</div>" +
-      '<div class="cc-sub">' + esc(c.day || "") + (c.time ? " " + esc(c.time) : "") + (c.place ? " · " + esc(c.place) : "") + "</div>" +
       '<div class="cc-tags">' +
       (c.teacher ? '<span class="cc-tag">' + esc(c.teacher) + "</span>" : "") +
       (c.url ? '<span class="cc-tag link">' + ic("link") + " 资料</span>" : "") +
       (c.note ? '<span class="cc-tag note">📝 笔记</span>' : "") +
       ((c.photos || []).length ? '<span class="cc-tag note">📷 ' + c.photos.length + "</span>" : "") +
+      (c.url || c.note || (c.photos || []).length ? "" : '<span class="cc-tag">点进去添加</span>') +
       "</div></div>";
   }
   function coursesView(dm) {
@@ -1336,17 +1336,7 @@
     var days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
     var html = "";
 
-    /* 今日课程卡（方块卡片） */
-    var todayName = days[(new Date().getDay() + 6) % 7];
-    var todayCourses = (dm.courses || []).filter(function (c) { return c.day === todayName; })
-      .sort(function (a, b) { return (a.time || "") > (b.time || "") ? 1 : -1; });
-    html += card(cardHead("📅 今日课程", todayName + " · " + todayCourses.length + " 节", "courses-today"),
-      todayCourses.length === 0 ? '<div class="li-sub">今天没有课，可以安排考研学习。</div>' :
-      '<div class="course-grid">' + todayCourses.map(function (c) {
-        return courseCard(c, dm.id);
-      }).join("") + "</div>");
-
-    html += card(cardHead("本学期课程", "点方块看详情 · 资料/笔记都在里面", "courses"),
+    html += card(cardHead("我的课程", "点方块添加资料 / 笔记 / 照片", "courses"),
       '<button class="btn ghost small" data-action="add-course" data-domain="' + esc(dm.id) + '" style="margin-bottom:10px;">' + ic("plus") + "添加课程</button>" +
       '<div class="course-grid">' + (dm.courses || []).map(function (c) {
         return courseCard(c, dm.id);
