@@ -1328,6 +1328,7 @@
       (c.teacher ? '<span class="cc-tag">' + esc(c.teacher) + "</span>" : "") +
       (c.url ? '<span class="cc-tag link">' + ic("link") + " 资料</span>" : "") +
       (c.note ? '<span class="cc-tag note">📝 笔记</span>' : "") +
+      ((c.photos || []).length ? '<span class="cc-tag note">📷 ' + c.photos.length + "</span>" : "") +
       "</div></div>";
   }
   function coursesView(dm) {

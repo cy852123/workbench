@@ -2427,6 +2427,18 @@
 
       /* 课程 */
       case "open-course-detail": courseDetailModal(id, domain); break;
+      case "pick-course-photo": { var pfi = $id("coursePhotoInput"); if (pfi) pfi.click(); break; }
+      case "view-course-photo": coursePhotoView(id, domain, parseInt(el ? el.getAttribute("data-idx") : "0", 10)); break;
+      case "del-course-photo": {
+        var pdm = data.domains.filter(function (x) { return x.id === domain; })[0];
+        var pc = pdm && (pdm.courses || []).filter(function (x) { return x.id === id; })[0];
+        var idx = parseInt(el ? el.getAttribute("data-idx") : "-1", 10);
+        if (pc && (pc.photos || []).length > idx && idx >= 0) {
+          pc.photos.splice(idx, 1);
+          save(); toast("照片已删除"); courseDetailModal(id, domain);
+        }
+        break;
+      }
       case "add-course": courseModal(null, domain); break;
       case "edit-course": courseModal(id, domain); break;
       case "del-course": delCourse(domain, id); break;
@@ -3303,18 +3315,75 @@
       cancelBtn() + '<button class="btn" data-action="submit-course" data-domain="' + esc(did) + '" data-id="' + esc(id || "") + '">' + ICONS.check + "保存</button>");
     window.__editCourseId = id || "";
   }
+  function compressImage(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.width, h = img.height;
+        var maxW = 900;
+        if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        var cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        cb(cv.toDataURL("image/jpeg", 0.72), w, h);
+      };
+      img.onerror = function () { toast("图片读取失败，请换一张", true); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
   function courseDetailModal(id, did) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
     var c = dm && (dm.courses || []).filter(function (x) { return x.id === id; })[0];
     if (!c) return;
+    var photos = c.photos || [];
     modalOpen(esc(c.name),
       '<div class="li-sub" style="margin-bottom:8px;">' + esc(c.day || "") + (c.time ? " · " + esc(c.time) : "") + (c.place ? " · " + esc(c.place) : "") + (c.teacher ? " · " + esc(c.teacher) : "") + "</div>" +
       (c.note ? '<div class="formula-block"><div class="formula-title">📝 课程笔记</div><div class="formula-line" style="white-space:pre-wrap;">' + esc(c.note) + "</div></div>" : "") +
+      '<div class="formula-block"><div class="formula-title">📷 课程照片（' + photos.length + '）</div>' +
+      (photos.length ? '<div class="course-photos">' + photos.map(function (ph, i) {
+        return '<div class="cp-item" data-action="view-course-photo" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '" data-idx="' + i + '">' +
+          '<img src="' + ph.data + '" alt="课程照片">' +
+          (ph.note ? '<div class="cp-note">' + esc(ph.note) + "</div>" : "") +
+          '<span class="cp-del" data-action="del-course-photo" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '" data-idx="' + i + '">×</span></div>';
+      }).join("") + "</div>" : '<div class="li-sub">还没有照片，上课拍课件可以存这里。</div>') +
+      '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">' +
+      '<button class="btn small plain" data-action="pick-course-photo" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">＋ 添加照片</button>' +
+      '<input type="file" id="coursePhotoInput" accept="image/*" style="display:none;"></div></div>' +
       '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
       (c.url ? '<a class="btn small" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + ICONS.link + "打开资料链接</a>" : "") +
       '<button class="btn small plain" data-action="edit-course" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">编辑</button>' +
       '<button class="btn small plain" data-action="del-course" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">删除</button>' +
       "</div>");
+    var fi = $id("coursePhotoInput");
+    if (fi) {
+      fi.value = "";
+      fi.addEventListener("change", function () {
+        var f = fi.files && fi.files[0];
+        if (!f) return;
+        compressImage(f, function (imgData) {
+          var cc = data.domains.filter(function (x) { return x.id === did; })[0];
+          var cc2 = cc && (cc.courses || []).filter(function (x) { return x.id === id; })[0];
+          if (!cc2) return;
+          cc2.photos = cc2.photos || [];
+          cc2.photos.push({ id: uid(), data: imgData, date: todayStr(), note: "" });
+          save();
+          toast("照片已保存（压缩后约 " + Math.round(imgData.length / 1024) + " KB）");
+          courseDetailModal(id, did);
+        });
+      });
+    }
+  }
+  function coursePhotoView(id, did, idx) {
+    var dm = data.domains.filter(function (x) { return x.id === did; })[0];
+    var c = dm && (dm.courses || []).filter(function (x) { return x.id === id; })[0];
+    var ph = c && (c.photos || [])[idx];
+    if (!ph) return;
+    modalOpen("课程照片",
+      '<img src="' + ph.data + '" style="width:100%;border-radius:10px;display:block;">' +
+      '<div class="li-sub" style="margin-top:8px;">' + esc(c.name) + " · " + esc(ph.date || "") + "</div>",
+      '<button class="btn" data-action="modal-close">关闭</button>');
   }
   function submitCourse(did, id) {
     var dm = data.domains.filter(function (x) { return x.id === did; })[0];
