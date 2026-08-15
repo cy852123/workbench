@@ -2262,13 +2262,15 @@
       '<button class="btn plain" data-action="sync-pull">↓ 从云端下载（覆盖本地）</button></div>' +
       '<div class="li-sub" style="margin-top:10px;">最近上传：' + esc((d.settings.sync || {}).lastPush || "无") + " ｜ 最近下载：" + esc((d.settings.sync || {}).lastPull || "无") + "</div>");
 
-    html += card(cardHead("AI 配置", "对话式 AI 的密钥只存本机浏览器", "api"),
-      '<div class="field"><label>API 地址（OpenAI 兼容格式）</label>' +
-      '<input id="apiBase" placeholder="如 https://api.deepseek.com/v1" value="' + esc(d.settings.apiBase || "") + '"></div>' +
+    html += card(cardHead("AI 配置", "对话式 AI 的密钥不落网页代码", "api"),
+      '<label class="checkline"><input type="checkbox" id="aiProxy"' + (d.settings.aiProxy ? " checked" : "") + '> <b>云端 AI 代理模式（推荐）</b></label>' +
+      '<div class="li-sub" style="margin-bottom:10px;">开启后：地址填 <b>https://workbench-sync-c9e.pages.dev</b>，密钥填<b>同步密钥</b>——AI 请求走云端服务，DeepSeek 密钥只存在服务端，网页里不保存真实密钥，别人也无法调用你的额度（有同步密钥校验）。</div>' +
+      '<div class="field"><label>API 地址</label>' +
+      '<input id="apiBase" placeholder="云端代理：https://workbench-sync-c9e.pages.dev" value="' + esc(d.settings.apiBase || "") + '"></div>' +
       '<div class="field"><label>模型名称</label>' +
       '<input id="apiModel" placeholder="如 deepseek-chat" value="' + esc(d.settings.apiModel || "") + '"></div>' +
-      '<div class="field"><label>API 密钥（' + (d.settings.apiKey ? "已配置（" + String(d.settings.apiKey).slice(0, 6) + "…）" : "未配置") + "）</label>" +
-      '<input id="apiKey" type="password" placeholder="粘贴你的密钥"><div class="li-sub" style="margin-top:4px;">密钥只保存在你浏览器的本地存储里，不会上传到任何公开仓库或服务器。配置后对话式 AI 才启用。</div></div>' +
+      '<div class="field"><label>密钥（' + (d.settings.apiKey ? "已配置（" + String(d.settings.apiKey).slice(0, 6) + "…）" : "未配置") + "）</label>" +
+      '<input id="apiKey" type="password" placeholder="代理模式填同步密钥；直接模式填 API 密钥"><div class="li-sub" style="margin-top:4px;">直接模式（不勾代理）：密钥保存在你浏览器的本地存储里，不会上传到任何公开仓库或服务器。</div></div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<button class="btn" data-action="save-api">' + ic("check") + "保存配置</button>" +
       (d.settings.apiKey ? '<button class="btn danger" data-action="clear-api">清除密钥</button>' : "") + "</div>");

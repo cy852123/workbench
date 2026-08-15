@@ -2057,6 +2057,20 @@
   function callAI(messages, cb) {
     var s = data.settings;
     if (!s.apiKey || !s.apiBase) { cb("对话式 AI 未启用：请先在「设置与数据 → AI 配置」填入 API 地址、模型和密钥。"); return; }
+    if (s.aiProxy) {
+      /* 云端代理模式：请求发到部署好的代理（/api/ai），密钥用同步密钥 */
+      fetch(String(s.apiBase).replace(/\/+$/, "") + "/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Sync-Key": s.apiKey },
+        body: JSON.stringify({ messages: messages })
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j.error) { cb("AI 服务异常：" + j.error); return; }
+        cb(j.content || "AI 返回了空结果。");
+      }).catch(function () {
+        cb("请求失败：网络不通或代理地址错误。");
+      });
+      return;
+    }
     var url = String(s.apiBase).replace(/\/+$/, "") + "/chat/completions";
     fetch(url, {
       method: "POST",
@@ -4219,11 +4233,13 @@
     var base = fval("apiBase").trim();
     var model = fval("apiModel").trim();
     var key = fval("apiKey").trim();
+    var proxy = !!(document.getElementById("aiProxy") || {}).checked;
     if (!base || !key) { toast("请填写 API 地址和密钥", true); return; }
     data.settings.apiBase = base;
     data.settings.apiModel = model;
     data.settings.apiKey = key;
-    modalClose(); refresh(); toast("AI 配置已保存（密钥只存在本机浏览器）");
+    data.settings.aiProxy = proxy;
+    modalClose(); refresh(); toast(proxy ? "AI 配置已保存（云端代理模式）" : "AI 配置已保存（密钥只存在本机浏览器）");
   }
   function clearApi() {
     data.settings.apiKey = ""; data.settings.apiBase = ""; data.settings.apiModel = "";
