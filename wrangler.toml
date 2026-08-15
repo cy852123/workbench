@@ -1,0 +1,8 @@
+name = "workbench-sync"
+main = "cloudflare-worker.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "WB_KV"
+id = "0757e3d602e74b87aedb6ec791c0b34c"

@@ -416,7 +416,7 @@
   function syncPush(silent) {
     var sc = syncConfig();
     if (!sc.url || !sc.key) { if (!silent) toast("请先在设置里填写云端同步地址和密钥", true); return; }
-    fetch(String(sc.url).replace(/\/+$/, "") + "/api/data", {
+    fetch(String(sc.url).replace(/\/+$/, "") + "/data", {
       method: "PUT",
       headers: { "Content-Type": "application/json", "X-Sync-Key": sc.key },
       body: JSON.stringify(data)
@@ -432,7 +432,7 @@
   function syncPull() {
     var sc = syncConfig();
     if (!sc.url || !sc.key) { toast("请先在设置里填写云端同步地址和密钥", true); return; }
-    fetch(String(sc.url).replace(/\/+$/, "") + "/api/data", {
+    fetch(String(sc.url).replace(/\/+$/, "") + "/data", {
       method: "GET",
       headers: { "X-Sync-Key": sc.key }
     }).then(function (r) {
