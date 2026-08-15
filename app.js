@@ -344,6 +344,21 @@
         changed = true;
       }
     }
+    /* 语法学习专区（v0.1.18 新增）：知识点库，内置示例，用户可自定义添加 */
+    if (!data.grammar) {
+      data.grammar = { points: [
+        { cat: "时态", title: "现在完成时", content: "have/has + 过去分词。表示过去发生的动作对现在有影响，或持续到现在的状态。标志词：already, yet, just, since, for + 时间段。例：I have finished my homework.（我已经做完作业了。）考研写作常用，注意与一般过去时的区分：一般过去时只陈述过去，现在完成时强调对现在的影响。", mastered: false, date: "" },
+        { cat: "时态", title: "过去完成时", content: "had + 过去分词。表示「过去的过去」，常与 by the time, before, after, when 引导的时间状语连用。例：By the time I arrived, the train had left.（我到时火车已经开了。）长难句翻译时注意时间先后关系。", mastered: false, date: "" },
+        { cat: "从句", title: "定语从句（which/that/who）", content: "先行词 + 关系词 + 从句。which 指物，that 指物或人，who 指人。限制性定语从句不用逗号，非限制性用逗号且不能用 that。例：The book which you lent me is great.（你借我的书很棒。）阅读中识别定语从句是拆长难句第一步：先找先行词，再找从句边界。", mastered: false, date: "" },
+        { cat: "从句", title: "名词性从句（that/what）", content: "that 引导陈述性从句（无含义），what 引导内容性从句（=the thing that）。主语从句、宾语从句、表语从句、同位语从句都是名词性从句。例：What he said is true.（他说的都是真的。）注意 that 引导同位语从句时 that 不省略。", mastered: false, date: "" },
+        { cat: "虚拟语气", title: "if 虚拟条件句", content: "与现在事实相反：if + 过去式，would/could + 动词原形。与过去事实相反：if + had done，would/could + have done。与将来相反：if + were to/should do。例：If I were you, I would study harder.（如果我是你，我会更努力学习。）真题中常见「含蓄条件句」（without/but for 代替 if）。", mastered: false, date: "" },
+        { cat: "非谓语", title: "动名词与不定式", content: "动名词 doing 作主语表习惯性动作，不定式 to do 作主语表具体某次动作。enjoy/finish/mind 后接动名词；want/hope/decide 后接不定式。例：Reading is my hobby.（阅读是我的爱好。）I want to improve my English.（我想提高英语。）", mastered: false, date: "" },
+        { cat: "主谓一致", title: "就近原则与就远原则", content: "就近原则（谓语与最近的主语一致）：either...or, neither...nor, not only...but also。就远原则（谓语与前面的主语一致）：as well as, together with, along with。例：Neither he nor I am wrong.（他没错我也没错。）The teacher, as well as the students, likes the book.（老师和学生都喜欢这本书。）", mastered: false, date: "" },
+        { cat: "特殊句型", title: "倒装句（否定词开头）", content: "否定词/半否定词开头的句子部分倒装：never, hardly, scarcely, seldom, little, not only, no sooner...than。结构：否定词 + 助动词/be + 主语。例：Never have I seen such a beautiful view.（我从未见过这么美的景色。）注意 not only 放句首倒装的是前句。", mastered: false, date: "" }
+      ] };
+      changed = true;
+    }
+    if (!Array.isArray(data.grammar.points)) { data.grammar.points = []; changed = true; }
     var aiDom = (data.domains || []).filter(function (x) { return x.id === "ai"; })[0];
     if (aiDom && aiDom.type !== "ailearn") {
       aiDom.type = "ailearn";
@@ -406,6 +421,7 @@
       }
     } catch (e) { /* 损坏则重建，先保留旧数据 */ }
     data = defaultData();
+    if (migrate()) save(true);
   }
   function save(quiet) {
     data.meta.updated = nowStr();
@@ -596,6 +612,7 @@
       "ky-stats": { e: "🎓", t: "统计仪表盘", s: "所有图表与进度" },
       "tasks-all": { e: "📋", t: "任务管理专区", s: "全部任务" },
       "cet-vocab": { e: "📖", t: "词汇专区", s: "生词本与记忆复习" },
+      "cet-grammar": { e: "📚", t: "语法专区", s: "语法检查器与知识点" },
       "cet-listening": { e: "🎧", t: "听力专区", s: "真题听力与精听" },
       "cet-reading": { e: "📖", t: "阅读专区", s: "真题阅读与长难句" },
       "cet-writing": { e: "✍️", t: "写作专区", s: "范文模板与 AI 批改" },
@@ -735,6 +752,7 @@
     else if (view === "tasks-all") html = Views.tasksAll();
     else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-wordbook") html = Views.cetWordbook(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
+    else if (view === "cet-grammar") html = Views.cetGrammar(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-exams") html = Views.cetExams(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-stats") html = Views.cetStats(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "ai-history") html = Views.aiHistory(data.domains.filter(function (x) { return x.id === "ai"; })[0]);
@@ -867,7 +885,7 @@
       "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan",
       "ky-english": "theme-cet", "ky-math": "theme-kaoyan", "ky-politics": "theme-kaoyan", "ky-major": "theme-kaoyan", "ky-word": "theme-kaoyan",
       "cet-vocab": "theme-cet", "cet-listening": "theme-cet", "cet-reading": "theme-cet", "cet-writing": "theme-cet",
-      "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet",
+      "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet", "cet-grammar": "theme-cet",
       "ai-history": "theme-ai"
     };
     return map[view] || "";
@@ -2887,6 +2905,13 @@
       case "submit-import-words": submitImportWords(); break;
       case "import-words-ok": importWordsOk(); break;
 
+      /* 语法学习专区（v0.1.18） */
+      case "grammar-check": grammarCheck(); break;
+      case "grammar-add": grammarAddModal(); break;
+      case "submit-grammar-add": submitGrammarAdd(); break;
+      case "grammar-toggle": grammarToggle(parseInt(el ? el.getAttribute("data-idx") : "", 10)); break;
+      case "grammar-del": grammarDel(parseInt(el ? el.getAttribute("data-idx") : "", 10)); break;
+
       /* AI */
       case "ai-send": {
         var txt = (fval("aiInput") || "").trim();
@@ -3452,6 +3477,65 @@
     var n = (window.__importWords || []).length;
     window.__importWords = null;
     modalClose(); refresh(); toast("已导入 " + n + " 个生词");
+  }
+  /* ---------- 语法学习专区（v0.1.18） ---------- */
+  function grammarCheck() {
+    var box = $id("grammarResult");
+    var txt = (fval("grammarText") || "").trim();
+    if (!txt) { toast("请先粘贴英文内容", true); return; }
+    box.innerHTML = '<div class="li-sub">正在检查语法…</div>';
+    fetch("https://api.languagetool.org/v2/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "language=en-US&text=" + encodeURIComponent(txt.slice(0, 3000))
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      var ms = (j && j.matches) || [];
+      if (!ms.length) {
+        box.innerHTML = '<div class="tag state-done" style="font-size:13px;">✓ 未发现语法错误（或语言检测不到明显问题）</div>';
+        return;
+      }
+      var html = '<div class="li-sub" style="margin-bottom:6px;">发现 <b>' + ms.length + '</b> 处问题：</div>';
+      ms.slice(0, 12).forEach(function (m) {
+        var sug = (m.replacements || []).slice(0, 2).map(function (s) { return s.value; }).join(" / ");
+        html += '<div style="background:#FBF3D9;border:1px dashed #D9B422;border-radius:8px;padding:8px 10px;margin-bottom:6px;">' +
+          '<div style="font-size:13px;">' + esc(m.message || "") + (sug ? ' <b style="color:#2F6B57;">建议：' + esc(sug) + "</b>" : "") + "</div>" +
+          '<div class="li-sub">原文：…' + esc((m.context && m.context.text || "").slice(0, 60)) + "…</div></div>";
+      });
+      if (ms.length > 12) html += '<div class="li-sub">…还有 ' + (ms.length - 12) + ' 处，请分段检查。</div>';
+      box.innerHTML = html;
+    }).catch(function () {
+      box.innerHTML = '<div class="li-sub" style="color:var(--danger,#c0392b);">检查失败：网络不通或服务暂时不可用，请稍后重试。</div>';
+    });
+  }
+  function grammarAddModal() {
+    modalOpen("添加语法知识点", "写一个你需要的语法点（分类、标题、内容），会存到语法知识点库。内置示例只是示范。" +
+      field("分类", "gCat", "text", "如：时态 / 从句 / 虚拟语气 / 非谓语 / 主谓一致 / 特殊句型") +
+      field("标题", "gTitle", "text", "如：现在完成时") +
+      area("内容", "gContent", "语法规则 + 例子，方便复习"),
+      cancelBtn() + '<button class="btn" data-action="submit-grammar-add">' + ICONS.check + "保存</button>");
+  }
+  function submitGrammarAdd() {
+    var cat = fval("gCat").trim();
+    var title = fval("gTitle").trim();
+    var content = fval("gContent").trim();
+    if (!title || !content) { toast("标题和内容不能为空", true); return; }
+    if (!data.grammar) data.grammar = { points: [] };
+    if (!Array.isArray(data.grammar.points)) data.grammar.points = [];
+    data.grammar.points.push({ cat: cat || "其他", title: title, content: content, mastered: false, custom: true, date: todayStr() });
+    modalClose(); refresh(); toast("已添加知识点");
+  }
+  function grammarToggle(i) {
+    var pts = (data.grammar && data.grammar.points) || [];
+    if (!pts[i]) return;
+    pts[i].mastered = !pts[i].mastered;
+    save(); renderView(); toast(pts[i].mastered ? "已标记掌握" : "已取消掌握");
+  }
+  function grammarDel(i) {
+    var pts = (data.grammar && data.grammar.points) || [];
+    if (!pts[i]) return;
+    if (!confirm("确定删除这个知识点？")) return;
+    pts.splice(i, 1);
+    save(); renderView(); toast("已删除");
   }
   /* 考试管理 */
   function addExamModal() {

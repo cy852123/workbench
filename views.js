@@ -644,16 +644,18 @@
       { id: "cet-reading", emoji: "📝", name: "阅读", desc: "真题阅读、长难句、错题记录" },
       { id: "cet-writing", emoji: "✍️", name: "写作", desc: "范文、模板、AI 批改、作文素材" },
       { id: "cet-translation", emoji: "🌐", name: "翻译", desc: "真题翻译练习、句式积累" },
-      { id: "cet-speaking", emoji: "🗣️", name: "口语", desc: "AI 口语对话练习" }
+      { id: "cet-speaking", emoji: "🗣️", name: "口语", desc: "AI 口语对话练习" },
+      { id: "cet-grammar", emoji: "📚", name: "语法", desc: "语法检查器、知识点库" }
     ];
     var low3 = zones.slice().sort(function (a, b) {
-      return (examSubj(dm, a.name).progress || 0) - (examSubj(dm, b.name).progress || 0);
+      var sa = examSubj(dm, a.name), sb = examSubj(dm, b.name);
+      return ((sa && sa.progress) || 0) - ((sb && sb.progress) || 0);
     }).slice(0, 3);
     html += '<div class="en-today"><div class="card-head" style="margin-bottom:4px;"><h3>📌 今日英语任务</h3>' +
       '<button class="btn small ghost" data-action="punch" data-domain="cet">⏱ 打卡学习</button></div>' +
       low3.map(function (z) {
         var s = examSubj(dm, z.name);
-        var done = (s.progress || 0) > 60;
+        var done = (s && s.progress || 0) > 60;
         return '<div class="en-task" data-action="go-view" data-view="' + z.id + '">' +
           '<span class="en-box' + (done ? " on" : "") + '"></span>' +
           '<span class="en-task-name">' + z.emoji + " " + esc(z.name) + "：" + esc(progressText(s ? s.progress : 0)) + '</span>' +
@@ -1229,6 +1231,37 @@
       '<button class="btn block" data-action="punch" data-domain="cet">打卡学习（选' + esc(zone.name) + "）</button>" +
       '<div class="li-sub" style="margin-top:8px;">打卡时在弹窗中选择科目「' + esc(zone.name) + "」，对应考试下该科目进度自动 +1%。</div>");
     if (zone.extra) html += zone.extra(dm);
+    return html;
+  }
+  /* 语法学习专区（v0.1.18）：语法检查器（LanguageTool）+ 知识点库（分类/自定义/掌握标记） */
+  function cetGrammar(dm) {
+    var W = window.W, d = W.data;
+    var html = backBar("domain:cet", "英语学习");
+    html += card(cardHead("🔍 语法检查器", "粘贴英文，自动找出语法错误", "grammar-check"),
+      '<div class="li-sub" style="margin-bottom:8px;">粘贴一段英文（作文/句子），点击检查后会标注语法错误并给出修改建议。免费在线检查，无需配置。</div>' +
+      '<textarea id="grammarText" rows="4" placeholder="粘贴英文作文或句子…" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:var(--fs-base);resize:vertical;"></textarea>' +
+      '<button class="btn block" style="margin-top:8px;" data-action="grammar-check">检查语法错误</button>' +
+      '<div id="grammarResult" style="margin-top:10px;"></div>');
+    /* 知识点库：按分类分组 */
+    var pts = (d.grammar && d.grammar.points) || [];
+    var cats = [];
+    pts.forEach(function (p) { if (cats.indexOf(p.cat) < 0) cats.push(p.cat); });
+    var done = pts.filter(function (p) { return p.mastered; }).length;
+    html += card(cardHead("📚 语法知识点", pts.length + " 条 ｜ 已掌握 " + done, "grammar-points"),
+      '<button class="btn ghost small" data-action="grammar-add" style="margin-bottom:10px;">＋ 添加知识点</button>' +
+      (pts.length === 0 ? '<div class="li-sub">还没有知识点，点上方按钮添加。</div>' :
+        cats.map(function (c) {
+          var list = pts.filter(function (p) { return p.cat === c; });
+          return '<div class="li-sub" style="font-weight:600;margin:10px 0 4px;">' + esc(c) + "（" + list.length + "）</div>" +
+            '<div class="list">' + list.map(function (p, i) {
+              return '<div class="list-item" style="align-items:flex-start;"><div class="li-main">' +
+                '<div class="li-title">' + esc(p.title) + (p.mastered ? ' <span class="tag state-done">已掌握</span>' : "") + (p.custom ? ' <span class="tag">自定义</span>' : "") + "</div>" +
+                '<div class="li-sub" style="white-space:pre-wrap;">' + esc(p.content) + "</div></div>" +
+                '<button class="btn small ' + (p.mastered ? "plain" : "") + '" data-action="grammar-toggle" data-idx="' + i + '">' + ic("check") + (p.mastered ? "已掌握" : "标记掌握") + "</button>" +
+                '<button class="icon-btn" data-action="grammar-del" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+            }).join("") + "</div>";
+        }).join("")) +
+      '<div class="li-sub" style="margin-top:10px;">内置示例知识点只是示范，点「＋ 添加知识点」可以写自己的内容。</div>');
     return html;
   }
   function cetWordbook(dm) {
@@ -2385,6 +2418,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · 语法学习专区<span class="log-tag">升级</span></div>' +
+      '<p>📚 英语学习新增「语法」专区：①语法检查器——粘贴英文作文/句子，自动找出语法错误并给修改建议（在线免费服务）；②语法知识点库——内置 8 个高频语法点示例（时态/从句/虚拟语气/非谓语/主谓一致/倒装），可自己添加、标记掌握。</p>' +
+      '<p>影响范围：英语学习板块。数据：自动初始化，不删旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · AI 全屏对话<span class="log-tag">升级</span></div>' +
       '<p>💬 对话式 AI 改为全屏对话页：在 AI 帮手页点「进入全屏对话」打开，消息区更大、输入框固定在底部，手机端更好用。对话历史保留，AI 回答下方仍有「保存到工作台」按钮。</p>' +
       '<p>影响范围：AI 帮手板块。数据：无影响。你需要的操作：无。</p></div>' +
@@ -2495,6 +2531,7 @@
     cetVocab: cetVocab,
     cetWordbook: cetWordbook,
     cetExams: cetExams,
+    cetGrammar: cetGrammar,
     cetStats: cetStats,
     englishZone: englishZone,
     aiHistory: aiHistory,
