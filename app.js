@@ -123,48 +123,6 @@
           }
         },
         {
-          id: "cet", type: "english", name: "英语学习", color: "blue", order: 1,
-          activeExam: "考研英语",
-          exams: {
-            "考研英语": {
-              auto: "kaoyan", examDate: "", archived: false,
-              wordbook: [
-                { id: "w1", word: "comprehensive", meaning: "adj. 全面的，综合的", note: "考研高频词", mastered: false, date: "2026-08-14" }
-              ],
-              subjects: {
-                "词汇": { progress: 25, note: "考研核心词汇，配合艾宾浩斯复习" },
-                "听力": { progress: 20, note: "" },
-                "阅读": { progress: 30, note: "" },
-                "写作": { progress: 15, note: "" },
-                "翻译": { progress: 10, note: "" },
-                "口语": { progress: 5, note: "" }
-              }
-            },
-            "大学英语六级": {
-              auto: "cet6", examDate: "", archived: false, wordbook: [],
-              subjects: {
-                "词汇": { progress: 30, note: "" },
-                "听力": { progress: 30, note: "" },
-                "阅读": { progress: 40, note: "" },
-                "写作": { progress: 20, note: "" },
-                "翻译": { progress: 25, note: "" },
-                "口语": { progress: 10, note: "" }
-              }
-            },
-            "大学英语四级": {
-              auto: "cet4", examDate: "", archived: false, wordbook: [],
-              subjects: {
-                "词汇": { progress: 40, note: "" },
-                "听力": { progress: 35, note: "" },
-                "阅读": { progress: 45, note: "" },
-                "写作": { progress: 25, note: "" },
-                "翻译": { progress: 30, note: "" },
-                "口语": { progress: 15, note: "" }
-              }
-            }
-          }
-        },
-        {
           id: "ai", type: "ailearn", name: "AI 知识学习", color: "green", order: 2,
           aiLearn: {
             today: null,
@@ -248,6 +206,8 @@
     var changed = false;
     /* 论文写作板块已移除（界面隐藏，历史数据保留在本机） */
     (data.domains || []).forEach(function (dm) { if (dm.id === "paper" && !dm.hidden) { dm.hidden = true; changed = true; } });
+    /* 英语学习板块已移除（界面隐藏，历史数据保留在本机，v0.1.20） */
+    (data.domains || []).forEach(function (dm) { if (dm.id === "cet" && !dm.hidden) { dm.hidden = true; changed = true; } });
     /* 错题本升级：补全复习字段（原因/答案 → 错因/解法/来源/复习次数/下次复习/掌握） */
     (data.mistakes || []).forEach(function (m) {
       if (m.cause === undefined) {
