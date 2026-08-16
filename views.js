@@ -919,6 +919,20 @@
     if (n > 1024) return Math.round(n / 1024) + " KB";
     return n + " B";
   }
+  /* 横向条形占比图（无图表库，纯 CSS） */
+  function pctBars(items, colors) {
+    var total = items.reduce(function (s, x) { return s + (x.n || 0); }, 0);
+    if (!total) return '<div class="li-sub" style="padding:6px 0;">暂无数据</div>';
+    return '<div style="display:flex;flex-direction:column;gap:7px;margin-top:6px;">' + items.map(function (x, i) {
+      var p = Math.round((x.n || 0) / total * 100);
+      var c = colors[i % colors.length];
+      return '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="font-size:12px;color:#6F7277;min-width:64px;text-align:right;">' + esc(x.name) + "</span>" +
+        '<div class="progress-track" style="flex:1;height:12px;"><div class="progress-fill" style="width:' + p + "%;background:" + c + ';"></div></div>' +
+        '<span style="font-size:12px;font-weight:700;min-width:34px;">' + p + "%</span></div>";
+    }).join("") + "</div>";
+  }
+  var PCT_COLORS = ["#2F6B57", "#AFC9EA", "#E9A8CF", "#F4D85A", "#B8CB9A", "#8FA3C0"];
 
   /* ==================== 三级专区 ==================== */
   function toolBtn(emoji, name, sub, action, view) {
@@ -958,19 +972,48 @@
       '<div class="grid grid-2">' +
       toolBtn("📚", "精读库", "真题篇目 + 正确率 + 定位句分析", "", "ky-reading") +
       toolBtn("📝", "长难句练习", "每日 5 句 · 拆解解析", "ky-sentence-modal", "") +
-      toolBtn("✍️", "作文模板库", "小/大作文高分句式 + 手动批注", "ky-essay-modal", "") +
-      toolBtn("🌐", "翻译每日一句", "生词 + 语序调整反思", "ky-trans-modal", "") +
+      toolBtn("✍️", "作文模板库", "大/小作文分类 · 上传模板文件", "ky-essay-modal", "") +
+      toolBtn("🌐", "翻译练习", "每日英译汉 + 汉译英 · 上传复盘", "ky-trans-modal", "") +
       "</div>");
-    /* 阅读记录（含定位句分析） */
+    /* 作文模板库：大作文/小作文 分类 + 自定义名称 + 上传文件 */
+    var ess = gen.essayFiles || [];
+    var essCats = gen.essayCats || ["大作文·图表", "大作文·图画", "小作文·书信", "小作文·通知"];
+    html += card(cardHead("✍️ 作文模板库", "大作文 / 小作文 分类上传", "essay"),
+      '<button class="btn small" data-action="ky-pick" data-key="essayFiles">📤 上传模板文件（PDF/图片/Word）</button> ' +
+      '<button class="btn small ghost" data-action="ky-essay-cat">＋ 新增分类名称</button>' +
+      (ess.length ? '<div class="list" style="margin-top:10px;">' + ess.slice().reverse().map(function (f, i) {
+        return '<div class="list-item" style="align-items:flex-start;">' +
+          '<div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;cursor:pointer;" data-action="ky-file-view" data-key="essayFiles" data-idx="' + i + '">' +
+          (f.cat ? '<span class="tag" style="margin-right:6px;">' + esc(f.cat) + "</span>" : "") + "📄 " + esc(f.name) + "</div>" +
+          '<div class="li-sub">' + fmtSize(f.size) + " · " + esc(f.date || "") + "</div></div>" +
+          '<button class="icon-btn" data-action="ky-file-del" data-key="essayFiles" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">还没上传作文模板。分成大作文/小作文，各自定义名称上传。</div>'));
+
+    /* 翻译练习：每日英译汉 + 汉译英 + 上传复盘（删生词记录/语序调整） */
+    var tr = gen.transFiles || [];
+    html += card(cardHead("🌐 翻译练习", "每日一道英译汉 + 一道汉译英", "trans"),
+      '<button class="btn small" data-action="ky-pick" data-key="transFiles">📤 上传今日翻译练习（拍照/PDF）</button>' +
+      (tr.length ? '<div class="list" style="margin-top:10px;">' + tr.slice().reverse().slice(0, 6).map(function (f, i) {
+        return '<div class="list-item" style="align-items:flex-start;">' +
+          '<div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;cursor:pointer;" data-action="ky-file-view" data-key="transFiles" data-idx="' + i + '">📄 ' + esc(f.name) + "</div>" +
+          '<div class="li-sub">' + fmtSize(f.size) + " · " + esc(f.date || "") + "</div></div>" +
+          '<button class="icon-btn" data-action="ky-file-del" data-key="transFiles" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">每天把翻译练习（英译汉 + 汉译英各一道）拍照或 PDF 传上来，复盘时我看。</div>'));
+    /* 阅读记录（含定位句分析）+ 错题类型占比 */
     var rl = gen.readingLog || [];
+    var wtCount = {};
+    rl.forEach(function (r) { (r.wrongTypes || []).forEach(function (w) { wtCount[w] = (wtCount[w] || 0) + 1; }); });
+    var wtItems = Object.keys(wtCount).map(function (k) { return { name: k, n: wtCount[k] }; });
     html += card(cardHead("📈 阅读复盘", rl.length ? "共 " + rl.length + " 篇 · 正确率 ≥60% 得 1⭐" : "暂无记录", "reading") +
       '<button class="btn small ghost" data-action="ky-reading-record">＋ 记录阅读</button>',
-      rl.length ? '<div class="list">' + rl.slice().reverse().slice(0, 6).map(function (r) {
+      '<div class="li-sub" style="font-weight:700;margin-bottom:2px;">📊 错题类型占比</div>' +
+      pctBars(wtItems, PCT_COLORS) +
+      (rl.length ? '<div class="list" style="margin-top:10px;">' + rl.slice().reverse().slice(0, 6).map(function (r) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(r.paper) + " ｜ 正确率 " + r.correct + "%" + (r.correct >= 60 ? ' <span class="tag state-done">+⭐</span>' : "") + "</div>" +
           '<div class="li-sub">' + esc(r.date) + " · 用时 " + r.minutes + " 分" +
           (r.wrongTypes && r.wrongTypes.length ? " · 错题：" + esc(r.wrongTypes.join("/")) : "") +
           (r.locate ? " · " + esc(r.locate) : "") + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">完成精读后自动记录到这里</div>');
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">完成精读后自动记录到这里</div>'));
     return html;
   }
   function kyMathPage(dm) {
@@ -1007,12 +1050,18 @@
           '<div class="li-sub">选填 ' + p.xuan + " · 高数 " + p.gs + " · 线代 " + p.xd + " · 概率 " + p.gl + " ｜ " + esc(p.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">做真题套卷后记录各板块得分</div>');
     var cl = gen.carelessness || [];
+    /* 错误类型占比统计 */
+    var clCount = {};
+    cl.forEach(function (c) { var k = c.type || "其他"; clCount[k] = (clCount[k] || 0) + 1; });
+    var clItems = Object.keys(clCount).map(function (k) { return { name: k, n: clCount[k] }; });
     html += card(cardHead("⚠️ 粗心账本", cl.length ? "共 " + cl.length + " 次失误" : "暂无记录", "careless") +
       '<button class="btn small ghost" data-action="ky-careless-modal">＋ 记一笔</button>',
-      cl.length ? '<div class="list">' + cl.slice().reverse().slice(0, 6).map(function (c) {
+      '<div class="li-sub" style="font-weight:700;margin-bottom:2px;">📊 错误类型占比</div>' +
+      pctBars(clItems, PCT_COLORS) +
+      (cl.length ? '<div class="list" style="margin-top:10px;">' + cl.slice().reverse().slice(0, 6).map(function (c) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(c.type) + " ｜ " + esc(c.note || "") + "</div>" +
           '<div class="li-sub">' + esc(c.date) + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">算错时点「粗心账本」记一笔，考前专项盯防</div>');
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">算错时点「粗心账本」记一笔，考前专项盯防</div>'));
     return html;
   }
   function kyPoliticsPage(dm) {
@@ -1036,18 +1085,32 @@
       }).join("") + "</div>");
     html += card(cardHead("🧰 学科工具箱", "政治专属工具", "tools"),
       '<div class="grid grid-2">' +
-      toolBtn("🗂", "知识点库", "马原/毛中特/史纲/思修 按章浏览", "ky-points-modal", "") +
-      toolBtn("🎩", "帽子题专项", "根本/基本/首要 对应关系刷题", "ky-hat-modal", "") +
+      toolBtn("🗂", "易错知识点", "自己记录易错点（可传文件）", "ky-points-modal", "") +
+      toolBtn("🎩", "帽子题易错", "自己记录易错帽子题", "ky-hat-modal", "") +
       toolBtn("📋", "主观题框架", "点-默-析 答题框架模板", "ky-frame-modal", "") +
       toolBtn("📰", "时政收藏夹", "本月时政词条 + 可联系考点", "ky-affair-modal", "") +
       "</div>");
-    var ht = gen.hatQuestions || [];
-    html += card(cardHead("🎩 帽子题记录", ht.length ? "共 " + ht.length + " 题" : "暂无记录", "hat") +
-      '<button class="btn small ghost" data-action="ky-hat-modal">＋ 刷帽子题</button>',
-      ht.length ? '<div class="list">' + ht.slice().reverse().slice(0, 6).map(function (h) {
-        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(h.q) + " → " + esc(h.ans) + "</div>" +
-          '<div class="li-sub">' + (h.correct ? "✓ 答对" : "✗ 答错") + " · " + esc(h.date) + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">帽子题是选择题高分关键，刷对应关系时记录</div>');
+    /* 易错知识点（自己记录，可上传文件）——customPoints 展平 */
+    var cp = gen.customPoints || {};
+    var pts = [];
+    Object.keys(cp).forEach(function (k) { (cp[k] || []).forEach(function (t) { pts.push({ point: t, cat: k }); }); });
+    var ptFiles = gen.pointsFiles || [];
+    html += card(cardHead("🗂 易错知识点", pts.length + " 条 · 自己记录", "points"),
+      '<button class="btn small" data-action="ky-point-add">＋ 记录易错点</button> ' +
+      '<button class="btn small ghost" data-action="ky-pick" data-key="pointsFiles">📤 上传资料</button>',
+      (pts.length ? '<div class="list">' + pts.slice().reverse().slice(0, 8).map(function (p) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(p.point) + "</div>" +
+          '<div class="li-sub">' + esc(p.cat || "未分类") + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">做错/记不住的知识点，自己记录到这里</div>') +
+      (ptFiles.length ? '<div style="margin-top:8px;">' + kyFileListHtml(ptFiles, "ky-file-del", "ky-file-view") + "</div>" : ""));
+    /* 帽子题易错（自己记录，删自动记录） */
+    var hats = gen.customHats || [];
+    html += card(cardHead("🎩 帽子题易错", hats.length + " 条 · 自己记录", "hat"),
+      '<button class="btn small" data-action="ky-hat-add">＋ 记录易错帽子题</button>',
+      hats.length ? '<div class="list">' + hats.slice().reverse().slice(0, 6).map(function (h) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(h.q) + " → " + esc(h.a) + "</div>" +
+          '<div class="li-sub">' + esc(h.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">帽子题做错的，自己记录到这里，考前重点背</div>');
     var af = gen.currentAffairs || [];
     html += card(cardHead("📰 时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs") +
       '<button class="btn small ghost" data-action="ky-affair-modal">＋ 收藏时政</button>',
@@ -1078,25 +1141,23 @@
       }).join("") + "</div>");
     html += card(cardHead("🧰 学科工具箱", "专业课专属工具", "tools"),
       '<div class="grid grid-2">' +
-      toolBtn("📒", "笔记库", "每章笔记回看（带标签）", "ky-notes-modal", "") +
-      toolBtn("✏️", "关键词挖空", "背诵/默写双模式", "ky-fill-modal", "") +
-      toolBtn("📋", "真题题型拆解", "选择错因/名词解释/大题思路", "ky-breakdown-modal", "") +
-      toolBtn("📊", "大纲对比", "考纲要求 vs 实际掌握度", "ky-outline-modal", "") +
+      toolBtn("📋", "真题套卷专区", "各板块得分记录（仿数学）", "ky-major-paper-modal", "") +
+      toolBtn("📒", "章节笔记", "每章笔记上传文件", "ky-notes-modal", "") +
       "</div>");
-    var nl = gen.noteLog || [];
-    html += card(cardHead("📒 章节笔记", nl.length ? "共 " + nl.length + " 章笔记" : "暂无记录", "notes") +
-      '<button class="btn small ghost" data-action="ky-start-major">＋ 记笔记</button>',
-      nl.length ? '<div class="list">' + nl.slice().reverse().slice(0, 6).map(function (n) {
-        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + n.chapter + " 章 ｜ " + esc(n.tagType) + "：" + esc(n.tag) + "</div>" +
-          '<div class="li-sub">' + esc(n.note.slice(0, 40)) + (n.note.length > 40 ? "…" : "") + " · " + esc(n.date) + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">每章学习后记笔记（强制标签），自动推进章节</div>');
-    var fb = gen.fillBlankNotes || [];
-    html += card(cardHead("✏️ 挖空默写", fb.length ? "共 " + fb.length + " 次" : "暂无记录", "fill") +
-      '<button class="btn small ghost" data-action="ky-fill-modal">＋ 添加挖空</button>',
-      fb.length ? '<div class="list">' + fb.slice().reverse().slice(0, 5).map(function (f) {
-        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + f.chapter + " 章挖空</div>" +
-          '<div class="li-sub">' + esc(f.text.slice(0, 40)) + (f.text.length > 40 ? "…" : "") + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">把重点词替换成 ____ 自测背诵</div>');
+    /* 真题套卷记录（仿数学） */
+    var mpr = gen.majorPaperRecords || [];
+    html += card(cardHead("📋 真题套卷记录", mpr.length ? "共 " + mpr.length + " 套" : "暂无记录", "mpapers") +
+      '<button class="btn small ghost" data-action="ky-major-paper-modal">＋ 记录套卷</button>',
+      mpr.length ? '<div class="list">' + mpr.slice().reverse().slice(0, 6).map(function (p) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(p.paper) + " ｜ 总分 " + p.total + "</div>" +
+          '<div class="li-sub">' + esc(p.date) + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">做真题套卷后记录各板块得分</div>');
+    /* 章节笔记：上传文件 */
+    var nl = gen.majorNotesFiles || [];
+    html += card(cardHead("📒 章节笔记", nl.length ? "共 " + nl.length + " 份文件" : "暂无记录", "notes") +
+      '<button class="btn small" data-action="ky-pick" data-key="majorNotesFiles">📤 上传章节笔记（PDF/图片）</button>',
+      nl.length ? '<div style="margin-top:8px;">' + kyFileListHtml(nl, "ky-file-del", "ky-file-view") + "</div>" :
+        '<div class="li-sub" style="padding:8px 0;">每章笔记拍照/PDF 传上来，点击即可查看</div>');
     return html;
   }
   function kyWordPage(dm) {
@@ -2590,6 +2651,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · 学科页改造 + 文件上传模式<span class="log-tag">升级</span></div>' +
+      '<p>🎓 学科页全面调整：①数学粗心账本加错误类型占比图；②英语作文模板库分成大/小作文分类、可自定义名称、上传模板文件（内置模板已删除）；翻译改为每日英译汉+汉译英、上传练习文件；阅读复盘加错题类型占比图；③政治知识点库改为易错知识点、帽子题改为自己记录；④专业课工具箱改仿数学真题套卷、章节笔记改上传文件、删除挖空默写。所有上传改为文件模式（图片网页内查看、PDF 下载查看）。</p>' +
+      '<p>影响范围：考研模块四学科页。数据：新增上传文件存储（2MB 上限），不删旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · 考研模块极简重构<span class="log-tag">升级</span></div>' +
       '<p>🎓 考研模块重做：①4 科整体进度条（数学/英语/政治/专业课，初学→复习→复盘→冲刺，每天勾选任务自动推进）；②今日日程（任务勾选完成、添加自定义任务）；③错题集（批量上传 PDF/图片/压缩包材料 + 知识点总结区，微信发我我帮你放）；④一键生成今日复盘和明日学习计划。网页不再做题，刷题都在线下纸质完成。</p>' +
       '<p>影响范围：考研模块。数据：新增科目进度/错题材料/知识点，不删旧数据。你需要的操作：无。</p></div>' +

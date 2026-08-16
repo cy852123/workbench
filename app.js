@@ -826,6 +826,70 @@
     }).join("");
     return '<div class="field"><label>' + esc(label) + '</label><select id="' + id + '">' + o + "</select></div>";
   }
+  /* ---------- 通用文件组件（v0.1.20）：选文件→存base64→点击查看 ---------- */
+  var KY_FILE_MAX = 2 * 1024 * 1024;
+  function kyPickFiles(storeKey) {
+    var inp = document.createElement("input");
+    inp.type = "file";
+    inp.multiple = true;
+    inp.accept = ".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.txt";
+    inp.onchange = function () {
+      var sc = kyActiveScheme(); if (!sc) return;
+      sc.gen = sc.gen || {};
+      var list = sc.gen[storeKey] = sc.gen[storeKey] || [];
+      var files = Array.prototype.slice.call(inp.files);
+      var n = 0, over = 0, pending = files.length;
+      if (!pending) return;
+      files.forEach(function (f) {
+        if (f.size > KY_FILE_MAX) { over++; pending--; if (pending <= 0) done(); return; }
+        var rd = new FileReader();
+        rd.onload = function () {
+          list.push({ id: uid(), name: f.name, size: f.size, type: f.type || "", dataUrl: rd.result, date: todayStr() });
+          n++; pending--;
+          if (pending <= 0) done();
+        };
+        rd.readAsDataURL(f);
+      });
+      function done() {
+        save(); refresh();
+        toast("已上传 " + n + " 个文件" + (over ? "，" + over + " 个超过 2MB 未存" : ""));
+      }
+    };
+    inp.click();
+  }
+  function kyFileListHtml(items, delAction, viewAction) {
+    if (!items || !items.length) return '<div class="li-sub" style="padding:8px 0;">还没有文件，点上方按钮上传</div>';
+    return '<div class="list">' + items.slice().reverse().map(function (f, i) {
+      var isImg = /^image\//.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
+      return '<div class="list-item" style="align-items:flex-start;">' +
+        '<div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;cursor:pointer;" data-action="' + (viewAction || "ky-file-view") + '" data-idx="' + i + '">' +
+        (isImg ? "🖼 " : "📄 ") + esc(f.name) + "</div>" +
+        '<div class="li-sub">' + fmtSize(f.size) + " · " + esc(f.date || "") + " · 点击查看</div></div>" +
+        '<button class="icon-btn" data-action="' + (delAction || "ky-file-del") + '" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+    }).join("") + "</div>";
+  }
+  function kyFileView(idx, storeKey) {
+    var sc = kyActiveScheme(); if (!sc) return;
+    var list = (sc.gen && sc.gen[storeKey]) || [];
+    var f = list[list.length - 1 - idx];
+    if (!f) return;
+    var isImg = /^image\//.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
+    if (isImg && f.dataUrl) {
+      modalOpen("📄 " + esc(f.name), '<img src="' + f.dataUrl + '" style="width:100%;border-radius:10px;max-height:60vh;object-fit:contain;">', okBtn("ky-close"));
+    } else {
+      modalOpen("📄 " + esc(f.name), '<div class="li-sub" style="margin-bottom:12px;">此文件类型不在网页内预览，点下方按钮下载查看。</div>',
+        cancelBtn() + '<a class="btn" href="' + f.dataUrl + '" download="' + esc(f.name) + '" style="text-decoration:none;">下载查看</a>');
+    }
+  }
+  function kyFileDel(idx, storeKey) {
+    var sc = kyActiveScheme(); if (!sc) return;
+    var list = (sc.gen && sc.gen[storeKey]) || [];
+    var real = list.length - 1 - idx;
+    if (!list[real]) return;
+    if (!confirm("删除这个文件？")) return;
+    list.splice(real, 1);
+    save(); refresh(); toast("已删除");
+  }
   function okBtn(action, label) {
     return '<button class="btn" data-action="' + action + '">' + ICONS.check + (label || "保存") + "</button>";
   }
@@ -1838,13 +1902,7 @@
     { s: "He who learns but does not think is lost.", t: "定语从句 who learns but does not think 修饰 He。出自《论语》英译。" },
     { s: "It is not the strongest that survives, but the most adaptable.", t: "强调句型 It is...that... + not...but... 转折。" }
   ];
-  var KY_ESSAY_TEMPLATES = {
-    "小作文·建议信": ["开头：I am writing to offer some suggestions on...", "主体：First and foremost, ... / Moreover, ... / Last but not least, ...", "结尾：I hope my suggestions will be of help.  Yours sincerely, Li Ming"],
-    "小作文·感谢信": ["开头：I am writing to express my sincere gratitude for...", "主体：Thanks to your help, I ...", "结尾：I would be grateful if you could...  Yours, Li Ming"],
-    "大作文·开头段": ["As is vividly depicted in the picture, ...", "The picture is intended to convey the message that...", "Obviously, the drawing symbolically reveals a prevalent phenomenon that..."],
-    "大作文·论证段": ["A case in point is ...", "According to a recent survey, ...", "What's more, it is of great significance to note that..."],
-    "大作文·结尾段": ["In conclusion, it is high time that we took effective measures to...", "Only in this way can we ...", "To sum up, ..."]
-  };
+  /* 内置作文模板已删除（用户用自己的上传文件，v0.1.20） */
   var KY_HAT_QUESTIONS = [
     { q: "实践是认识的（ ）", a: "来源、动力、检验标准和目的" },
     { q: "马克思主义最鲜明的特征", a: "科学性 + 革命性（实践性、人民性）" },
@@ -1890,6 +1948,39 @@
     gen.paperRecords.push({ date: todayStr(), paper: paper, xuan: x, gs: g, xd: x2, gl: p, total: x + g + x2 + p });
     modalClose(); refresh(); toast("套卷「" + paper + "」已记录");
   }
+  /* 专业课真题套卷（仿数学） */
+  function kyMajorPaperModal() {
+    modalOpen("📋 专业课真题套卷", '<div class="li-sub" style="margin-bottom:10px;">记录每套专业课真题（按你的题型分板块）</div>' +
+      field("套卷编号", "mPaperNo", "text", "如 2023 / 模拟一", "") +
+      field("板块一得分", "mPaperA", "number", "如 名词解释", "") +
+      field("板块二得分", "mPaperB", "number", "如 简答题", "") +
+      field("板块三得分", "mPaperC", "number", "如 综合题", ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-major-paper">' + ICONS.check + "保存记录</button>");
+  }
+  function submitKyMajorPaper() {
+    var gen = kyActiveScheme().gen || {};
+    var paper = fval("mPaperNo").trim();
+    if (!paper) { toast("请填写套卷编号", true); return; }
+    var a = parseInt(fval("mPaperA"), 10) || 0, b = parseInt(fval("mPaperB"), 10) || 0, c = parseInt(fval("mPaperC"), 10) || 0;
+    gen.majorPaperRecords = gen.majorPaperRecords || [];
+    gen.majorPaperRecords.push({ date: todayStr(), paper: paper, total: a + b + c, parts: [a, b, c] });
+    modalClose(); refresh(); toast("套卷「" + paper + "」已记录");
+  }
+  /* 作文模板：新增分类名称 */
+  function kyEssayCat() {
+    modalOpen("＋ 新增作文分类", "给作文模板分个类（如：大作文·科技类、小作文·感谢信）" +
+      field("分类名称", "esCatName", "text", "如 大作文·图表类", ""),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-essay-cat">' + ICONS.check + "保存</button>");
+  }
+  function submitKyEssayCat() {
+    var gen = kyActiveScheme().gen || {};
+    var name = fval("esCatName").trim();
+    if (!name) { toast("请填写分类名称", true); return; }
+    gen.essayCats = gen.essayCats || [];
+    if (gen.essayCats.indexOf(name) >= 0) { toast("这个分类已存在"); return; }
+    gen.essayCats.push(name);
+    modalClose(); save(); refresh(); toast("已新增分类「" + name + "」");
+  }
   function kyCarelessModal() {
     modalOpen("⚠️ 粗心账本", '<div class="li-sub" style="margin-bottom:10px;">专门记录跳步/正负号等计算失误，考前专项盯防</div>' +
       '<div class="field"><label>失误类型</label>' +
@@ -1929,12 +2020,11 @@
   function kyEssayModal() {
     var gen = kyActiveScheme().gen || {};
     var notes = gen.essayNotes || [];
-    modalOpen("✍️ 作文模板库", '<div class="li-sub" style="margin-bottom:8px;">高分句式 + 手动批注</div>' +
-      Object.keys(KY_ESSAY_TEMPLATES).map(function (k) {
-        return '<div class="formula-block"><div class="formula-title">' + esc(k) + "</div>" +
-          KY_ESSAY_TEMPLATES[k].map(function (f) { return '<div class="formula-line">' + esc(f) + "</div>"; }).join("") + "</div>";
-      }).join("") +
-      (notes.length ? '<div class="li-sub" style="margin:10px 0 6px;">我的批注：</div><div class="list">' + notes.slice().reverse().slice(0, 5).map(function (n) {
+    var ess = gen.essayFiles || [];
+    modalOpen("✍️ 作文模板库", '<div class="li-sub" style="margin-bottom:8px;">你自己上传的模板文件 + 批注（内置模板已删除）</div>' +
+      (ess.length ? '<div style="margin-bottom:10px;">' + kyFileListHtml(ess, "ky-file-del", "ky-file-view") + "</div>" : '<div class="li-sub" style="padding:8px 0;">还没上传模板，回学科页点「上传模板文件」。</div>') +
+      '<button class="btn small" data-action="ky-pick" data-key="essayFiles" style="margin-top:6px;">📤 上传模板文件</button>' +
+      (notes.length ? '<div class="li-sub" style="margin:12px 0 6px;">我的批注：</div><div class="list">' + notes.slice().reverse().slice(0, 5).map(function (n) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(n.type) + "</div>" +
           '<div class="li-sub">' + esc(n.text) + " · " + esc(n.date) + "</div></div></div>";
       }).join("") + "</div>" : ""),
@@ -2974,6 +3064,14 @@
       case "ky-add-knowledge": kyAddKnowledgeModal(); break;
       case "submit-ky-knowledge": submitKyKnowledge(); break;
       case "ky-knowledge-del": kyKnowledgeDel(parseInt(el ? el.getAttribute("data-idx") : "0", 10)); break;
+      /* 通用文件组件（v0.1.20） */
+      case "ky-file-view": kyFileView(parseInt(el ? el.getAttribute("data-idx") : "0", 10), el ? el.getAttribute("data-key") || "mistakeFiles" : "mistakeFiles"); break;
+      case "ky-file-del": kyFileDel(parseInt(el ? el.getAttribute("data-idx") : "0", 10), el ? el.getAttribute("data-key") || "mistakeFiles" : "mistakeFiles"); break;
+      case "ky-pick": kyPickFiles(el ? el.getAttribute("data-key") || "mistakeFiles" : "mistakeFiles"); break;
+      case "ky-essay-cat": kyEssayCat(); break;
+      case "submit-ky-essay-cat": submitKyEssayCat(); break;
+      case "ky-major-paper-modal": kyMajorPaperModal(); break;
+      case "submit-ky-major-paper": submitKyMajorPaper(); break;
       case "ky-goal-modal": kyGoalModal(); break;
       case "submit-ky-goal": submitKyGoal(); break;
       /* 学科工具 */
