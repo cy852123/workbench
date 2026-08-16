@@ -614,6 +614,7 @@
       "ky-major": { e: "🎓", t: "专业课学科页", s: "笔记/挖空/大纲" },
       "ky-word": { e: "📖", t: "单词学科页", s: "真题生词/僻义/替换词" },
       "ky-stats": { e: "🎓", t: "统计仪表盘", s: "所有图表与进度" },
+      "ky-mistake-files": { e: "🎓", t: "错题集", s: "批量上传材料与知识点" },
       "tasks-all": { e: "📋", t: "任务管理专区", s: "全部任务" },
       "cet-vocab": { e: "📖", t: "词汇专区", s: "生词本与记忆复习" },
       "cet-grammar": { e: "📚", t: "语法专区", s: "语法检查器与知识点" },
@@ -781,6 +782,7 @@
     else if (view === "ky-major") html = Views.kyMajorPage(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
     else if (view === "ky-word") html = Views.kyWordPage(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
     else if (view === "ky-stats") html = Views.kyStats(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
+    else if (view === "ky-mistake-files") html = Views.kyMistakeFiles();
     else if (view === "tasks-all") html = Views.tasksAll();
     else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-wordbook") html = Views.cetWordbook(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
@@ -908,7 +910,7 @@
       "search": "theme-search", "ai": "theme-ai", "settings": "theme-settings",
       "domain:kaoyan": "theme-kaoyan", "domain:cet": "theme-cet", "domain:ai": "theme-ai",
       "domain:paper": "theme-paper", "domain:courses": "theme-courses",
-      "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan",
+      "ky-subjects": "theme-kaoyan", "ky-tasks": "theme-kaoyan", "ky-weekly": "theme-kaoyan", "ky-files": "theme-kaoyan", "ky-stats": "theme-kaoyan", "ky-mistake-files": "theme-kaoyan",
       "ky-english": "theme-cet", "ky-math": "theme-kaoyan", "ky-politics": "theme-kaoyan", "ky-major": "theme-kaoyan", "ky-word": "theme-kaoyan",
       "cet-vocab": "theme-cet", "cet-listening": "theme-cet", "cet-reading": "theme-cet", "cet-writing": "theme-cet",
       "cet-translation": "theme-cet", "cet-speaking": "theme-cet", "cet-wordbook": "theme-cet", "cet-stats": "theme-cet", "cet-exams": "theme-cet", "cet-grammar": "theme-cet", "grammar-detail": "theme-cet",
@@ -1634,6 +1636,172 @@
     gen.reviewLog = gen.reviewLog || [];
     gen.reviewLog.push({ date: todayStr(), disturb: q1.value, gain: q2.value, adjust: q3.value });
     modalClose(); refresh(); toast("复盘已保存，周日生成拦路虎周报");
+  }
+  /* ---------- 极简版：科目进度 / AI 复盘 / 明日计划 / 自定义任务 / 错题集 / 知识点 ---------- */
+  /* 今日任务生成（与 views.js 一致，app.js 侧独立实现供事件使用） */
+  function kyGenTasks(sc, t) {
+    var gen = sc.gen || {};
+    var stage = sc.stage || "base";
+    var target = gen.targetEnglish || 70;
+    var enItems, enCount;
+    if (target >= 70) { enItems = ["阅读精读 2 篇（2010 年前真题）", "长难句 5 句"]; enCount = "阅读 2 篇"; }
+    else if (target < 60) { enItems = ["阅读精读 1 篇", "单词 150 个"]; enCount = "阅读 1 篇"; }
+    else { enItems = ["阅读精读 2 篇", "长难句 3 句"]; enCount = "阅读 2 篇"; }
+    var mathItems = ({ base: ["教材精读 + 基础习题 20 道"], enhance: ["专题刷题 20 道（限时）"], zhenti: ["真题套卷 1 套 + 订正"], sprint: ["模拟卷 1 套 + 错题复盘"] })[stage] || ["基础复习"];
+    var polSubj = ["马原", "毛中特", "史纲", "思修"][Math.floor(Date.parse(t + "T00:00:00") / 86400000) % 4] || "马原";
+    var poItems = ["今日知识点 4 条（" + polSubj + " 轮播）", "1000 题 20 道"];
+    var majorItems = ["今日章节：第 " + (gen.chapterIndex || 1) + " 章（记笔记）"];
+    var wordItems = ["新词 80 + 复习 120"];
+    var dd = (gen.dailyDone && gen.dailyDone.date === t) ? (gen.dailyDone.subjects || []) : [];
+    return [
+      { key: "english", name: "英语", color: "#2980B9", count: enCount, items: enItems, view: "ky-english", done: dd.indexOf("english") >= 0 },
+      { key: "math", name: "数学", color: "#8E44AD", count: mathItems[0].split("：")[0], items: mathItems, view: "ky-math", done: dd.indexOf("math") >= 0 },
+      { key: "politics", name: "政治", color: "#E74C3C", count: "知识点 4 条", items: poItems, view: "ky-politics", done: dd.indexOf("politics") >= 0 },
+      { key: "major", name: "专业课", color: "#27AE60", count: "第 " + (gen.chapterIndex || 1) + " 章", items: majorItems, view: "ky-major", done: dd.indexOf("major") >= 0 },
+      { key: "word", name: "单词", color: "#F5B041", count: "4 项提分工具", items: wordItems, view: "ky-word", done: dd.indexOf("word") >= 0 }
+    ];
+  }
+  function kySc() {
+    var sc = kyActiveScheme();
+    if (sc) { sc.progress = sc.progress || { math: 0, english: 0, politics: 0, major: 0 }; sc.mistakeFiles = sc.mistakeFiles || []; sc.knowledge = sc.knowledge || []; sc.gen = sc.gen || {}; }
+    return sc;
+  }
+  function kyToggleSubj(idx) {
+    var sc = kySc(); if (!sc) return;
+    var t = todayStr();
+    var cards = kyGenTasks(sc, t);
+    var c = cards[idx]; if (!c) return;
+    var key = c.key; if (key === "word") key = "english"; // 单词并入英语进度
+    var dd = sc.gen.dailyDone = sc.gen.dailyDone || { date: "", count: 0, subjects: [] };
+    var done = dd.subjects.indexOf(c.key) >= 0;
+    if (done) {
+      dd.subjects = dd.subjects.filter(function (x) { return x !== c.key; });
+      dd.count = Math.max(0, dd.count - 1);
+      sc.progress[key] = Math.max(0, Math.round((sc.progress[key] || 0) - 2));
+    } else {
+      dd.subjects.push(c.key);
+      dd.count += 1;
+      sc.progress[key] = Math.min(100, Math.round((sc.progress[key] || 0) + 2));
+    }
+    dd.date = t;
+    save(); renderView(); toast(done ? "已取消完成" : "「" + c.name + "」已完成，进度 +2%");
+  }
+  function kyReviewAI() {
+    var sc = kySc(); if (!sc) return;
+    var t = todayStr();
+    var cards = kyGenTasks(sc, t);
+    var dd = sc.gen.dailyDone && sc.gen.dailyDone.date === t ? sc.gen.dailyDone : { count: 0, subjects: [] };
+    var doneNames = cards.filter(function (c) { return dd.subjects.indexOf(c.key) >= 0; }).map(function (c) { return c.name; });
+    var mf = sc.mistakeFiles || [];
+    var kn = sc.knowledge || [];
+    var todayFiles = mf.filter(function (f) { return f.date === t; });
+    var text = "【今日复盘】\n完成情况：" + doneNames.length + "/" + cards.length + " 项";
+    if (doneNames.length) text += "（" + doneNames.join("、") + "）";
+    text += "\n错题材料：今日上传 " + todayFiles.length + " 份，累计 " + mf.length + " 份";
+    text += "\n知识点总结：" + (kn.length ? kn.length + " 条（" + kn.map(function (k) { return k.title; }).join("、").slice(0, 40) + "）" : "暂无，可找 AI 总结后放入");
+    var prog = sc.progress;
+    var weakest = Object.keys(prog).sort(function (a, b) { return (prog[a] || 0) - (prog[b] || 0); })[0];
+    var names = { math: "数学", english: "英语", politics: "政治", major: "专业课" };
+    text += "\n当前进度：" + Object.keys(prog).map(function (k) { return names[k] + " " + Math.round(prog[k] || 0) + "%"; }).join(" ");
+    text += "\n建议：明日优先补「" + (names[weakest] || "") + "」，并回顾今日错题材料。";
+    sc.gen.lastReview = { date: t, text: text };
+    save(); refresh(); toast("复盘已生成");
+  }
+  function kyPlanTomorrow() {
+    var sc = kySc(); if (!sc) return;
+    var t = todayStr();
+    var cards = kyGenTasks(sc, t);
+    var dd = sc.gen.dailyDone && sc.gen.dailyDone.date === t ? sc.gen.dailyDone : { subjects: [] };
+    var undone = cards.filter(function (c) { return dd.subjects.indexOf(c.key) < 0; });
+    var prog = sc.progress;
+    var weakest = Object.keys(prog).sort(function (a, b) { return (prog[a] || 0) - (prog[b] || 0); })[0];
+    var names = { math: "数学", english: "英语", politics: "政治", major: "专业课" };
+    var text = "【明日计划】\n" + cards.map(function (c) {
+      var extra = c.key === weakest ? "（薄弱科目，优先）" : "";
+      var mark = dd.subjects.indexOf(c.key) >= 0 ? "已完成，明日继续" : "未完成，顺延";
+      return "· " + c.name + "：" + c.count + " ——" + mark + extra;
+    }).join("\n");
+    text += "\n· 回顾错题集材料（今日上传）";
+    sc.gen.tomorrowPlan = { date: t, text: text };
+    save(); refresh(); toast("明日计划已生成");
+  }
+  function kyAddTaskModal() {
+    modalOpen("添加自定义任务", "加一条今天/明天要做的学习任务。",
+      field("任务内容", "kyTaskTitle", "text", "如：高数极限错题重做 10 道") +
+      field("科目", "kyTaskSubj", "text", "数学 / 英语 / 政治 / 专业课 / 单词"),
+      cancelBtn() + '<button class="btn" data-action="submit-ky-add-task">保存任务</button>');
+  }
+  function submitKyAddTask() {
+    var sc = kySc(); if (!sc) return;
+    var title = fval("kyTaskTitle").trim();
+    if (!title) { toast("请输入任务内容", true); return; }
+    sc.gen.extraTasks = sc.gen.extraTasks || [];
+    sc.gen.extraTasks.push({ id: uid(), title: title, subject: fval("kyTaskSubj").trim() || "其他", date: todayStr(), done: false });
+    modalClose(); save(); refresh(); toast("已添加自定义任务");
+  }
+  function kyTaskNotesModal() {
+    var sc = kySc(); if (!sc) return;
+    var notes = (sc.gen && sc.gen.extraTasks) || [];
+    modalOpen("任务说明与调整", "已添加的自定义任务，可标记完成或删除。" + (notes.length ? "" : " 暂无自定义任务，用「添加自定义任务」加。"),
+      notes.length ? '<div class="list">' + notes.map(function (n, i) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-size:13px;">' + esc(n.title) + "</div>" +
+          '<div class="li-sub">' + esc(n.subject) + " · " + esc(n.date || "") + (n.done ? " · 已完成" : "") + "</div></div>" +
+          '<button class="btn small plain" data-action="ky-task-notes-toggle" data-idx="' + i + '">' + (n.done ? "取消" : "完成") + "</button></div>";
+      }).join("") + "</div>" : "",
+      cancelBtn());
+  }
+  function kyUploadFiles() {
+    var inp = $id("kyFileInput");
+    if (inp) inp.click();
+  }
+  function kyUploadSubmit() {
+    var sc = kySc(); if (!sc) return;
+    var inp = $id("kyFileInput");
+    if (!inp || !inp.files || !inp.files.length) { toast("请先选择文件", true); return; }
+    var t = todayStr();
+    Array.prototype.forEach.call(inp.files, function (f) {
+      sc.mistakeFiles.push({ id: uid(), name: f.name, size: f.size, type: f.type || "", subject: "", date: t });
+    });
+    inp.value = "";
+    save(); renderView(); toast("已上传 " + inp.files.length + " 份材料（文件名保存在本机，云端同步清单）");
+  }
+  function kyFileDel(i) {
+    var sc = kySc(); if (!sc) return;
+    var mf = sc.mistakeFiles || [];
+    if (!mf[i]) return;
+    if (!confirm("删除这份材料记录？")) return;
+    mf.splice(i, 1);
+    save(); renderView(); toast("已删除");
+  }
+  function kyAddKnowledgeModal() {
+    modalOpen("添加知识点总结", "把你找 AI 总结的知识点放这里（或直接微信发我，我帮你放）。" +
+      field("标题", "kyKnTitle", "text", "如：极限计算常见陷阱总结") +
+      field("科目", "kyKnSubj", "text", "数学 / 英语 / 政治 / 专业课") +
+      '<div class="field"><label>内容</label><textarea id="kyKnContent" placeholder="粘贴知识点总结内容…" style="min-height:110px;width:100%;box-sizing:border-box;"></textarea></div>',
+      cancelBtn() + '<button class="btn" data-action="submit-ky-knowledge">保存知识点</button>');
+  }
+  function submitKyKnowledge() {
+    var sc = kySc(); if (!sc) return;
+    var title = fval("kyKnTitle").trim();
+    var content = fval("kyKnContent").trim();
+    if (!title || !content) { toast("请填写标题和内容", true); return; }
+    sc.knowledge.push({ id: uid(), title: title, content: content, subject: fval("kyKnSubj").trim() || "全部", date: todayStr() });
+    modalClose(); save(); refresh(); toast("知识点已保存");
+  }
+  function kyKnowledgeDel(i) {
+    var sc = kySc(); if (!sc) return;
+    var kn = sc.knowledge || [];
+    if (!kn[i]) return;
+    if (!confirm("删除这条知识点总结？")) return;
+    kn.splice(i, 1);
+    save(); renderView(); toast("已删除");
+  }
+  function kyTaskNotesToggle(i) {
+    var sc = kySc(); if (!sc) return;
+    var notes = sc.gen.extraTasks || [];
+    if (!notes[i]) return;
+    notes[i].done = !notes[i].done;
+    save(); renderView(); toast(notes[i].done ? "已标记完成" : "已取消完成");
   }
   function kyGoalModal() {
     var gen = kyActiveScheme().gen || {};
@@ -2792,6 +2960,20 @@
       case "ky-word-done": kyWordDone(); break;
       case "ky-review-today": kyReviewToday(); break;
       case "ky-review-save": kyReviewSave(); break;
+      /* 极简版：进度/复盘/计划/错题集/知识点（v0.1.19） */
+      case "ky-toggle-subj": kyToggleSubj(parseInt(el ? el.getAttribute("data-idx") : "0", 10)); break;
+      case "ky-review-ai": kyReviewAI(); break;
+      case "ky-plan-tomorrow": kyPlanTomorrow(); break;
+      case "ky-add-task": kyAddTaskModal(); break;
+      case "submit-ky-add-task": submitKyAddTask(); break;
+      case "ky-task-notes": kyTaskNotesModal(); break;
+      case "ky-task-notes-toggle": kyTaskNotesToggle(parseInt(el ? el.getAttribute("data-idx") : "0", 10)); break;
+      case "ky-upload-files": kyUploadFiles(); break;
+      case "ky-upload-submit": kyUploadSubmit(); break;
+      case "ky-file-del": kyFileDel(parseInt(el ? el.getAttribute("data-idx") : "0", 10)); break;
+      case "ky-add-knowledge": kyAddKnowledgeModal(); break;
+      case "submit-ky-knowledge": submitKyKnowledge(); break;
+      case "ky-knowledge-del": kyKnowledgeDel(parseInt(el ? el.getAttribute("data-idx") : "0", 10)); break;
       case "ky-goal-modal": kyGoalModal(); break;
       case "submit-ky-goal": submitKyGoal(); break;
       /* 学科工具 */

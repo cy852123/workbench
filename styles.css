@@ -473,6 +473,9 @@ h1, h2, h3, h4 { font-weight: 700; }
 
 /* ===== 进度条 ===== */
 .progress-track { background: #ECEEEB; border-radius: 20px; height: 8px; overflow: hidden; }
+.progress-seg { position: absolute; top: 0; bottom: 0; width: 1.5px; background: #fff; z-index: 2; }
+.ky-card { cursor: pointer; }
+.ky-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.06); }
 .progress-fill { height: 100%; border-radius: 20px; background: var(--accent); transition: width 0.3s; }
 .progress-fill.yellow { background: #D9B422; }
 .progress-fill.pink { background: #C77BA8; }

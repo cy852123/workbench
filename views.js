@@ -795,55 +795,129 @@
     var t = todayStr();
     var exdStr = kyExamDate(sc);
     var exd = exdStr ? daysDiff(exdStr) : null;
-    var archived = !!sc.archived;
     var gen = sc.gen || {};
-    var stageDays = ({ base: 60, enhance: 60, zhenti: 70, sprint: 30 })[sc.stage] || 60;
-    var passed = Math.max(0, daysDiff(gen.stageStart || t) || 0);
-    var stagePct = Math.min(100, Math.round(passed / stageDays * 100));
-    var stageLeft = Math.max(0, stageDays - passed);
+    var prog = sc.progress || { math: 0, english: 0, politics: 0, major: 0 };
+    sc.progress = prog;
 
-    /* 顶部状态行：距初试 | 阶段切换 | 阶段剩余 */
+    /* 顶部状态行：距初试 + 生成按钮 */
     html += '<div class="ky-top">' +
       '<div class="ky-top-item"><span>距初试</span><b class="ky-num">' + (exd != null && exd >= 0 ? exd : "--") + '</b><span>天</span></div>' +
-      '<button class="ky-stage-btn" data-action="ky-stage-switch">' + esc(kyStageName(sc.stage)) + ' ▾</button>' +
-      '<div class="ky-top-item"><span>阶段剩余</span><b class="ky-num">' + stageLeft + '</b><span>天</span></div>' +
+      '<button class="ky-stage-btn" data-action="ky-review-ai">生成今日复盘</button>' +
+      '<button class="ky-stage-btn" data-action="ky-plan-tomorrow">生成明日计划</button>' +
       '</div>';
 
-    /* 中部：5 科卡片 */
-    var cards = kyGenTasks(sc, t);
-    html += '<div class="ky-cards">' + cards.map(function (c) {
-      return '<div class="ky-card' + (c.done ? " ky-done" : "") + '" style="--kc:' + c.color + ';">' +
-        '<div class="ky-card-name">' + esc(c.name) + (c.done ? '<span class="ky-ok">✓ 完成</span>' : "") + "</div>" +
-        '<div class="ky-card-count">' + esc(c.count) + "</div>" +
-        '<div class="ky-card-prog"><span class="li-sub">' + esc(kyStageName(sc.stage)) + " " + stagePct + "%</span>" +
-        '<div class="progress-track"><div class="progress-fill" style="width:' + stagePct + "%;background:var(--kc);\"></div></div></div>" +
-        '<button class="ky-start" data-action="go-view" data-view="' + c.view + '">' + (c.done ? "已完成" : "进入学习") + "</button></div>";
+    /* 4 科整体进度卡（初学→复习→复盘→冲刺 进度桥） */
+    var kyCards = [
+      { key: "math", name: "数学", color: "#8E44AD", view: "ky-math" },
+      { key: "english", name: "英语", color: "#2980B9", view: "ky-english" },
+      { key: "politics", name: "政治", color: "#E74C3C", view: "ky-politics" },
+      { key: "major", name: "专业课", color: "#27AE60", view: "ky-major" }
+    ];
+    html += '<div class="ky-cards">' + kyCards.map(function (c) {
+      var p = Math.max(0, Math.min(100, Math.round(prog[c.key] || 0)));
+      var seg = p < 25 ? ["初学", 0] : p < 50 ? ["复习", 1] : p < 75 ? ["复盘", 2] : ["冲刺", 3];
+      var segCol = ["#B8CB9A", "#AFC9EA", "#E9A8CF", "#F4D85A"][seg[1]];
+      return '<div class="ky-card" style="--kc:' + c.color + ';" data-action="go-view" data-view="' + c.view + '">' +
+        '<div class="ky-card-name">' + esc(c.name) + '</div>' +
+        '<div class="ky-card-count">' + p + '%</div>' +
+        '<div class="ky-card-prog">' +
+        '<div class="progress-track" style="position:relative;">' +
+        '<div class="progress-fill" style="width:' + p + "%;background:var(--kc);\"></div>" +
+        '<div class="progress-seg" style="left:25%;"></div><div class="progress-seg" style="left:50%;"></div><div class="progress-seg" style="left:75%;"></div>' +
+        "</div>" +
+        '<span class="li-sub" style="font-weight:600;color:' + segCol + ';">当前：' + seg[0] + '段</span></div>' +
+        '<div class="li-sub" style="font-size:11px;margin-top:4px;">' +
+        ['初学','复习','复盘','冲刺'].map(function (s, i) { return '<span style="color:' + (i <= seg[1] ? "#202124" : "#B9BDB6") + ';">' + s + '</span>'; }).join(" → ") +
+        "</div></div>";
     }).join("") + "</div>";
 
-    /* 底部：完成率圆环 + 连续打卡 + 本周时长 + 星级 */
+    /* 今日日程：任务列表（勾选 + 菜单）+ 添加 */
+    var cards = kyGenTasks(sc, t);
     var doneCount = (gen.dailyDone && gen.dailyDone.date === t) ? gen.dailyDone.count : 0;
-    var rate = Math.round(doneCount / cards.length * 100);
-    var streak = kyStreak(d, "kaoyan");
-    var weekLog = (d.studyLog || []).filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6 && x.domainId === "kaoyan"; });
-    var weekMin = weekLog.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
-    html += '<div class="ky-bottom">' +
-      '<div class="ky-ring"><div>' + kyRingHtml(rate) + '</div><div class="ky-ring-label">今日完成率</div></div>' +
-      '<div class="ky-stats">' +
-      '<div class="ky-stat-line">连续打卡 <b>' + streak + '</b> 天</div>' +
-      '<div class="ky-stat-line">本周有效时长 <b>' + fmtMin(weekMin) + "</b></div>" +
-      '<div class="ky-stat-line">⭐ 累计 ' + (gen.stars || 0) + " 颗" + ((gen.stars || 0) >= 10 || gen.coupon10 ? ' <span class="ky-coupon">周末可睡到 10 点</span>' : "") + "</div>" +
-      (doneCount < cards.length ? '<div class="ky-pressure">若今日不完成，明天任务将自动叠加 20%</div>' : "") +
-      (doneCount === cards.length ? '<div class="ky-pressure" style="color:#27AE60;">今日全部完成 +3 ⭐ 已入账</div>' : "") +
-      "</div></div>";
+    html += card(cardHead("📌 今日日程", doneCount + " / " + cards.length + " 完成", "tasks"),
+      '<div class="list">' + cards.map(function (c, i) {
+        var done = c.done;
+        return '<div class="task-item' + (done ? " done" : "") + '">' +
+          '<span class="task-check" data-action="ky-toggle-subj" data-idx="' + i + '">' + (done ? ic("check") : "") + "</span>" +
+          '<span class="task-title" style="font-weight:600;">' + esc(c.name) + "</span>" +
+          '<span class="li-sub" style="flex:1;font-size:12px;color:#6F7277;">' + esc(c.count) + "</span>" +
+          '<span class="tag">' + (done ? "已完成" : "未完成") + "</span>" +
+          "</div>";
+      }).join("") + "</div>" +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      '<button class="btn small ghost" data-action="ky-add-task">＋ 添加自定义任务</button>' +
+      '<button class="btn small ghost" data-action="ky-task-notes">任务说明与调整</button>' +
+      "</div>");
 
-    /* 快捷入口行 */
-    html += '<div class="ky-quick">' +
-      '<button class="btn small plain" data-action="ky-review-today">今日快捷复盘（3 问）</button>' +
-      '<button class="btn small plain" data-action="ky-goal-modal">目标分数</button>' +
-      '<button class="btn small plain" data-action="go-view" data-view="ky-stats">统计与周报</button>' +
-      '<button class="btn small plain" data-action="go-view" data-view="ky-tasks">加练区（手动任务）</button>' +
-      "</div>";
+    /* 错题集：批量上传 + 知识点总结 */
+    var mf = sc.mistakeFiles || [];
+    var kn = sc.knowledge || [];
+    html += card(cardHead("📁 错题集", "放材料的地方 · 批量上传", "mistakes"),
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
+      '<button class="btn small" data-action="ky-upload-files">＋ 上传 PDF / 图片 / 压缩包</button>' +
+      '<button class="btn small ghost" data-action="go-view" data-view="ky-mistake-files">查看错题材料（' + mf.length + '）</button>' +
+      "</div>" +
+      '<div class="li-sub" style="margin-bottom:10px;">📎 知识点总结（你自己找 AI 总结后放这里，或微信发我）：</div>' +
+      (kn.length ? '<div class="list">' + kn.slice().reverse().slice(0, 5).map(function (k) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;">' + esc(k.title) + "</div>" +
+          '<div class="li-sub">' + esc(String(k.content || "").slice(0, 60)) + " · " + esc(k.date || "") + "</div></div></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:4px 0;">暂无知识点总结</div>') +
+      '<button class="btn small plain" style="margin-top:8px;" data-action="ky-add-knowledge">＋ 添加知识点总结</button>');
+
+    /* 复盘区 */
+    html += card(cardHead("🔄 复盘", "每天结束时生成", "review"),
+      (gen.lastReview && gen.lastReview.date === t
+        ? '<div style="background:#F7F8F6;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.7;white-space:pre-wrap;color:#202124;">' + esc(gen.lastReview.text) + "</div>"
+        : '<div class="li-sub" style="padding:6px 0;">今天还没复盘。学习结束后点上方「生成今日复盘」，我会总结今天完成情况、错题薄弱点，并给出明天安排。</div>') +
+      (gen.tomorrowPlan && gen.tomorrowPlan.date !== t ? '<div class="li-sub" style="margin-top:10px;">明日计划已生成：' + esc(String(gen.tomorrowPlan.text || "").slice(0, 80)) + "…</div>" : ""));
+
     return html;
+  }
+
+
+  /* 三级：错题集（批量上传材料 + 知识点总结） */
+  function kyMistakeFiles() {
+    var W = window.W, d = W.data;
+    var dm = d.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var sc = kyActive(dm);
+    if (!sc) return empty("暂无备考方案", "");
+    var mf = sc.mistakeFiles || [];
+    var kn = sc.knowledge || [];
+    var html = backBar("domain:kaoyan", "考研备考");
+    html += '<div class="page-title" style="font-size:18px;font-weight:800;margin-bottom:4px;">📁 错题集</div>' +
+      '<div class="li-sub" style="margin-bottom:14px;">这里只是放材料的地方：把一天刷的题（PDF/图片/压缩包）批量传上来，知识点总结放在下面，复盘时我会引用。</div>';
+
+    html += card(cardHead("📤 批量上传", "支持 PDF / 图片 / 压缩包", "upload"),
+      '<div class="field"><label>选择文件（可多选）</label>' +
+      '<input type="file" id="kyFileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.zip,.rar,.doc,.docx">' +
+      '<div class="li-sub" style="margin-top:6px;">选好文件后点下方上传按钮；文件会保存在本机浏览器（不上传服务器，云端仅同步文件名清单）。</div>' +
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<button class="btn" data-action="ky-upload-submit">上传所选文件</button>' +
+      '<button class="btn ghost" data-action="ky-file-subject">设置科目（默认：全部）</button></div></div>');
+
+    html += card(cardHead("🗂 已上传材料", mf.length + " 份", "files"),
+      mf.length ? '<div class="list">' + mf.slice().reverse().map(function (f, i) {
+        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;">' + esc(f.name) + "</div>" +
+          '<div class="li-sub">' + esc(f.subject || "全部") + " · " + fmtSize(f.size) + " · " + esc(f.date || "") + "</div></div>" +
+          '<button class="icon-btn" data-action="ky-file-del" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">还没有上传材料</div>');
+
+    html += card(cardHead("📎 知识点总结", kn.length + " 条", "knowledge"),
+      '<button class="btn small ghost" style="margin-bottom:10px;" data-action="ky-add-knowledge">＋ 添加知识点总结（或微信发我，我帮你放）</button>' +
+      (kn.length ? '<div class="list">' + kn.slice().reverse().map(function (k, i) {
+        return '<div class="list-item" style="align-items:flex-start;"><div class="li-main"><div class="li-title" style="font-weight:600;font-size:13.5px;">' + esc(k.title) + "</div>" +
+          '<div class="li-sub" style="white-space:pre-wrap;margin-top:4px;">' + esc(k.content || "") + "</div>" +
+          '<div class="li-sub" style="margin-top:4px;">' + esc(k.date || "") + " · " + esc(k.subject || "") + "</div></div>" +
+          '<button class="icon-btn" data-action="ky-knowledge-del" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">还没有知识点总结。你可以自己找 AI 总结后添加，或直接微信发我，我会帮你整理到这里。</div>'));
+
+    return html;
+  }
+  function fmtSize(n) {
+    n = n || 0;
+    if (n > 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + " MB";
+    if (n > 1024) return Math.round(n / 1024) + " KB";
+    return n + " B";
   }
 
   /* ==================== 三级专区 ==================== */
@@ -2516,6 +2590,9 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-08-16 · 考研模块极简重构<span class="log-tag">升级</span></div>' +
+      '<p>🎓 考研模块重做：①4 科整体进度条（数学/英语/政治/专业课，初学→复习→复盘→冲刺，每天勾选任务自动推进）；②今日日程（任务勾选完成、添加自定义任务）；③错题集（批量上传 PDF/图片/压缩包材料 + 知识点总结区，微信发我我帮你放）；④一键生成今日复盘和明日学习计划。网页不再做题，刷题都在线下纸质完成。</p>' +
+      '<p>影响范围：考研模块。数据：新增科目进度/错题材料/知识点，不删旧数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · AI 切换微信直连<span class="log-tag">升级</span></div>' +
       '<p>🤖 网页内置 AI 对话已停用（准确率和灵活性不足）。所有 AI 功能改由微信直连 Hermes 助手：发纸质书照片可拍照分析讲题、问不会的题可存入错题本/答疑库、汇报学习可复盘调计划、发作文可批改点评。网页保留本地规则工具（收集箱建议/复盘草稿/学习摘要）。</p>' +
       '<p>影响范围：AI 帮手 / 设置 / 英语专区 AI 工具。数据：无影响。你需要的操作：电脑联网并开机，微信找到「Hermes」发消息。</p></div>' +
@@ -2632,6 +2709,7 @@
     kyWeekly: kyWeekly,
     kyFiles: kyFiles,
     kyStats: kyStats,
+    kyMistakeFiles: kyMistakeFiles,
     kyEnglishPage: kyEnglishPage,
     kyMathPage: kyMathPage,
     kyPoliticsPage: kyPoliticsPage,
