@@ -144,6 +144,26 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 
 > 注意：Python 的 `http.server` 带 `allow_reuse_address`，**同一个端口能在 Windows 上被多个进程同时绑定**，请求随机命中一个 —— 出现莫名其妙的 `ERR_EMPTY_RESPONSE` 时先 `netstat -ano | grep ":8000 "` 看是不是有好几个监听，`taskkill /F /PID <pid>` 清掉再起。
 
+## 五之二、视觉系统（styles.css，2026-09-17 重做）
+
+`styles.css` **开头 5 行的注释就是设计规范，改样式前先读它**。要点：
+
+| 规则 | 说明 |
+|---|---|
+| 颜色只有 5 类 | 墨 `--ink/--ink-2` ｜ 次级 `--sub/--muted` ｜ 线 `--line/--line-soft` ｜ 底 `--bg/--card/--soft/--chip` ｜ 强调 `--accent`（**全站唯一交互色**）+ 语义 `--ok/--warn/--danger` |
+| 模块身份色 `--theme` | 17 个板块**同族低饱和** `hsl(H 45% 36-46%)`，只换色相；白字在各底色均 ≥4.5:1 |
+| 字号 / 字重 | 字号走 `--t-display…--t-xs`；**字重只用 2 档**（400 正文 / 650 `--w-strong`）—— 层级靠字号，不靠加粗 |
+| 圆角 / 阴影 | 圆角只用 4 档 `--r-sm/md/lg/pill`；阴影只用 2 档 `--shadow-1/2` |
+| 层级靠底色分层 | 白 `.card` / `.ky-card` / `.course-card` = **主要内容**；`var(--soft)` 浅底 = 统计块 / 卡内小组件 / 空状态 |
+| 图标 | CSS 顶部规范写着"统一 SVG（`ic()` / `W.icons`）"，但**当前界面实际用的是 emoji**（用户 2026-08-16 特意选的「可爱 emoji 风格」）—— 想换回去再议，别擅自改 |
+
+**两批改动**（都只动 `styles.css`，HTML/JS 一行未改）：
+
+- `b684b1e` 令牌层：17 个荧光模块色 → 同族低饱和；35 处近似灰/阴影/圆角收敛成令牌；字重 800/900 → 650/700；删掉「每页头顶 4px 彩条」和「课程卡顶部色条」；补 `:focus-visible` 焦点环；触控区 22→28px
+- `3357ec7` 层级/密度/空状态：白卡 vs 浅底分层；`max-width 1180` 居中；卡间距 20px；列表分隔线降一档；`.empty` 加纯 CSS「空页」图形；手机端反向收紧
+
+**回滚**：`git checkout <上一版hash> -- styles.css`（只改这一个文件）；改完必须 `npm test` 40 项全过 + 人眼比对截图。
+
 ## 六、怎么部署（Cloudflare Pages）
 
 - Pages 项目：**`workbench-sync`**，地址 `https://workbench-sync-c9e.pages.dev`（固定域名，手机装的就是它）
