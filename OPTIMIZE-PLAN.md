@@ -43,7 +43,7 @@
 | **P0-2** | 正确性 | ✅ **2026-09-17 已修复**：`service-worker.js` 已随本次部署上线（此前 `.pages-deploy/` 里从来没有它） | 修复前：线上 `/service-worker.js` = 3050 B（就是 `index.html`）；修复后：**2022 B、`Content-Type: application/javascript`** | ① 离线现在能打开了；② **从下次改前端起必须遵守「改前端 → 缓存号 +1」**，否则手机吃旧缓存 |
 | **P0-3** | 数据安全 | **只有 localStorage，没有定期备份**；云端快照里 `sync.auto = false`，而且**云端主数据停在 2026-08-16 05:15**（之后没成功上传过） | 实测 `curl -H "X-Sync-Key: …" .../api/data` 返回 `meta.updated = "2026-08-16 05:15"`；快照 `settings.sync.auto=false` | 清浏览器数据 / 换手机 / 存储写满 → 全部学习记录消失；两台设备数据也在各自漂移 |
 | **P0-4** | 正确性 | **上传文件 = base64 进 localStorage**：2 MB 上限 × 2~3 个文件就可能把 localStorage（一般 5~10 MB）撑满，之后所有保存静默失败 | `app.js:790`（上限）、`app.js:386-394`（失败只弹提示） | 撑满后你以为保存了，其实没存 → 数据丢失，且现象难查 |
-| **P0-5** | 安全 | 仓库是 **public**，历史里已经有个人数据导出文件（`downloads/工作台备份_2026-08-16.json`，含课程/错题/答疑等记录；**已确认不含同步密钥、不含 API 密钥**） | GitHub API：`"private": false`；`git log -S<密钥>` 为空 | 隐私暴露；也提醒以后别把 `data_tmp.json` 这类文件误提交 |
+| **P0-5** | 安全 | ✅ **2026-09-17 已修复**：仓库已转为 **private**。历史里仍留着个人数据导出文件（`downloads/工作台备份_2026-08-16.json`，含课程/错题/答疑记录）—— 已确认**不含同步密钥、不含 API 密钥**（`git log -S<密钥>` 返回 0 个 commit） | 改前 API `"private": false`；改后 `{"isPrivate":true,"visibility":"PRIVATE"}`，未登录访问返回 **404** | 外部已看不到；**历史里那份数据还在**，要彻底清除需 `git filter-repo`（不建议，见下）。以后别再把 `data_tmp.json` 这类文件误提交 |
 
 ### P1 —— 结构性的，需要小步做
 
@@ -121,7 +121,7 @@ curl -sL -o /dev/null -w '%{http_code}\n' $B/               # 200
 ### P0-5：公开仓库里的历史个人数据
 
 **两条路**：
-- **A（推荐，最省心）**：把仓库改成 **private**（GitHub → Settings → General → Danger Zone → Change visibility）。历史里的数据就外人看不到了。
+- **A（推荐，最省心）** ✅ **2026-09-17 已执行**：`gh repo edit cy852123/workbench --visibility private --accept-visibility-change-consequences`。历史里的数据外人看不到了（未登录 API 实测 404）。改回去：把 `--visibility private` 换成 `public`。
 - **B（彻底）**：用 `git filter-repo` 把 `downloads/` 从全部历史里删掉并强推。**风险高**（重写历史、需要重新 clone），而且公开期间可能已被索引，收益有限。
 **改动范围**：只有 A 是零代码改动。
 **验证**：`curl -s https://api.github.com/repos/cy852123/workbench | grep '"private"'` → `true`。
@@ -174,7 +174,7 @@ curl -sL -o /dev/null -w '%{http_code}\n' $B/               # 200
 
 1. ~~**要不要更新线上？**（P0-1/P0-2）~~ ✅ **2026-09-17 已执行**：先本地 `npm test` 40/40 + 看 7 张截图确认，再部署，再线上自查（md5 + 浏览器 0 报错）
 2. **`app.js`/`views.js` 拆不拆？** 选 A / B / C（我建议 A 或 B，不建议 C）
-3. **仓库要不要转 private？**（P0-5；我建议转，零成本）
+3. ~~**仓库要不要转 private？**（P0-5）~~ ✅ **2026-09-17 已转 private**（零成本，一行命令可改回）
 4. **上传文件要不要改存 IndexedDB？**（P0-4；代价是"文件不再自动同步到手机"）
 
 ---
@@ -185,7 +185,7 @@ curl -sL -o /dev/null -w '%{http_code}\n' $B/               # 200
 |---|---|---|---|
 | 第 1 批 | P0-3 数据兜底（App 内操作，不涉及代码） | 5 分钟 | 不需要 |
 | ~~第 2 批~~ | ~~P0-1 + P0-2 更新线上（含 SW）~~ ✅ **2026-09-17 已完成** | — | Pages 控制台 Rollback |
-| 第 3 批 | P0-5-A 仓库转 private | 1 分钟 | 改回 public |
+| ~~第 3 批~~ | ~~P0-5-A 仓库转 private~~ ✅ **2026-09-17 已完成** | — | 改回 public |
 | 第 4 批 | P1-1 回归门禁 + P1-2 版本号单一来源 | 半天 | `git revert` |
 | 第 5 批 | 写 `deploy` 脚本（把第 2 批那 3 步固化成一条命令 + 自检） | 半天 | 删脚本即可，部署仍可手动 |
 | 第 6 批 | P0-4 上传容量（选 A/B/C）+ P1-6 同步提示 | 1 天 | `git revert` |

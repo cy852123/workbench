@@ -3,7 +3,7 @@
 个人学习管理 PWA（考研备考为主）。纯前端、零构建、离线可用：数据存在浏览器 localStorage，通过 Cloudflare 同步到云端，手机「添加到主屏幕」就是一个 App。
 
 **线上**：https://workbench-sync-c9e.pages.dev
-**仓库**：`git@github.com:cy852123/workbench.git`（public）
+**仓库**：`git@github.com:cy852123/workbench.git`（**2026-09-17 已从 public 改为 private** —— 历史里有个人数据导出文件，转私密后外部看不到；未登录访问 API 实测返回 404。要改回去：`gh repo edit cy852123/workbench --visibility public`）
 **本机路径**：`E:\Software\workbench`（2026-09-17 从 `C:\Users\Administrator\workbench` 迁到 E 盘）
 
 > ✅ 2026-09-17 维护记录：**线上已更新到本地当前版本**（首次把 `service-worker.js` 一起部署，PWA 离线缓存首次生效）。部署前的状态、命令与自查结果见第六节。
@@ -227,7 +227,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - [ ] `app.js` 4500 行 / `views.js` 2816 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
 - [ ] 词典脚本 `gen_dict.py` 生成的 `dict.js` 目前**没有任何代码引用**（查词功能没接回界面），66 MB 原料因此白占地方
 - [ ] `tests/` 60+ 个脚本没入库：其中真正当回归门禁用的（`test.js`/`test_interact.js`）建议入库，其余 scratch 留在本地
-- [ ] 论文写作领域还是 `hidden:true`（入口不显示）
+- [x] ~~仓库转 private~~ ✅ 2026-09-17 完成（`gh repo edit cy852123/workbench --visibility private`，现 `isPrivate:true`，未登录 API 返回 404）
+- [ ] **论文写作领域还是 `hidden:true`**（入口不显示）
 
 ## 十、版本控制
 
