@@ -199,6 +199,21 @@ def bump_sw():
         note(False, "缓存号没改成 v%s" % new_s, "读回来的仍是 v%s" % (back.group(1) if back else "?"))
         return False
     note(True, "缓存号 v%s → v%s（已读回确认）" % (old_s, new_s))
+    # ★ 同步 index.html 里的资源版本号 ?v=vNNN —— 必须与 SW 缓存号一致，否则页面请求的
+    #   URL 和 SW 预缓存的 URL 对不上（离线会失效）。2026-09-17 加：手机端「部署了不更新」。
+    ip = os.path.join(ROOT, "index.html")
+    itxt = io.open(ip, encoding="utf-8").read()
+    itxt2, n = re.subn(r"\?v=v\d+", "?v=v" + new_s, itxt)
+    if n < 3:
+        note(False, "index.html 里的 ?v=v<数字> 只找到 %d 处（应 3 处：styles/views/app）" % n)
+        return False
+    io.open(ip, "w", encoding="utf-8", newline="").write(itxt2)
+    iback = re.search(r"\?v=(v\d+)", io.open(ip, encoding="utf-8").read())
+    if not iback or iback.group(1) != "v" + new_s:
+        note(False, "index.html 的 ?v= 没同步成 v%s" % new_s,
+             "读回来是 %s" % (iback.group(1) if iback else "?"))
+        return False
+    note(True, "index.html 资源版本号同步为 v%s（%d 处，已读回确认）" % (new_s, n))
     return True
 
 

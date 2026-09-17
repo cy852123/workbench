@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="工作台">
 <title>个人工作台</title>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=v060">
 </head>
 <body>
 
@@ -67,18 +67,31 @@
 <!-- 提示条 -->
 <div class="toast" id="toast"></div>
 
-<script src="views.js"></script>
-<script src="app.js"></script>
+<script src="views.js?v=v060"></script>
+<script src="app.js?v=v060"></script>
 <script>
 /* 注册 Service Worker（PWA：离线可用 + 安装到手机桌面） */
 if ("serviceWorker" in navigator) {
+  var swReg = null, swReloading = false;
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("service-worker.js").catch(function (e) {
+    navigator.serviceWorker.register("service-worker.js").then(function (r) {
+      swReg = r;
+      /* 2026-09-17：浏览器只在「导航」时才会去查 SW 有没有更新 —— 手机 PWA 切后台
+         再切回来没有导航，于是就永远挂着旧版（用户反馈「手机端没有更新」）。
+         这里注册完主动查一次。 */
+      r.update().catch(function () {});
+    }).catch(function (e) {
       console.warn("Service Worker 注册失败（不影响正常使用）", e);
     });
   });
-  /* 新版本发布时提示刷新 */
+  /* 每次回到前台都查一次更新（被挂起的情况靠这个救回来） */
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && swReg) swReg.update().catch(function () {});
+  });
+  /* 新 SW 接管后刷新一次，保证看到的是新版；加锁避免反复刷新 */
   navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (swReloading) return;
+    swReloading = true;
     window.location.reload();
   });
 }

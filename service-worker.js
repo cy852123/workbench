@@ -4,12 +4,18 @@
    - 静态资源（css/js）：先读缓存（秒开），后台拉取更新缓存
    - 发布新版本时更新 CACHE 版本号，旧缓存自动清理，一次刷新即生效 */
 var CACHE = "wb-cache-v060";
+/* 资源版本号 = 缓存号里那串 vNNN，**两处必须一致**（tools/deploy.py 会同步改）。
+   给 css/js 的 URL 挂 ?v= 是「手机端一次打开就拿到新版」的兜底：
+   index.html 是网络优先、必然拿到新 HTML，而它引用的 URL 带了新版本号，
+   SW 里的旧缓存按整串 URL 匹配、必然 miss → 直接走网络 → 立刻是新版。
+   （否则 css/js 走「缓存优先」，第一次打开永远是旧文件，要开第二次才更新） */
+var VER = CACHE.replace("wb-cache-", "");
 var ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./views.js",
-  "./app.js",
+  "./styles.css?v=" + VER,
+  "./views.js?v=" + VER,
+  "./app.js?v=" + VER,
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"
