@@ -399,7 +399,7 @@
   function setSaveState(txt, bad) {
     var el = $id("sideSave");
     if (!el) return;
-    el.textContent = (bad ? "⚠️ " : "") + txt;
+    el.textContent = (bad ? "" : "") + txt;
     el.title = bad ? txt : "";
   }
   function save(quiet) {
@@ -535,6 +535,8 @@
   }
 
   /* ---------- 全局状态 ---------- */
+  function ico(n) { return ICONS[n] || ""; }   /* 取 SVG 图标串；navItems/viewTitle 里存的是图标名 */
+
   var W = {
     icons: ICONS,
     data: data,
@@ -548,79 +550,79 @@
   function navItems() {
     var items = [];
     items.push({ group: "开始" });
-    items.push({ view: "today", label: "今日", icon: "☀️" });
+    items.push({ view: "today", label: "今日", icon: "sun" });
     items.push({ group: "我的领域" });
     data.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
-      var ic = dm.id === "kaoyan" ? "🎓" : dm.id === "cet" ? "📖" : dm.id === "ai" ? "🧠" : dm.id === "courses" ? "📚" : "📁";
+      var ic = dm.id === "kaoyan" ? "target" : dm.id === "cet" ? "book" : dm.id === "ai" ? "spark" : dm.id === "courses" ? "grid" : "folder";
       items.push({ view: "domain:" + dm.id, label: dm.name, icon: ic, domain: true });
     });
     items.push({ group: "工具" });
-    items.push({ view: "focus", label: "专注", icon: "🍅" });
-    items.push({ view: "activity", label: "学习记录", icon: "📈" });
-    items.push({ view: "library", label: "资料库", icon: "📁" });
-    items.push({ view: "inbox", label: "收集箱", icon: "📥", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
-    items.push({ view: "mistakes", label: "错题本", icon: "📕" });
-    items.push({ view: "reviews", label: "复盘", icon: "🔄" });
-    items.push({ view: "health", label: "健康", icon: "💪" });
+    items.push({ view: "focus", label: "专注", icon: "timer" });
+    items.push({ view: "activity", label: "学习记录", icon: "trending" });
+    items.push({ view: "library", label: "资料库", icon: "folder" });
+    items.push({ view: "inbox", label: "收集箱", icon: "inbox", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
+    items.push({ view: "mistakes", label: "错题本", icon: "alert" });
+    items.push({ view: "reviews", label: "复盘", icon: "refresh" });
+    items.push({ view: "health", label: "健康", icon: "heart" });
     items.push({ group: "系统" });
-    items.push({ view: "search", label: "搜索", icon: "🔍" });
-    items.push({ view: "settings", label: "设置与数据", icon: "⚙️" });
+    items.push({ view: "search", label: "搜索", icon: "search" });
+    items.push({ view: "settings", label: "设置与数据", icon: "settings" });
     return items;
   }
 
   function viewTitle(view) {
-    if (view === "today") return { e: "☀️", t: "今日", s: "每天从这里开始" };
+    if (view === "today") return { e: "sun", t: "今日", s: "每天从这里开始" };
     if (view.indexOf("domain:") === 0) {
       var dm = data.domains.filter(function (x) { return x.id === view.slice(7); })[0];
-      var e = dm && dm.id === "kaoyan" ? "🎓" : dm && dm.id === "cet" ? "📖" : dm && dm.id === "ai" ? "🧠" : dm && dm.id === "courses" ? "📚" : "📁";
-      return dm ? { e: e, t: dm.name, s: dm.type === "courses" ? "课程与作业" : dm.type === "paper" ? "论文进度" : "领域概览" } : { e: "📁", t: "领域", s: "" };
+      var e = dm && dm.id === "kaoyan" ? "target" : dm && dm.id === "cet" ? "book" : dm && dm.id === "ai" ? "spark" : dm && dm.id === "courses" ? "grid" : "folder";
+      return dm ? { e: e, t: dm.name, s: dm.type === "courses" ? "课程与作业" : dm.type === "paper" ? "论文进度" : "领域概览" } : { e: "folder", t: "领域", s: "" };
     }
     var map = {
-      library: { e: "📁", t: "资料库", s: "分类、标签、链接识别" },
-      "lib-detail": { e: "📁", t: "资料详情", s: "完整信息" },
-      inbox: { e: "📥", t: "收集箱", s: "先收着，稍后整理" },
-      "inbox-detail": { e: "📥", t: "收集内容", s: "全文与去向" },
-      mistakes: { e: "📕", t: "错题本", s: "错题是复习的宝藏" },
-      "mk-topics": { e: "📕", t: "错题 · 专题", s: "科目下的专题" },
-      "mk-types": { e: "📕", t: "错题 · 考点类型", s: "专题下的考点" },
-      "mk-list": { e: "📕", t: "错题 · 列表", s: "该考点下的错题" },
-      "mk-detail": { e: "📕", t: "错题详情", s: "完整错题与解法" },
-      qa: { e: "💬", t: "答疑库", s: "问过的题不再错" },
-      "qa-detail": { e: "💬", t: "答疑详情", s: "完整问答" },
-      reviews: { e: "🔄", t: "复盘", s: "让进步发生" },
-      "review-detail": { e: "🔄", t: "复盘详情", s: "完整复盘记录" },
-      health: { e: "💪", t: "健康", s: "学习的第一步" },
-      focus: { e: "🍅", t: "专注", s: "番茄钟计时" },
-      activity: { e: "📈", t: "学习记录", s: "自动汇总你今天干了什么" },
-      calendar: { e: "📅", t: "日历", s: "重要日期一目了然" },
+      library: { e: "folder", t: "资料库", s: "分类、标签、链接识别" },
+      "lib-detail": { e: "folder", t: "资料详情", s: "完整信息" },
+      inbox: { e: "inbox", t: "收集箱", s: "先收着，稍后整理" },
+      "inbox-detail": { e: "inbox", t: "收集内容", s: "全文与去向" },
+      mistakes: { e: "alert", t: "错题本", s: "错题是复习的宝藏" },
+      "mk-topics": { e: "alert", t: "错题 · 专题", s: "科目下的专题" },
+      "mk-types": { e: "alert", t: "错题 · 考点类型", s: "专题下的考点" },
+      "mk-list": { e: "alert", t: "错题 · 列表", s: "该考点下的错题" },
+      "mk-detail": { e: "alert", t: "错题详情", s: "完整错题与解法" },
+      qa: { e: "help", t: "答疑库", s: "问过的题不再错" },
+      "qa-detail": { e: "help", t: "答疑详情", s: "完整问答" },
+      reviews: { e: "refresh", t: "复盘", s: "让进步发生" },
+      "review-detail": { e: "refresh", t: "复盘详情", s: "完整复盘记录" },
+      health: { e: "heart", t: "健康", s: "学习的第一步" },
+      focus: { e: "timer", t: "专注", s: "番茄钟计时" },
+      activity: { e: "trending", t: "学习记录", s: "自动汇总你今天干了什么" },
+      calendar: { e: "calendar", t: "日历", s: "重要日期一目了然" },
       accounts: { e: "👤", t: "账号", s: "管理我的平台账号" },
-      search: { e: "🔍", t: "搜索", s: "一次搜遍全部内容" },
-      ai: { e: "🤖", t: "AI 帮手", s: "辅助学习与整理" },
-      settings: { e: "⚙️", t: "设置与数据", s: "说明、备份、更新日志" },
-      "ky-subjects": { e: "🎓", t: "科目详情", s: "科目任务统计" },
-      "ky-tasks": { e: "🎓", t: "全部领域任务", s: "三类任务管理" },
-      "ky-weekly": { e: "🎓", t: "本周计划", s: "周计划管理" },
-      "ky-files": { e: "🎓", t: "备考资料库", s: "关联资料" },
-      "ky-english": { e: "📖", t: "英语学科页", s: "精读/作文/翻译" },
-      "ky-math": { e: "🎓", t: "数学学科页", s: "公式/套卷/粗心账本" },
-      "ky-politics": { e: "🎓", t: "政治学科页", s: "知识点/帽子题/时政" },
-      "ky-major": { e: "🎓", t: "专业课学科页", s: "笔记/挖空/大纲" },
-      "ky-word": { e: "📖", t: "单词学科页", s: "真题生词/僻义/替换词" },
-      "ky-stats": { e: "🎓", t: "统计仪表盘", s: "所有图表与进度" },
-      "ky-mistake-files": { e: "🎓", t: "错题集", s: "批量上传材料与知识点" },
-      "tasks-all": { e: "📋", t: "任务管理专区", s: "全部任务" },
-      "cet-vocab": { e: "📖", t: "词汇专区", s: "生词本与记忆复习" },
-      "cet-grammar": { e: "📚", t: "语法专区", s: "语法检查器与知识点" },
-      "grammar-detail": { e: "📚", t: "语法知识点", s: "查看与复习" },
-      "cet-listening": { e: "🎧", t: "听力专区", s: "真题听力与精听" },
-      "cet-reading": { e: "📖", t: "阅读专区", s: "真题阅读与长难句" },
-      "cet-writing": { e: "✍️", t: "写作专区", s: "范文模板与 AI 批改" },
-      "cet-translation": { e: "🌐", t: "翻译专区", s: "翻译练习与句式积累" },
-      "cet-speaking": { e: "🗣️", t: "口语专区", s: "AI 口语对话练习" },
-      "cet-wordbook": { e: "📖", t: "生词本", s: "完整生词管理" },
-      "cet-exams": { e: "🎓", t: "考试管理", s: "新增/归档/删除考试" },
-      "cet-stats": { e: "📖", t: "英语统计", s: "学习数据" },
-      "ai-history": { e: "🤖", t: "AI 学习历史", s: "历史学习资料库" }
+      search: { e: "search", t: "搜索", s: "一次搜遍全部内容" },
+      ai: { e: "spark", t: "AI 帮手", s: "辅助学习与整理" },
+      settings: { e: "settings", t: "设置与数据", s: "说明、备份、更新日志" },
+      "ky-subjects": { e: "target", t: "科目详情", s: "科目任务统计" },
+      "ky-tasks": { e: "target", t: "全部领域任务", s: "三类任务管理" },
+      "ky-weekly": { e: "target", t: "本周计划", s: "周计划管理" },
+      "ky-files": { e: "target", t: "备考资料库", s: "关联资料" },
+      "ky-english": { e: "book", t: "英语学科页", s: "精读/作文/翻译" },
+      "ky-math": { e: "target", t: "数学学科页", s: "公式/套卷/粗心账本" },
+      "ky-politics": { e: "target", t: "政治学科页", s: "知识点/帽子题/时政" },
+      "ky-major": { e: "target", t: "专业课学科页", s: "笔记/挖空/大纲" },
+      "ky-word": { e: "book", t: "单词学科页", s: "真题生词/僻义/替换词" },
+      "ky-stats": { e: "target", t: "统计仪表盘", s: "所有图表与进度" },
+      "ky-mistake-files": { e: "target", t: "错题集", s: "批量上传材料与知识点" },
+      "tasks-all": { e: "file", t: "任务管理专区", s: "全部任务" },
+      "cet-vocab": { e: "book", t: "词汇专区", s: "生词本与记忆复习" },
+      "cet-grammar": { e: "grid", t: "语法专区", s: "语法检查器与知识点" },
+      "grammar-detail": { e: "grid", t: "语法知识点", s: "查看与复习" },
+      "cet-listening": { e: "play", t: "听力专区", s: "真题听力与精听" },
+      "cet-reading": { e: "book", t: "阅读专区", s: "真题阅读与长难句" },
+      "cet-writing": { e: "edit", t: "写作专区", s: "范文模板与 AI 批改" },
+      "cet-translation": { e: "link", t: "翻译专区", s: "翻译练习与句式积累" },
+      "cet-speaking": { e: "send", t: "口语专区", s: "AI 口语对话练习" },
+      "cet-wordbook": { e: "book", t: "生词本", s: "完整生词管理" },
+      "cet-exams": { e: "target", t: "考试管理", s: "新增/归档/删除考试" },
+      "cet-stats": { e: "book", t: "英语统计", s: "学习数据" },
+      "ai-history": { e: "spark", t: "AI 学习历史", s: "历史学习资料库" }
     };
     return map[view] || { t: view, s: "" };
   }
@@ -629,7 +631,7 @@
   function aiTasksLoad() {
     var box = $id("aiTasksBox");
     if (!box) return;
-    var head = '<div class="c-head"><span class="c-emoji">🤖</span><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div>';
+    var head = '<div class="c-head"><span class="c-emoji">' + ico("spark") + '</span><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div>';
     var sc = data.settings.sync || {};
     if (!sc.url || !sc.key) {
       box.innerHTML = head + '<div class="li-sub">去「设置 → 云端同步」填地址和密钥后，AI 每天早上会把任务放到这里。</div>';
@@ -647,7 +649,7 @@
         box.innerHTML = head + '<div class="home-tasks">' + j.tasks.map(function (task, i) {
           var id = "ait-" + i;
           return '<div class="home-task" data-action="ai-task-done" data-idx="' + i + '">' +
-            '<span class="box' + (doneMap[id] ? " on" : "") + '">' + (doneMap[id] ? "✓" : "") + "</span>" +
+            '<span class="box' + (doneMap[id] ? " on" : "") + '">' + (doneMap[id] ? "check" : "") + "</span>" +
             '<div><div class="ht-name">' + esc(task.title) + "</div>" +
             (task.subject ? '<div class="ht-sub">' + esc(task.subject) + (task.note ? " · " + esc(task.note) : "") + "</div>" : "") +
             "</div></div>";
@@ -702,7 +704,7 @@
       if (it.group) { html += '<div class="nav-group"><div class="nav-group-title">' + it.group + "</div></div>"; return; }
       var active = W.ui.view === it.view ? " active" : "";
       html += '<button class="nav-item' + active + '" data-action="nav" data-view="' + it.view + '">' +
-        '<span class="nav-emoji">' + it.icon + "</span><span>" + it.label + "</span>" +
+        '<span class="nav-emoji">' + ico(it.icon) + "</span><span>" + it.label + "</span>" +
         (it.badge ? '<span class="nav-badge">' + it.badge + "</span>" : "") + "</button>";
     });
     nav.innerHTML = html;
@@ -712,15 +714,15 @@
     var primary = data.settings.primaryDomain || data.domains[0].id;
     var pv = "domain:" + primary;
     var bottom = [
-      { view: "today", label: "今日", icon: "☀️" },
-      { view: pv, label: (data.domains.filter(function (x) { return x.id === primary; })[0] || {}).name || "领域", icon: "🎓" },
-      { view: "__plus", label: "添加", icon: "➕" },
-      { view: "__more", label: "更多", icon: "☰" }
+      { view: "today", label: "今日", icon: "sun" },
+      { view: pv, label: (data.domains.filter(function (x) { return x.id === primary; })[0] || {}).name || "领域", icon: "target" },
+      { view: "__plus", label: "添加", icon: "plus" },
+      { view: "__more", label: "更多", icon: "grid" }
     ];
     mn.innerHTML = bottom.map(function (b) {
       var active = W.ui.view === b.view ? " active" : "";
       return '<button class="mn-item' + active + '" data-action="' + (b.view === "__plus" ? "quick-add" : b.view === "__more" ? "open-drawer" : "nav") + '" data-view="' + b.view + '">' +
-        '<span class="nav-emoji">' + b.icon + "</span><span>" + b.label + "</span></button>";
+        '<span class="nav-emoji">' + ico(b.icon) + "</span><span>" + b.label + "</span></button>";
     }).join("");
 
     /* 抽屉 */
@@ -730,7 +732,7 @@
       if (it.group) { dhtml += '<div class="drawer-group-title">' + it.group + "</div>"; return; }
       var active = W.ui.view === it.view ? " active" : "";
       dhtml += '<button class="drawer-item' + active + '" data-action="nav" data-view="' + it.view + '">' +
-        '<span class="nav-emoji">' + it.icon + "</span><span>" + it.label + "</span></button>";
+        '<span class="nav-emoji">' + ico(it.icon) + "</span><span>" + it.label + "</span></button>";
     });
     db.innerHTML = dhtml;
   }
@@ -738,7 +740,7 @@
     var wrap = $id("viewWrap");
     var view = W.ui.view;
     var v = viewTitle(view);
-    $id("topbar").innerHTML = '<span class="ph-emoji">' + (v.e || "") + '</span><div class="ph-txt"><h1>' + v.t + '</h1><span class="topbar-sub">' + v.s + "</span></div>" +
+    $id("topbar").innerHTML = '<span class="ph-emoji">' + ico(v.e) + '</span><div class="ph-txt"><h1>' + v.t + '</h1><span class="topbar-sub">' + v.s + "</span></div>" +
       '<span class="topbar-help"><button class="icon-btn lg" data-action="help" data-help="' + view + '" title="帮助">' + ICONS.help + "</button></span>";
 
     var html = "";
@@ -856,7 +858,7 @@
       var isImg = /^image\//.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
       return '<div class="list-item" style="align-items:flex-start;">' +
         '<div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;cursor:pointer;" data-action="' + (viewAction || "ky-file-view") + '" data-idx="' + i + '">' +
-        (isImg ? "🖼 " : "📄 ") + esc(f.name) + "</div>" +
+        (isImg ? "" : "") + esc(f.name) + "</div>" +
         '<div class="li-sub">' + fmtSize(f.size) + " · " + esc(f.date || "") + " · 点击查看</div></div>" +
         '<button class="icon-btn" data-action="' + (delAction || "ky-file-del") + '" data-idx="' + i + '">' + ICONS.trash + "</button></div>";
     }).join("") + "</div>";
@@ -871,9 +873,9 @@
     if (!f) return;
     var isImg = /^image\//.test(f.type || "") || /\.(png|jpe?g|webp)$/i.test(f.name || "");
     if (isImg && f.dataUrl) {
-      modalOpen("📄 " + esc(f.name), '<img src="' + f.dataUrl + '" style="width:100%;border-radius:10px;max-height:60vh;object-fit:contain;">', okBtn("ky-close"));
+      modalOpen("" + esc(f.name), '<img src="' + f.dataUrl + '" style="width:100%;border-radius:10px;max-height:60vh;object-fit:contain;">', okBtn("ky-close"));
     } else {
-      modalOpen("📄 " + esc(f.name), '<div class="li-sub" style="margin-bottom:12px;">此文件类型不在网页内预览，点下方按钮下载查看。</div>',
+      modalOpen("" + esc(f.name), '<div class="li-sub" style="margin-bottom:12px;">此文件类型不在网页内预览，点下方按钮下载查看。</div>',
         cancelBtn() + '<a class="btn" href="' + f.dataUrl + '" download="' + esc(f.name) + '" style="text-decoration:none;">下载查看</a>');
     }
   }
@@ -1046,7 +1048,7 @@
     rewardModal("今日 AI 学习完成", "完成 30 分钟「" + td.topic + "」，已记录打卡。", true);
   }
   function aiAppendNoteModal() {
-    modalOpen("📝 追加学习笔记", "不完成今日课程，也可以随手记录 AI 学习的零散感悟。" +
+    modalOpen("追加学习笔记", "不完成今日课程，也可以随手记录 AI 学习的零散感悟。" +
       area("笔记内容", "aiAppend", "今天的感悟、想法、学到的小技巧…"),
       cancelBtn() + '<button class="btn" data-action="submit-ai-append">' + ICONS.check + "保存到历史</button>");
   }
@@ -1918,7 +1920,7 @@
     var gen = kyActiveScheme().gen || {};
     var custom = gen.customFormulas || {};
     var cats = Object.keys(KY_FORMULAS).concat(Object.keys(custom));
-    modalOpen("📐 数学公式卡", '<div class="li-sub" style="margin-bottom:10px;">考研数学常用公式（内置 + 自定义）</div>' +
+    modalOpen("数学公式卡", '<div class="li-sub" style="margin-bottom:10px;">考研数学常用公式（内置 + 自定义）</div>' +
       cats.map(function (k) {
         var items = (KY_FORMULAS[k] || []).concat(custom[k] || []);
         return '<div class="formula-block"><div class="formula-title">' + esc(k) + (custom[k] && custom[k].length ? ' <span class="tag">自定义</span>' : "") + "</div>" +
@@ -1927,7 +1929,7 @@
       cancelBtn() + '<button class="btn" data-action="ky-formula-add">＋ 添加公式</button>');
   }
   function kyPaperModal() {
-    modalOpen("📋 真题套卷记录", '<div class="li-sub" style="margin-bottom:10px;">记录每套真题各板块得分（百分制），薄弱章节一目了然</div>' +
+    modalOpen("真题套卷记录", '<div class="li-sub" style="margin-bottom:10px;">记录每套真题各板块得分（百分制），薄弱章节一目了然</div>' +
       field("套卷编号", "kyPaperNo", "text", "如 2010 / 2013", "") +
       field("选填得分", "kyPaperX", "number", "0-50", "") +
       field("高数得分", "kyPaperG", "number", "0-35", "") +
@@ -1946,7 +1948,7 @@
   }
   /* 专业课真题套卷（仿数学） */
   function kyMajorPaperModal() {
-    modalOpen("📋 专业课真题套卷", '<div class="li-sub" style="margin-bottom:10px;">记录每套专业课真题（按你的题型分板块）</div>' +
+    modalOpen("专业课真题套卷", '<div class="li-sub" style="margin-bottom:10px;">记录每套专业课真题（按你的题型分板块）</div>' +
       field("套卷编号", "mPaperNo", "text", "如 2023 / 模拟一", "") +
       field("板块一得分", "mPaperA", "number", "如 名词解释", "") +
       field("板块二得分", "mPaperB", "number", "如 简答题", "") +
@@ -1978,7 +1980,7 @@
     modalClose(); save(); refresh(); toast("已新增分类「" + name + "」");
   }
   function kyCarelessModal() {
-    modalOpen("⚠️ 粗心账本", '<div class="li-sub" style="margin-bottom:10px;">专门记录跳步/正负号等计算失误，考前专项盯防</div>' +
+    modalOpen("粗心账本", '<div class="li-sub" style="margin-bottom:10px;">专门记录跳步/正负号等计算失误，考前专项盯防</div>' +
       '<div class="field"><label>失误类型</label>' +
       '<label class="checkline"><input type="radio" name="clType" value="跳步"> 跳步</label>' +
       '<label class="checkline"><input type="radio" name="clType" value="正负号"> 正负号</label>' +
@@ -1997,7 +1999,7 @@
     modalClose(); refresh(); toast("已记入粗心账本");
   }
   function kySentenceModal() {
-    modalOpen("📝 长难句练习（每日 5 句）", '<div class="li-sub" style="margin-bottom:10px;">先自己拆解，再点看解析</div>' +
+    modalOpen("长难句练习（每日 5 句）", '<div class="li-sub" style="margin-bottom:10px;">先自己拆解，再点看解析</div>' +
       KY_SENTENCES.map(function (s, i) {
         return '<div class="sentence-block"><div class="sentence-en">' + (i + 1) + ". " + esc(s.s) + "</div>" +
           '<button class="btn small ghost" data-action="ky-sentence-ans" data-idx="' + i + '" style="margin-top:6px;">看解析</button>' +
@@ -2017,9 +2019,9 @@
     var gen = kyActiveScheme().gen || {};
     var notes = gen.essayNotes || [];
     var ess = gen.essayFiles || [];
-    modalOpen("✍️ 作文模板库", '<div class="li-sub" style="margin-bottom:8px;">你自己上传的模板文件 + 批注（内置模板已删除）</div>' +
+    modalOpen("作文模板库", '<div class="li-sub" style="margin-bottom:8px;">你自己上传的模板文件 + 批注（内置模板已删除）</div>' +
       (ess.length ? '<div style="margin-bottom:10px;">' + kyFileListHtml(ess, "ky-file-del", "ky-file-view") + "</div>" : '<div class="li-sub" style="padding:8px 0;">还没上传模板，回学科页点「上传模板文件」。</div>') +
-      '<button class="btn small" data-action="ky-pick" data-key="essayFiles" style="margin-top:6px;">📤 上传模板文件</button>' +
+      '<button class="btn small" data-action="ky-pick" data-key="essayFiles" style="margin-top:6px;">上传模板文件</button>' +
       (notes.length ? '<div class="li-sub" style="margin:12px 0 6px;">我的批注：</div><div class="list">' + notes.slice().reverse().slice(0, 5).map(function (n) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(n.type) + "</div>" +
           '<div class="li-sub">' + esc(n.text) + " · " + esc(n.date) + "</div></div></div>";
@@ -2027,7 +2029,7 @@
       cancelBtn() + '<button class="btn" data-action="ky-essay-note">＋ 记录作文批注</button>');
   }
   function kyEssayNoteModal() {
-    modalOpen("✍️ 记录作文批注", '<div class="li-sub" style="margin-bottom:10px;">记下你写作时用到的靓句 / 老师批改意见</div>' +
+    modalOpen("记录作文批注", '<div class="li-sub" style="margin-bottom:10px;">记下你写作时用到的靓句 / 老师批改意见</div>' +
       selField("类型", "esType", [["小作文", "小作文"], ["大作文", "大作文"]], "大作文") +
       field("批注内容", "esNote", "text", "如：用到了 It is high time that 句型", ""),
       cancelBtn() + '<button class="btn" data-action="submit-ky-essay-note">' + ICONS.check + "保存批注</button>");
@@ -2041,7 +2043,7 @@
     modalClose(); refresh(); toast("批注已保存");
   }
   function kyTransModal() {
-    modalOpen("🌐 翻译每日一句", '<div class="li-sub" style="margin-bottom:10px;">今日翻译练习：先翻，再记录生词与语序反思</div>' +
+    modalOpen("翻译每日一句", '<div class="li-sub" style="margin-bottom:10px;">今日翻译练习：先翻，再记录生词与语序反思</div>' +
       '<div style="background:#F7F7F5;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:14px;line-height:1.7;">The progress of science depends not only on new ideas, but also on new instruments that make those ideas possible.</div>' +
       field("生词记录", "trWords", "text", "如：instrument 仪器", "") +
       field("语序调整反思", "trNote", "text", "如：not only...but also 译作 不仅…而且…", ""),
@@ -2059,7 +2061,7 @@
     var gen = kyActiveScheme().gen || {};
     var custom = gen.customPoints || {};
     var cats = Object.keys(KY_POL_POINTS).concat(Object.keys(custom));
-    modalOpen("🗂 政治知识点库", '<div class="li-sub" style="margin-bottom:10px;">按章浏览（内置 + 自定义）</div>' +
+    modalOpen("政治知识点库", '<div class="li-sub" style="margin-bottom:10px;">按章浏览（内置 + 自定义）</div>' +
       cats.map(function (k) {
         var items = (KY_POL_POINTS[k] || []).concat(custom[k] || []);
         return '<div class="formula-block"><div class="formula-title">' + esc(k) + (custom[k] && custom[k].length ? ' <span class="tag">自定义</span>' : "") + "</div>" +
@@ -2070,7 +2072,7 @@
   function kyHatModal() {
     var gen = kyActiveScheme().gen || {};
     var hats = KY_HAT_QUESTIONS.concat(gen.customHats || []);
-    modalOpen("🎩 帽子题专项", '<div class="li-sub" style="margin-bottom:10px;">先答再看答案，记录对错</div>' +
+    modalOpen("帽子题专项", '<div class="li-sub" style="margin-bottom:10px;">先答再看答案，记录对错</div>' +
       hats.map(function (h, i) {
         return '<div class="formula-block"><div class="formula-title">' + (i + 1) + ". " + esc(h.q) + "</div>" +
           '<div class="li-sub">答案：' + esc(h.a) + "</div>" +
@@ -2087,17 +2089,17 @@
     if (!h) return;
     gen.hatQuestions = gen.hatQuestions || [];
     gen.hatQuestions.push({ date: todayStr(), q: h.q, ans: h.a, correct: correct });
-    save(); modalClose(); toast(correct ? "✓ 答对，已记录" : "✗ 答错，已记录（建议复习）");
+    save(); modalClose(); toast(correct ? "答对，已记录" : "答错，已记录（建议复习）");
   }
   function kyFrameModal() {
-    modalOpen("📋 主观题答题框架（点-默-析）", '<div class="li-sub" style="margin-bottom:10px;">比对自己的答案框架</div>' +
+    modalOpen("主观题答题框架（点-默-析）", '<div class="li-sub" style="margin-bottom:10px;">比对自己的答案框架</div>' +
       Object.keys(KY_SUBJ_FRAMES).map(function (k) {
         return '<div class="formula-block"><div class="formula-title">' + esc(k) + "</div>" +
           '<div class="formula-line">' + esc(KY_SUBJ_FRAMES[k]) + "</div></div>";
       }).join(""), okBtn("ky-close"));
   }
   function kyAffairModal() {
-    modalOpen("📰 时政收藏夹", '<div class="li-sub" style="margin-bottom:10px;">粘贴本月重要时政词条，标注可联系考点</div>' +
+    modalOpen("时政收藏夹", '<div class="li-sub" style="margin-bottom:10px;">粘贴本月重要时政词条，标注可联系考点</div>' +
       field("时政词条/事件", "afTitle", "text", "如：中央经济工作会议提出…", "") +
       field("可联系考点", "afPoint", "text", "如：新发展理念 / 高质量发展", "") +
       field("详细内容", "afText", "text", "（可选）粘贴要点", ""),
@@ -2115,14 +2117,14 @@
   function kyNotesModal() {
     var gen = kyActiveScheme().gen || {};
     var nl = gen.noteLog || [];
-    modalOpen("📒 章节笔记库", '<div class="li-sub" style="margin-bottom:10px;">共 ' + nl.length + " 章笔记 · 每章带标签</div>" +
+    modalOpen("章节笔记库", '<div class="li-sub" style="margin-bottom:10px;">共 ' + nl.length + " 章笔记 · 每章带标签</div>" +
       (nl.length ? '<div class="list" style="max-height:340px;overflow-y:auto;">' + nl.slice().reverse().map(function (n) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">第 ' + n.chapter + " 章 ｜ " + esc(n.tagType) + "：" + esc(n.tag) + "</div>" +
           '<div class="li-sub">' + esc(n.note) + " · " + esc(n.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub">暂无笔记</div>'), okBtn("ky-close"));
   }
   function kyFillModal() {
-    modalOpen("✏️ 关键词挖空（背诵/默写）", '<div class="li-sub" style="margin-bottom:10px;">把重点词替换成 ____，自测背诵。例如：<b>实践是认识的 ____（来源）</b></div>' +
+    modalOpen("关键词挖空（背诵/默写）", '<div class="li-sub" style="margin-bottom:10px;">把重点词替换成 ____，自测背诵。例如：<b>实践是认识的 ____（来源）</b></div>' +
       field("章节", "fbCh", "text", "如 第 3 章", "") +
       field("挖空内容", "fbText", "text", "如：晶体的结构取决于 ____（键合方式）", ""),
       cancelBtn() + '<button class="btn" data-action="submit-ky-fill">' + ICONS.check + "保存挖空</button>");
@@ -2136,7 +2138,7 @@
     modalClose(); refresh(); toast("挖空已保存，明天可以自测");
   }
   function kyBreakdownModal() {
-    modalOpen("📋 真题题型拆解", '<div class="li-sub" style="margin-bottom:10px;">按题型记录错因，精准打击弱点</div>' +
+    modalOpen("真题题型拆解", '<div class="li-sub" style="margin-bottom:10px;">按题型记录错因，精准打击弱点</div>' +
       field("真题编号", "bdYear", "text", "如 2019", "") +
       field("选择题错因", "bdChoose", "text", "如：概念混淆/计算错误", "") +
       field("名词解释默写", "bdTerm", "text", "如：基本掌握/记不全", "") +
@@ -2155,7 +2157,7 @@
     var gen = kyActiveScheme().gen || {};
     var oc = gen.outlineCompare || {};
     var keys = Object.keys(oc);
-    modalOpen("📊 大纲对比（考纲要求 vs 掌握度）",
+    modalOpen("大纲对比（考纲要求 vs 掌握度）",
       '<div class="li-sub" style="margin-bottom:10px;">为每个章节设定 考纲要求 与 实际掌握度（0-100%）</div>' +
       (keys.length ? '<div class="list" style="max-height:220px;overflow-y:auto;margin-bottom:10px;">' + keys.map(function (k) {
         var v = oc[k];
@@ -2176,7 +2178,7 @@
     modalClose(); refresh(); toast("大纲对比已保存");
   }
   function kyExamwordModal() {
-    modalOpen("📚 真题生词本", '<div class="li-sub" style="margin-bottom:10px;">阅读/翻译中遇到的生词，考前集中复习</div>' +
+    modalOpen("真题生词本", '<div class="li-sub" style="margin-bottom:10px;">阅读/翻译中遇到的生词，考前集中复习</div>' +
       field("单词", "ewWord", "text", "如 comprehensive", "") +
       field("真题年份", "ewYear", "text", "如 2011", "") +
       field("所在短句", "ewSent", "text", "如 A comprehensive study shows...", ""),
@@ -2191,7 +2193,7 @@
     modalClose(); refresh(); toast("已加入真题生词本");
   }
   function kyOddwordModal() {
-    modalOpen("🎭 熟词僻义专项", '<div class="li-sub" style="margin-bottom:10px;">考研常考熟词僻义，如 address → 处理/演讲</div>' +
+    modalOpen("熟词僻义专项", '<div class="li-sub" style="margin-bottom:10px;">考研常考熟词僻义，如 address → 处理/演讲</div>' +
       field("单词", "owWord", "text", "如 address", "") +
       field("僻义", "owMean", "text", "如 处理（v.）", "") +
       field("例句", "owEx", "text", "如 The meeting addressed the issue.", ""),
@@ -2206,7 +2208,7 @@
     modalClose(); refresh(); toast("已加入熟词僻义专项");
   }
   function kyReplaceModal() {
-    modalOpen("🖊 写作替换词库", '<div class="li-sub" style="margin-bottom:10px;">记录作文想用的高级词汇，如 important → crucial</div>' +
+    modalOpen("写作替换词库", '<div class="li-sub" style="margin-bottom:10px;">记录作文想用的高级词汇，如 important → crucial</div>' +
       field("原词（低阶）", "rpFrom", "text", "如 important", "") +
       field("替换词（高阶）", "rpTo", "text", "如 crucial / vital", ""),
       cancelBtn() + '<button class="btn" data-action="submit-ky-replace">' + ICONS.check + "保存</button>");
@@ -2222,9 +2224,9 @@
   function kyWordAddModal() {
     modalOpen("＋ 添加生词（选类型）", '<div class="li-sub" style="margin-bottom:10px;">选择要添加的类型</div>' +
       '<div style="display:flex;flex-direction:column;gap:8px;">' +
-      '<button class="btn ghost" data-action="ky-examword-modal">📚 真题生词本（单词+年份+短句）</button>' +
-      '<button class="btn ghost" data-action="ky-oddword-modal">🎭 熟词僻义（单词+僻义+例句）</button>' +
-      '<button class="btn ghost" data-action="ky-replace-modal">🖊 写作替换词（原词→替换词）</button></div>',
+      '<button class="btn ghost" data-action="ky-examword-modal">真题生词本（单词+年份+短句）</button>' +
+      '<button class="btn ghost" data-action="ky-oddword-modal">熟词僻义（单词+僻义+例句）</button>' +
+      '<button class="btn ghost" data-action="ky-replace-modal">写作替换词（原词→替换词）</button></div>',
       cancelBtn() + '<button class="btn" data-action="ky-close">取消</button>');
   }
   function kyWordMaster(idx) {
@@ -3543,7 +3545,7 @@
     }).then(function (r) { return r.json(); }).then(function (j) {
       var ms = (j && j.matches) || [];
       if (!ms.length) {
-        box.innerHTML = '<div class="tag state-done" style="font-size:13px;">✓ 未发现语法错误（或语言检测不到明显问题）</div>';
+        box.innerHTML = '<div class="tag state-done" style="font-size:13px;">未发现语法错误（或语言检测不到明显问题）</div>';
         return;
       }
       var html = '<div class="li-sub" style="margin-bottom:6px;">发现 <b>' + ms.length + '</b> 处问题：</div>';
@@ -3764,8 +3766,8 @@
     var photos = c.photos || [];
     modalOpen(esc(c.name),
       '<div class="li-sub" style="margin-bottom:8px;">资料 · 笔记 · 照片都在这里</div>' +
-      (c.note ? '<div class="formula-block"><div class="formula-title">📝 课程笔记</div><div class="formula-line" style="white-space:pre-wrap;">' + esc(c.note) + "</div></div>" : "") +
-      '<div class="formula-block"><div class="formula-title">📷 课程照片（' + photos.length + '）</div>' +
+      (c.note ? '<div class="formula-block"><div class="formula-title">课程笔记</div><div class="formula-line" style="white-space:pre-wrap;">' + esc(c.note) + "</div></div>" : "") +
+      '<div class="formula-block"><div class="formula-title">课程照片（' + photos.length + '）</div>' +
       (photos.length ? '<div class="course-photos">' + photos.map(function (ph, i) {
         return '<div class="cp-item" data-action="view-course-photo" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '" data-idx="' + i + '">' +
           '<img src="' + ph.data + '" alt="课程照片">' +
@@ -3776,8 +3778,8 @@
       '<button class="btn small plain" data-action="pick-course-photo" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">＋ 添加照片</button>' +
       '<input type="file" id="coursePhotoInput" accept="image/*" style="display:none;"></div></div>' +
       '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
-      '<button class="btn small plain" data-action="edit-course-note" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">' + (c.note ? "✏️ 修改笔记" : "＋ 添加笔记") + "</button>" +
-      '<button class="btn small plain" data-action="edit-course-url" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">' + (c.url ? "🔗 修改资料" : "＋ 添加资料") + "</button>" +
+      '<button class="btn small plain" data-action="edit-course-note" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">' + (c.note ? "修改笔记" : "＋ 添加笔记") + "</button>" +
+      '<button class="btn small plain" data-action="edit-course-url" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">' + (c.url ? "修改资料" : "＋ 添加资料") + "</button>" +
       (c.url ? '<a class="btn small" href="' + esc(c.url) + '" target="_blank" rel="noopener">' + ICONS.link + "打开资料</a>" : "") +
       '<button class="btn small plain" data-action="edit-course" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">编辑课程</button>' +
       '<button class="btn small plain" data-action="del-course" data-domain="' + esc(did) + '" data-id="' + esc(c.id) + '">删除</button>' +
@@ -4194,7 +4196,7 @@
       '<div class="field"><label>状态</label>' +
       '<label class="checkline"><input type="radio" name="qaStatus" value="待解决"' + ((q ? q.status : "待解决") === "待解决" ? " checked" : "") + "> 待解决（还没弄懂）</label>" +
       '<label class="checkline"><input type="radio" name="qaStatus" value="已解决"' + ((q ? q.status : "") === "已解决" ? " checked" : "") + "> 已解决</label></div>" +
-      '<label class="checkline"><input type="checkbox" id="qaStar"' + (q && q.starred ? " checked" : "") + "><label for=\"qaStar\">⭐ 收藏（考前必看）</label>",
+      '<label class="checkline"><input type="checkbox" id="qaStar"' + (q && q.starred ? " checked" : "") + "><label for=\"qaStar\">收藏（考前必看）</label>",
       cancelBtn() + okBtn("submit-qa"));
     window.__editQaId = id || "";
   }

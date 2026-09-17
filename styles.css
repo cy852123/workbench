@@ -828,6 +828,114 @@ img, svg, video { max-width: 100%; }
 .bar { background: var(--line); }
 .bar-col.today .bar { background: var(--accent); }
 
+
+/* ============================================================
+   v4：emoji → 统一线性 SVG 图标（2026-09-17）
+   图标位容器的类名没变（nav-emoji / ph-emoji / tool-ic / hd-emoji / h3-emoji /
+   st3-emoji / st4-emoji / c-emoji / f-tp-ic），只是里面从 emoji 换成了
+   W.icons 里的 SVG 串 —— 描边用 currentColor，自动跟随所在位置的文字颜色。
+   图标名 → 具体路径 见 app.js 顶部的 ICONS 表（35 个，lucide 风格）。
+   ============================================================ */
+.nav-emoji, .ph-emoji, .tool-ic, .hd-emoji, .h3-emoji,
+.st3-emoji, .st4-emoji, .c-emoji, .f-tp-ic { line-height: 0; }
+.nav-emoji svg, .ph-emoji svg, .tool-ic svg, .hd-emoji svg, .h3-emoji svg,
+.st3-emoji svg, .st4-emoji svg, .c-emoji svg, .f-tp-ic svg { display: block; }
+.nav-emoji svg { width: 16px; height: 16px; }
+.mobile-nav .mn-item .nav-emoji svg { width: 22px; height: 22px; }
+.ph-emoji svg { width: 26px; height: 26px; }
+.tool-ic svg { width: 20px; height: 20px; }
+.hd-emoji svg { width: 19px; height: 19px; }
+.h3-emoji svg { width: 22px; height: 22px; }
+.st3-emoji svg { width: 17px; height: 17px; }
+.st4-emoji svg { width: 19px; height: 19px; }
+.c-emoji svg { width: 18px; height: 18px; }
+.f-tp-ic svg { width: 15px; height: 15px; }
+.hd-emoji, .h3-emoji, .st3-emoji, .st4-emoji, .c-emoji { display: flex; align-items: center; justify-content: center; }
+/* 侧栏图标色：未选中用次级灰，选中/悬停跟随状态色，避免 17 个彩色小人打架 */
+.nav-item .nav-emoji { color: inherit; opacity: .85; }
+.nav-item.active .nav-emoji { opacity: 1; }
+.ph-emoji { color: var(--accent); }
+
+/* ============================================================
+   v5：去图标 + 高级化（2026-09-17）
+   方向：装饰性图标全部拿掉，让「字号 / 字重 / 留白 / 一条细线」承担层级。
+   为什么用 CSS 隐藏而不是删代码：零 JS 风险、一行 git revert 就能回到有图标版本。
+   保留的 svg 只有功能性图标（搜索框里的放大镜、弹窗关闭 ✕ 等）。
+   ============================================================ */
+
+/* ① 隐藏所有装饰性图标位 */
+.nav-emoji, .ph-emoji, .tool-ic, .hd-emoji, .h3-emoji,
+.st3-emoji, .st4-emoji, .c-emoji, .f-tp-ic, .en-skill-ic { display: none !important; }
+/* 卡片标题里的图标（cardHead 把 svg 直接拼进了 h3）与学科页标题 */
+.card-head h3 > svg, .page-title > svg, .log-item svg { display: none !important; }
+
+/* ② 侧栏：纯文字导航。浅底 + 强调色文字（比整块实心绿高级） */
+.sidebar { background: transparent; border-right: 1px solid var(--line-soft); }
+.brand { padding: 20px 18px 14px; font-size: 15px; letter-spacing: .2px; }
+.side-nav { padding: 6px 10px 18px; }
+.nav-group { margin-top: 16px; }
+.nav-group-title {
+  font-size: 10.5px; letter-spacing: 1.2px; color: var(--muted);
+  padding: 0 10px 6px; font-weight: 600;
+}
+.nav-item {
+  padding: 8px 10px; border-radius: var(--r-sm);
+  font-size: 13.5px; color: var(--ink-2); font-weight: 450;
+}
+.nav-item:hover { background: var(--soft); }
+.nav-item.active { background: var(--soft); color: var(--accent); font-weight: 650; }
+.nav-item .nav-badge { background: var(--chip); color: var(--sub); }
+.nav-item.active .nav-badge { background: var(--accent); color: #fff; }
+
+/* ③ 页头：标题更大更稳，压一条细线定出页头区域 */
+.topbar { padding: 22px 30px 16px; }
+.ph-txt h1 { font-size: 23px; font-weight: 650; letter-spacing: -.3px; }
+.topbar-sub { font-size: 12.5px; letter-spacing: .1px; }
+
+/* ④ 卡片头：标题行下面压一条发丝线（编辑感来源，替代图标做分隔） */
+.card { padding: 20px 22px; margin-bottom: 22px; border-color: var(--line-soft); }
+.card-head {
+  margin-bottom: 14px; padding-bottom: 11px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.card-head h3 { font-size: var(--t-h2); font-weight: 650; letter-spacing: -.2px; }
+.card-head .hint { font-size: 12px; color: var(--muted); }
+
+/* ⑤ 数字块：数字撑起来，标签压低——纯排版做出层级 */
+.st3-num, .st4-num, .stat-num { font-weight: 650; letter-spacing: -.5px; color: var(--ink); }
+.st3-label, .st4-label, .h3-label, .stat-label { color: var(--muted); letter-spacing: .2px; }
+.h3-val { font-weight: 600; }
+
+/* ⑥ 按钮与输入：更克制的实心/描边 */
+.btn { font-weight: 600; padding: 9px 18px; border-radius: var(--r-sm); }
+.btn.ghost { border-color: var(--line); color: var(--ink-2); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.btn.plain { background: transparent; color: var(--sub); border: 1px solid var(--line); }
+.btn.plain:hover { background: var(--soft); color: var(--ink); }
+.field input, .field select, .field textarea, .search-input-wrap input, .ai-input input {
+  border-color: var(--line); background: var(--card);
+}
+.field input:focus, .field select:focus, .field textarea:focus,
+.search-input-wrap input:focus, .ai-input input:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* ⑦ 首页领域卡（现在没图标了）：名字顶上来，给「进入」留出呼吸 */
+.hd { padding: 16px; }
+.hd-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.hd-row { margin-bottom: 6px; }
+.hd-sub { min-height: 0; }
+.hd-go { font-size: 12.5px; letter-spacing: .2px; }
+
+/* ⑧ 手机端跟随（页头/卡片同步收紧一点） */
+@media (max-width: 767px) {
+  .topbar { padding: 16px 16px 12px; }
+  .ph-txt h1 { font-size: 21px; }
+  .card { padding: 16px; margin-bottom: 18px; }
+  .card-head { padding-bottom: 9px; margin-bottom: 12px; }
+  .nav-item { padding: 9px 10px; }
+}
+
 /* 8) 主题切换时主区域给一个极轻的过渡，减少"跳色"的廉价感 */
 .view-wrap { transition: background .2s; }
 
