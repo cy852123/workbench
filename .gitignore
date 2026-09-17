@@ -4,6 +4,8 @@
 
 ## 依赖
 node_modules/
+__pycache__/
+*.pyc
 
 ## 凭据（绝不上传；本地留着，同步与部署要用）
 .cf-env

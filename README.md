@@ -23,7 +23,7 @@
 | 样式 | `styles.css` 740 行 / 42 KB |
 | 离线 | `service-worker.js`（缓存号 **`wb-cache-v053`**；2026-09-17 首次真正上线，之后每次改前端都要 +1） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
-| 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交的说明 + App 内「设置与数据 → 更新日志」（20 条）** |
+| 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交的说明 + App 内「更新日志」（21 条）** |
 
 ## 二、目录结构
 
@@ -34,6 +34,7 @@ workbench/
 ├─ functions/api/*.js       云端接口（随 Pages 一起部署）：data 同步 / ai 代理 / learnpack / tasks
 ├─ cloudflare-worker.js + wrangler.toml   独立 Worker（名字也叫 workbench-sync，**当前线上没用它**）
 ├─ gen_dict.py · download_dict.py         词典脚本（见第七节，目前没接进界面）
+├─ tools/deploy.py                        **一键部署**：同步暂存 + 缓存号+1 + 上传 + 线上自检（见第六节）
 ├─ shot_preview.js                        截图脚本：截 previews/ 下某个设计原型页（桌面+手机两张，输出到 previews/）
 ├─ tests/                  **不入库**：51 个测试脚本（45 个 .js + 6 个 .py）+ 13 个截图/数据文件，共 64 个（见第五节）
 ├─ previews/               **不入库**：8/16 改版过程的设计预览图/原型页（留档，别删）
@@ -203,6 +204,26 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 
 **顺带查出来的问题（2026-09-17 已修复）**：`.pages-deploy/` 里**曾经从来没有 `service-worker.js`**，所以线上 `/service-worker.js` 返回的一直是首页 HTML（3050 字节 = `index.html` 的大小），等于**线上 PWA 的离线缓存从来没生效过**。好处是手机不会卡旧版本；坏处是离线打不开。下面第 1 步的 `cp` 清单里补上了 `service-worker.js`，本次已随部署上线。
 
+**首选：一条命令搞定（2026-09-17 新增 `tools/deploy.py`）**
+
+```bash
+cd E:\Software\workbench
+python tools/deploy.py            # 前置检查 → 缓存号+1 → 同步暂存 → 上传 → 线上自检
+```
+
+它会依次：① 检查仓库是否干净 + `node --check` 三个文件 + 读 `.cf-env`；② 把 `service-worker.js` 的缓存号 **自动 +1**；③ 把 8 个前端文件（**含 `service-worker.js`**）+ `functions/api/*.js` 同步进 `.pages-deploy/`；④ `wrangler pages deploy`；⑤ **逐文件比对线上与本地 `md5`**、核对线上 SW 缓存号、确认 `/api/data` 返回 401、首页 200 —— 任何一项不过就打印回滚指引并以非 0 退出。
+
+```bash
+python tools/deploy.py --test        # 部署前先跑 npm test（要 8000 端口空着）
+python tools/deploy.py --dry-run     # 只做检查+同步，不真上传（安全试跑）
+python tools/deploy.py --no-bump     # 不 +1 缓存号（只有首次上线用得上）
+python tools/deploy.py --commit      # 成功后自动提交缓存号那一处改动
+```
+
+> 这个脚本就是为下面两个事故写的（`.pages-deploy/` 忘同步、缓存号忘 +1）。**以后改完前端就只跑它**，不要再手抄命令。
+
+下面是它固化的那几步（想看手工流程 / 排障时用）：
+
 重新部署的步骤（改完前端 → 同步暂存目录 → 上传）：
 
 ```bash
@@ -278,7 +299,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - [x] ~~把本地这 7 个 commit 推到 GitHub~~ ✅ 2026-09-17 完成（`8003f2e..626b90a`）。**注意**：`E:\backup\workbench\` 的备份和项目在**同一块 E 盘**，盘坏了两份一起没，GitHub 才是异地那一份
 - [x] ~~把线上更新到当前本地版本（含首次部署 `service-worker.js`）~~ ✅ 2026-09-17 完成，见第六节的部署记录与 md5 自查表
 - [ ] **以后每次改前端**必须走完整流程：`cp` 到 `.pages-deploy/` → **SW 缓存号 +1** → `wrangler pages deploy`。漏掉任何一步就会出「改了没生效」或「线上还是旧版」（已发生过一次）——所以下面那条「写 deploy 脚本」优先级很高
-- [ ] 部署流程自动化：写个 `deploy` 脚本把「同步暂存 + SW 版本号 +1 + 上传 + 自检」一次做完（现在靠手抄，已出过一次事故）
+- [x] ~~部署流程自动化~~ ✅ 2026-09-17 完成：`tools/deploy.py`（含 `--test/--dry-run/--no-bump/--commit`），已实测跑通
 - [ ] `app.js` 4500 行 / `views.js` 2816 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
 - [ ] 词典脚本 `gen_dict.py` 生成的 `dict.js` 目前**没有任何代码引用**（查词功能没接回界面），66 MB 原料因此白占地方
 - [ ] `tests/` 60+ 个脚本没入库：其中真正当回归门禁用的（`test.js`/`test_interact.js`）建议入库，其余 scratch 留在本地
