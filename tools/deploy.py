@@ -290,6 +290,14 @@ def verify():
         same = bool(m) and bool(local) and int(m.group(1)) == int(local.group(1))
         note(same, "线上是真正的 SW 且缓存号与本地一致（证明部署的确实是本地产物）",
              "线上 v%s / 本地 v%s" % (m.group(1) if m else "?", local.group(1) if local else "?"))
+        # ★ 2026-09-17 加：index.html 的资源版本号必须与 SW 缓存号一致。
+        #   两者不一致 = 页面请求的 URL 和 SW 预缓存对不上 → 离线失效 / 手机端更新行为异常。
+        idx = fetch("/", bust=True).decode("utf-8", "replace")
+        ivs = sorted(set(re.findall(r"\?v=(v\d+)", idx)))
+        want_v = "v" + (local.group(1) if local else "?")
+        note(len(ivs) == 1 and ivs[0] == want_v,
+             "线上 index.html 资源版本号与 SW 缓存号一致（手机端一次打开即新版的前提）",
+             "index.html=%s / SW 缓存号=%s" % (",".join(ivs) or "无", want_v))
         try:
             fetch("/api/data")
             note(False, "/api/data 无密钥应 401", "竟然可读，密钥保护可能失效")
