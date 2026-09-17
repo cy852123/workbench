@@ -830,3 +830,61 @@ img, svg, video { max-width: 100%; }
 
 /* 8) 主题切换时主区域给一个极轻的过渡，减少"跳色"的廉价感 */
 .view-wrap { transition: background .2s; }
+
+/* ============================================================
+   v2 第二批：层级 / 密度 / 空状态（2026-09-17）
+   核心思路 —— 用「底色」分层，而不是给每个盒子再加一个边框：
+     白卡 .card           = 主要内容（一页里只该出现在该看的地方）
+     浅底 var(--soft)     = 统计块 / 卡内小组件 / 空状态（默认低一层）
+   之前所有块都是"白底 + 1px 描边 + 同款阴影"，所以整页像一堵白盒子墙。
+   ============================================================ */
+
+/* A. 密度与节奏 -------------------------------------------------- */
+.view-wrap { max-width: 1180px; margin: 0 auto; padding: 18px 28px 48px; }
+.topbar { padding: 20px 28px 14px; border-bottom: 1px solid var(--line-soft); margin-bottom: 18px; }
+.card { padding: 18px 20px; margin-bottom: 20px; }
+.card:last-child { margin-bottom: 0; }
+.card-head { margin-bottom: 14px; }
+/* 卡里再嵌卡：内层不再白底+描边，避免"白盒子套白盒子"的糊感 */
+.card .card { background: var(--soft); border-color: transparent; box-shadow: none; }
+
+/* B. 层级：次级块统一走浅底 -------------------------------------- */
+.hd, .tool, .st3, .st4, .h3, .f-st, .en-entry {
+  background: var(--soft); border-color: transparent; box-shadow: none;
+}
+.hd:hover, .tool:hover { background: var(--card); border-color: var(--line); }
+.st3, .st4, .h3 { padding: 16px 12px; }
+.h3-btn { background: var(--card); border-color: var(--line); }
+.st3-num, .st4-num, .stat-num, .f-st-num { font-variant-numeric: tabular-nums; }
+/* 主要内容卡（考研四科 / 课程）保持白色 —— 它们才是这一页的主角 */
+.ky-card, .course-card { background: var(--card); }
+
+/* C. 列表：分隔线降到最轻一档，行可点就给 hover ------------------ */
+.list-item { padding: 12px 8px; border-bottom-color: var(--line-soft); border-radius: var(--r-sm); }
+.list-item:hover { background: var(--soft); }
+.task-item, .en-task { border-bottom-color: var(--line-soft); }
+.list-item .li-meta, .f-his-type, .f-his-time, .hm-legend { color: var(--muted); }
+
+/* D. 空状态：一个"空页"图形 + 明确的主次文案 --------------------- */
+.empty {
+  text-align: center; color: var(--sub); font-size: var(--t-body);
+  padding: 28px 18px; background: var(--soft); border-radius: var(--r-md);
+}
+.empty::before {
+  content: ""; display: block; width: 36px; height: 28px; margin: 0 auto 12px;
+  border: 1.5px solid var(--line); border-radius: var(--r-sm);
+  background:
+    linear-gradient(var(--line-soft), var(--line-soft)) 8px 9px / 20px 2px no-repeat,
+    linear-gradient(var(--line-soft), var(--line-soft)) 8px 16px / 13px 2px no-repeat,
+    var(--card);
+}
+.empty .empty-tip { margin-top: 8px; font-size: var(--t-sm); color: var(--muted); }
+
+/* E. 手机端：桌面放宽，手机反而要更紧凑 -------------------------- */
+@media (max-width: 767px) {
+  .view-wrap { padding: 10px 14px 96px; }
+  .topbar { padding: 14px 16px 12px; margin-bottom: 14px; }
+  .card { padding: 14px; margin-bottom: 16px; }
+  .st3, .st4, .h3 { padding: 12px 8px; }
+  .empty { padding: 22px 14px; }
+}
