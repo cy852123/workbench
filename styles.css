@@ -191,6 +191,37 @@ body.font-large { --fs-base: 16px; --fs-sm: 14px; --fs-h3: 16px; }
 .hs-ring i { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 13px; font-weight: 800; color: var(--accent); }
 .hs-item { font-size: 13.5px; color: #555; padding: 0 12px; border-left: 1px solid #EEE; }
 .hs-item b { font-size: 17px; color: var(--text); }
+
+/* ============================================================
+   F1（2026-09-17）首页减法
+   参考调研（网易号《仪表盘设计的 6 个要点》）：关键数据要用大号加粗突出、
+   别把平级模块堆在一起。原来首页 5 张平级卡，首屏就挤满了。
+   ============================================================ */
+
+/* 顶部概览卡的 KPI 大数字行 */
+.home-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.kpi { padding: 2px 0 2px 14px; border-left: 1px solid var(--line); }
+.kpi:first-child { padding-left: 0; border-left: 0; }
+.kpi-num { font-size: 29px; font-weight: 680; letter-spacing: -.02em; line-height: 1.15; color: var(--text); font-variant-numeric: tabular-nums; }
+.kpi-label { font-size: 11.5px; color: var(--sub); letter-spacing: .05em; margin-top: 5px; }
+
+/* 「更多」折叠区（AI 下发任务等低频内容） */
+details.more { margin-top: 2px; }
+details.more > summary { cursor: pointer; font-size: 12.5px; color: var(--sub); padding: 11px 2px; list-style: none; letter-spacing: .04em; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: "＋ "; color: var(--accent); font-weight: 700; }
+details.more[open] > summary::before { content: "－ "; }
+details.more > summary:hover { color: var(--accent); }
+details.more > .card:first-of-type { margin-top: 0; }
+
+/* 领域入口改紧凑单行（原来是 5 列高卡，一屏就被它吃掉） */
+.home-domains { grid-template-columns: 1fr !important; gap: 0 !important; }
+.home-domains .hd { display: grid; grid-template-columns: 1fr auto; align-items: center;
+  padding: 12px 2px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; }
+.home-domains .hd:last-child { border-bottom: 0; }
+.home-domains .hd-row { grid-column: 1; grid-row: 1; margin-bottom: 0; }
+.home-domains .hd-sub { grid-column: 1; grid-row: 2; min-height: 0; margin-bottom: 0; font-size: 12.5px; line-height: 1.45; }
+.home-domains .hd-go { grid-column: 2; grid-row: 1 / span 2; }
 @media (max-width: 768px) {
   .home-hero { flex-direction: column; align-items: flex-start; }
   .home-tasks { grid-template-columns: 1fr; }

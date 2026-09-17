@@ -111,13 +111,29 @@
     /* hero 卡：问候 + 行动按钮 */
     var weekLog = (d.studyLog || []).filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6; });
     var weekMin = weekLog.reduce(function (s, x) { return s + (x.minutes || 0); }, 0);
+    /* F1（2026-09-17）首页减法：这几个关键数字原来在最底部一张「状态条」卡里，
+       重复又靠下；现在提前算好，直接放进顶部概览卡的大号 KPI 行。 */
+    var kyDm0 = d.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
+    var kySc0 = kyActive(kyDm0);
+    var actPct = 0;
+    if (kySc0 && kySc0.gen && kySc0.gen.dailyDone && kySc0.gen.dailyDone.date === t) {
+      actPct = Math.min(100, Math.round(kySc0.gen.dailyDone.count / 5 * 100));
+    }
+    var streak = kyStreak(d, "kaoyan");
+    var kyStars = (kySc0 && kySc0.gen) ? (kySc0.gen.stars || 0) : 0;
     html += '<div class="card"><div class="home-hero">' +
       '<div><div class="home-greet">' + greeting + "，今天学什么？</div>" +
-      '<div class="home-date">' + dateCN(t) + " " + weekCN() + " · 本周累计 " + fmtMin(weekMin) + "</div></div>" +
+      '<div class="home-date">' + dateCN(t) + " " + weekCN() + "</div></div>" +
       '<div class="home-cta">' +
       '<button class="btn ghost" data-action="punch" data-domain="">快速打卡</button>' +
-      '<button class="btn" data-action="add-goal">＋ 设定今日目标</button>' +
-      "</div></div></div>";
+      '<button class="btn" data-action="add-goal">设定今日目标</button>' +
+      "</div></div>" +
+      '<div class="home-kpi">' +
+      '<div class="kpi"><div class="kpi-num">' + actPct + '%</div><div class="kpi-label">今日完成率</div></div>' +
+      '<div class="kpi"><div class="kpi-num">' + streak + ' 天</div><div class="kpi-label">连续打卡</div></div>' +
+      '<div class="kpi"><div class="kpi-num">' + fmtMin(weekMin) + '</div><div class="kpi-label">本周有效时长</div></div>' +
+      (kyStars ? '<div class="kpi"><div class="kpi-num">' + kyStars + '</div><div class="kpi-label">累计星星</div></div>' : "") +
+      "</div></div>";
 
     /* 今日行动大卡 */
     var g = (d.goals || []).filter(function (x) { return x.date === t; });
@@ -126,11 +142,11 @@
     (d.studyLog || []).filter(function (x) { return x.date === t; }).forEach(function (x) { doneMin += (x.minutes || 0); });
     var goalLine;
     if (g.length === 0) {
-      goalLine = '<span>🎯</span><span class="gl">今日小目标：尚未设置，点右边设定一个吧</span>' +
+      goalLine = '<span class="gl">今日小目标：尚未设置，点右边设定一个吧</span>' +
         '<button class="btn small" data-action="add-goal">设定</button>';
     } else {
       var gp = planMin > 0 ? Math.min(100, Math.round(doneMin / planMin * 100)) : 0;
-      goalLine = '<span>🎯</span><span class="gl has">目标 ' + fmtMin(planMin) + " · 已学 " + fmtMin(doneMin) + "（" + gp + "%）</span>" +
+      goalLine = '<span class="gl has">目标 ' + fmtMin(planMin) + " · 已学 " + fmtMin(doneMin) + "（" + gp + "%）</span>" +
         '<button class="btn small ghost" data-action="add-goal">调整</button>';
     }
     var todayTasks = (d.tasks || []).filter(function (x) { return x.date === t ? !x.done : (!x.date && !x.done); });
@@ -145,39 +161,25 @@
             '<div class="ht-sub">' + esc(domainName(tt.domainId)) + "</div>" +
             (tt.date && tt.date < t ? '<div class="ht-late">已逾期</div>' : "") + "</div></div>";
         }).join("") + "</div>";
-    var kyDm0 = d.domains.filter(function (x) { return x.id === "kaoyan"; })[0];
-    var kySc0 = kyActive(kyDm0);
-    var actPct = 0;
-    if (kySc0 && kySc0.gen && kySc0.gen.dailyDone && kySc0.gen.dailyDone.date === t) {
-      actPct = Math.min(100, Math.round(kySc0.gen.dailyDone.count / 5 * 100));
-    }
-    html += '<div class="card"><div class="home-action-head"><h3>今日行动</h3>' +
-      (kySc0 ? '<span class="home-pct">完成 ' + actPct + "%</span>" : "") + "</div>" +
+    /* F1：完成率已在顶部 KPI 行显示，这里不再重复 */
+    html += '<div class="card"><div class="home-action-head"><h3>今日行动</h3></div>' +
       '<div class="home-goal">' + goalLine + "</div>" +
       tasksHtml +
       '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
-      '<button class="btn ghost small" data-action="add-task">' + ic("plus") + "新建任务</button>" +
+      '<button class="btn ghost small" data-action="add-task">新建任务</button>' +
       '<button class="btn ghost small" data-action="go-view" data-view="tasks-all">查看全部</button>' +
       (overDue.length ? '<span class="ht-late" style="align-self:center;">另有 ' + overDue.length + " 条逾期</span>" : "") +
       "</div></div>";
 
-    /* AI 下发任务卡（Hermes 每天早上写入云端，这里异步拉取展示） */
-    html += '<div class="card" id="aiTasksBox"><div class="c-head"><span class="c-emoji">' + ic("spark") + '</span><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div><div class="li-sub">加载中…</div></div>';
-
-    /* 学科入口 5 卡（紧凑） */
+    /* 学科入口（紧凑）—— F1：从第 5 张提到第 3 张，当「入口汇总」 */
     html += '<div class="card"><div class="card-head"><h3>学习领域</h3></div>' +
       '<div class="home-domains">' + d.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).map(homeDomainCard).join("") + "</div></div>";
 
-    /* 底部状态条 */
-    var streak = kyStreak(d, "kaoyan");
-    var kyStars = (kySc0 && kySc0.gen) ? (kySc0.gen.stars || 0) : 0;
-    html += '<div class="card"><div class="home-status">' +
-      '<div class="hs-ring" style="--p:' + actPct + '%;"><i>' + actPct + "%</i></div>" +
-      '<div class="hs-item">今日完成率<br><b>' + actPct + "%</b></div>" +
-      '<div class="hs-item">连续打卡<br><b>' + streak + " 天</b></div>" +
-      '<div class="hs-item">本周有效时长<br><b>' + fmtMin(weekMin) + "</b></div>" +
-      (kyStars ? '<div class="hs-item" style="margin-left:auto;">累计 <b>' + kyStars + "</b> 颗</div>" : "") +
-      "</div></div>";
+    /* F1：AI 下发任务收进「更多」，默认折叠。异步填充仍按 id="aiTasksBox" 找，嵌套不影响。 */
+    html += '<details class="more"><summary>更多 · AI 下发任务</summary>' +
+      '<div class="card" id="aiTasksBox"><div class="c-head"><span class="c-title">AI 下发任务</span><span class="c-sub">Hermes 每天帮你安排</span></div><div class="li-sub">加载中…</div></div></details>';
+
+    /* F1：原「底部状态条」整卡删除 —— 数字已上移到顶部概览卡，避免同一屏重复两遍 */
 
     return html;
   }
