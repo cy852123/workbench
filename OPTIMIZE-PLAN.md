@@ -21,7 +21,7 @@
 |---|---|---|
 | 核心文件 | `app.js` 4500 行 / 285 KB；`views.js` 2816 行 / 216 KB；`styles.css` 740 行 / 42 KB | `wc -l`、`ls -l` |
 | 仓库跟踪文件 | 23 个（本次瘦身前 95 个） | `git ls-files \| wc -l` |
-| UI 回归现状 | `npm test` = **39 项断言全过**（桌面+手机 3 种宽度+交互） | 真跑，见下 |
+| UI 回归现状 | `npm test` = **40 项断言全过**（桌面+手机 3 种宽度+交互） | 真跑，见下 |
 | 线上版本 | 落后本地 6 个 commit；线上 `app.js` 里 `cet` 仍出现在 84 行 | 下载线上文件比对 md5 + `grep -c cet` |
 | 线上 Service Worker | **不存在**（请求 `/service-worker.js` 返回 3050 字节 = `index.html` 的大小） | `curl` + md5 比对 |
 | 云端数据 | KV `WB_KV` 里 3 个键：`wb_main`（主数据）、`wb_tasks`、`wb_learnpack`；单次上限 20 MB | Cloudflare API 只读查询 |
@@ -127,7 +127,7 @@ curl -s https://workbench-sync-c9e.pages.dev/app.js | grep -c cet               
 3. `package.json` 加脚本：`npm run verify` = `node --check` 三个文件 + 起服务 + 跑全部测试 + 打印"通过 N 项"。
 4. 门禁只读（不写文件、不删文件）—— 现在 `tests/test.js` 会**写根目录 7 张 shot_*.png**，改为写到 `tests/` 下。
 **风险**：低（新增+挪脚本，不改 app 代码）。注意"不要挪动脚本位置"的纪律：只新增 `run_verify.js`，现有测试脚本位置不动。
-**验证**：`npm run verify` 应打印 `PASS 39/39`；然后**故意改坏一处**（把 `views.js` 里某个标题改错）再跑，必须变红 —— 证明门禁真能失败。
+**验证**：`npm run verify` 应打印 `PASS 40/40`；然后**故意改坏一处**（把 `views.js` 里某个标题改错）再跑，必须变红 —— 证明门禁真能失败。
 **回滚**：`git revert`。
 
 ### P1-2：版本号单一来源
@@ -146,7 +146,7 @@ curl -s https://workbench-sync-c9e.pages.dev/app.js | grep -c cet               
 **方案 B（按视图拆 views.js，1~2 天）**：`views.js` 拆成 `views/` 下 8~10 个文件（今日/考研/课程/资料库/错题本/答疑/复盘/设置…），`index.html` 多引几个 `<script>`。**不需要构建工具**（浏览器原生多文件），但要按依赖顺序列 script 标签，且 SW 的 `ASSETS` 清单要同步更新。
 **方案 C（真模块化，用 ES Module，3~5 天）**：改成 `import/export` + `type="module"`，`app.js` 拆成 store/sync/migrate/actions/render。收益最大，但要动 `index.html` 加载方式、SW 缓存清单、所有测试的注入方式。
 **我的建议**：**先做 A + P1-1 + P1-2**；等你哪天要加"新模块"时再做 B（拆的时候顺手把新模块独立出去）。**C 现在不值得**——没有构建需求，收益主要是"好看"。
-**无论选哪个，验证方式一致**：`npm test` 39 项全过 + 桌面/手机截图人眼比对。
+**无论选哪个，验证方式一致**：`npm test` 40 项全过 + 桌面/手机截图人眼比对。
 
 ### P1-5：仓库历史瘦身（可选）
 

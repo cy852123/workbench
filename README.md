@@ -97,7 +97,7 @@ cd E:\Software\workbench
 # ① 语法：改完 app.js/views.js 立刻查
 node --check app.js && node --check views.js && node --check service-worker.js
 
-# ② UI 冒烟（39 项断言，需要先起 8000 服务；用 Edge/Chrome 无头跑）
+# ② UI 冒烟（40 项断言，需要先起 8000 服务；用 Edge/Chrome 无头跑）
 npm test                            # = node tests/test.js && node tests/test_interact.js
 ```
 
