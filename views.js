@@ -460,7 +460,7 @@
 
     /* 区块1：今日学习（核心） */
     if (!td) {
-      html += card(cardHead(ic("calendar") + " 今日学习", "还没生成今日学习包", "ai-today"),
+      html += card(cardHead("今日学习", "还没生成今日学习包", "ai-today"),
         empty("今日学习包未生成", "每天早上 7 点 Hermes 会根据你的学习数据（错题、答疑、进度）生成个性化学习包；也可以点下方按钮立即用内置模板生成。") +
         '<button class="btn block" data-action="gen-ai-today">生成今日学习包</button>');
     } else {
@@ -497,7 +497,7 @@
     })();
     var weekCount = aiLogs.filter(function (x) { var dd = daysDiff(x.date); return dd != null && dd >= 0 && dd <= 6; }).length;
     var histCount = (al.history || []).length;
-    html += card(cardHead(ic("trending") + " 学习状态", "极简摘要，无进度条", "ai-status"),
+    html += card(cardHead("学习状态", "极简摘要，无进度条", "ai-status"),
       '<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">' +
       '<div><div class="stat-num">' + streak + '</div><div class="stat-label">连续学习（天）</div></div>' +
       '<div><div class="stat-num">' + weekCount + '</div><div class="stat-label">本周已完成学习（次）</div></div>' +
@@ -505,7 +505,7 @@
       '<button class="btn ghost small" data-action="go-view" data-view="ai-history" style="margin-top:12px;">查看全部历史记录</button>');
 
     /* 区块3：追加笔记 */
-    html += card(cardHead(ic("edit") + " 辅助快捷", "随手记录", "ai-append"),
+    html += card(cardHead("辅助快捷", "随手记录", "ai-append"),
       '<p style="font-size:14px;color:var(--sub);margin-bottom:10px;">不完成今日课程，也可以随时记录 AI 学习的零散感悟，会存入历史记录。</p>' +
       '<button class="btn block plain" data-action="ai-append-note">追加学习笔记</button>');
 
@@ -517,7 +517,7 @@
     var al = dm.aiLearn || { history: [] };
     var hist = (al.history || []).slice().sort(function (a, b) { return b.date > a.date ? 1 : -1; });
     var html = backBar("domain:ai", "AI 知识学习");
-    html += card(cardHead(ic("grid") + " 历史学习资料库", hist.length + " 条记录，可回看复习", "ai-history"),
+    html += card(cardHead("历史学习资料库", hist.length + " 条记录，可回看复习", "ai-history"),
       hist.length === 0 ? empty("还没有历史记录", "完成今日学习或追加笔记后，会保存在这里") :
         '<div>' + hist.map(function (h) {
           return '<div class="review-item"><div class="ri-head"><span class="ri-date">' + esc(h.date) + "</span>" +
@@ -531,8 +531,8 @@
             "</div>";
         }).join("") + "</div>");
     html += '<div class="grid grid-2">' +
-      card(cardHead(ic("trending") + " 本周学习时长", "AI 学习打卡", "stats"), weekBars(function (x) { return x.domainId === "ai"; })) +
-      card(cardHead(ic("flame") + " 28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "ai"; })) +
+      card(cardHead("本周学习时长", "AI 学习打卡", "stats"), weekBars(function (x) { return x.domainId === "ai"; })) +
+      card(cardHead("28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "ai"; })) +
       "</div>";
     return html;
   }
@@ -700,7 +700,7 @@
       { id: "cet-speaking", emoji: "help", name: "口语对话", desc: "微信练口语" },
       { id: "cet-translation", emoji: "link", name: "翻译工具", desc: "微信发句翻译" }
     ];
-    html += card(cardHead(ic("grid") + " AI 英语工具箱", "微信直连 Hermes", "ai-tools"),
+    html += card(cardHead("AI 英语工具箱", "微信直连 Hermes", "ai-tools"),
       '<div class="grid grid-4">' + tools.map(function (t) {
         return '<div class="card" style="margin-bottom:0;"><div class="card-head"><h3 style="font-size:15px;">' + t.emoji + " " + esc(t.name) + '</h3></div>' +
           '<div class="li-sub" style="margin-bottom:10px;">' + esc(t.desc) + "</div>" +
@@ -710,7 +710,7 @@
 
     /* 关联资料 */
     var cetRes = (d.resources || []).filter(function (r) { return r.domainId === "cet"; });
-    html += card(cardHead(ic("link") + " 关联学习资料", cetRes.length + " 份", "resources"),
+    html += card(cardHead("关联学习资料", cetRes.length + " 份", "resources"),
       cetRes.length === 0 ? empty("还没有关联资料", "点下方新增，或到资料库选择关联到英语学习") :
         '<div class="list">' + cetRes.slice(0, 6).map(function (r) {
           return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(r.title) + "</div>" +
@@ -795,7 +795,7 @@
     var html = "";
     var sc = kyActive(dm);
     if (!sc) {
-      html += card(cardHead(ic("target") + " 考研备考", "暂未创建备考方案", "empty"),
+      html += card(cardHead("考研备考", "暂未创建备考方案", "empty"),
         '<div class="li-sub" style="margin-bottom:12px;">创建一套备考方案，开始你的考研旅程。</div>' +
         '<button class="btn" data-action="ky-scheme-create">新建备考方案</button>');
       return html;
@@ -842,7 +842,7 @@
     /* 今日日程：任务列表（勾选 + 菜单）+ 添加 */
     var cards = kyGenTasks(sc, t);
     var doneCount = (gen.dailyDone && gen.dailyDone.date === t) ? gen.dailyDone.count : 0;
-    html += card(cardHead(ic("target") + " 今日日程", doneCount + " / " + cards.length + " 完成", "tasks"),
+    html += card(cardHead("今日日程", doneCount + " / " + cards.length + " 完成", "tasks"),
       '<div class="list">' + cards.map(function (c, i) {
         var done = c.done;
         return '<div class="task-item' + (done ? " done" : "") + '">' +
@@ -860,7 +860,7 @@
     /* 错题集：批量上传 + 知识点总结 */
     var mf = sc.mistakeFiles || [];
     var kn = sc.knowledge || [];
-    html += card(cardHead(ic("folder") + " 错题集", "放材料的地方 · 批量上传", "mistakes"),
+    html += card(cardHead("错题集", "放材料的地方 · 批量上传", "mistakes"),
       '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
       '<button class="btn small" data-action="ky-upload-files">＋ 上传 PDF / 图片 / 压缩包</button>' +
       '<button class="btn small ghost" data-action="go-view" data-view="ky-mistake-files">查看错题材料（' + mf.length + '）</button>' +
@@ -873,7 +873,7 @@
       '<button class="btn small plain" style="margin-top:8px;" data-action="ky-add-knowledge">＋ 添加知识点总结</button>');
 
     /* 复盘区 */
-    html += card(cardHead(ic("refresh") + " 复盘", "每天结束时生成", "review"),
+    html += card(cardHead("复盘", "每天结束时生成", "review"),
       (gen.lastReview && gen.lastReview.date === t
         ? '<div style="background:#F7F8F6;border-radius:10px;padding:12px 14px;font-size:13.5px;line-height:1.7;white-space:pre-wrap;color:#202124;">' + esc(gen.lastReview.text) + "</div>"
         : '<div class="li-sub" style="padding:6px 0;">今天还没复盘。学习结束后点上方「生成今日复盘」，我会总结今天完成情况、错题薄弱点，并给出明天安排。</div>') +
@@ -895,7 +895,7 @@
     html += '<div class="page-title" style="font-size:18px;font-weight:800;margin-bottom:4px;">错题集</div>' +
       '<div class="li-sub" style="margin-bottom:14px;">这里只是放材料的地方：把一天刷的题（PDF/图片/压缩包）批量传上来，知识点总结放在下面，复盘时我会引用。</div>';
 
-    html += card(cardHead(ic("upload") + " 批量上传", "支持 PDF / 图片 / 压缩包", "upload"),
+    html += card(cardHead("批量上传", "支持 PDF / 图片 / 压缩包", "upload"),
       '<div class="field"><label>选择文件（可多选）</label>' +
       '<input type="file" id="kyFileInput" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.zip,.rar,.doc,.docx">' +
       '<div class="li-sub" style="margin-top:6px;">选好文件后点下方上传按钮；文件会保存在本机浏览器（不上传服务器，云端仅同步文件名清单）。</div>' +
@@ -903,14 +903,14 @@
       '<button class="btn" data-action="ky-upload-submit">上传所选文件</button>' +
       '<button class="btn ghost" data-action="ky-file-subject">设置科目（默认：全部）</button></div></div>');
 
-    html += card(cardHead(ic("folder") + " 已上传材料", mf.length + " 份", "files"),
+    html += card(cardHead("已上传材料", mf.length + " 份", "files"),
       mf.length ? '<div class="list">' + mf.slice().reverse().map(function (f, i) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;">' + esc(f.name) + "</div>" +
           '<div class="li-sub">' + esc(f.subject || "全部") + " · " + fmtSize(f.size) + " · " + esc(f.date || "") + "</div></div>" +
           '<button class="icon-btn" data-action="ky-file-del" data-idx="' + i + '">' + ic("trash") + "</button></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">还没有上传材料</div>');
 
-    html += card(cardHead(ic("link") + " 知识点总结", kn.length + " 条", "knowledge"),
+    html += card(cardHead("知识点总结", kn.length + " 条", "knowledge"),
       '<button class="btn small ghost" style="margin-bottom:10px;" data-action="ky-add-knowledge">＋ 添加知识点总结（或微信发我，我帮你放）</button>' +
       (kn.length ? '<div class="list">' + kn.slice().reverse().map(function (k, i) {
         return '<div class="list-item" style="align-items:flex-start;"><div class="li-main"><div class="li-title" style="font-weight:600;font-size:13.5px;">' + esc(k.title) + "</div>" +
@@ -953,7 +953,7 @@
   }
   function kyAiBriefCard(gen) {
     var b = (gen.aiBrief && gen.aiBrief.date === todayStr()) ? gen.aiBrief.text : null;
-    return card(cardHead(ic("spark") + " AI 每日简报", "根据昨日记录自动生成", "brief"),
+    return card(cardHead("AI 每日简报", "根据昨日记录自动生成", "brief"),
       '<div style="background:#EAF6F0;border-radius:10px;padding:12px 14px;font-size:13.5px;color:#2F6B57;line-height:1.6;">' +
       (b ? "" + esc(b) : "昨日没有学习记录，今天从 30 分钟开始吧。") + "</div>");
   }
@@ -969,14 +969,14 @@
     html += kyAiBriefCard(gen);
     var cards = kyGenTasks(sc, t);
     var en = cards.filter(function (c) { return c.key === "english"; })[0] || { items: [], done: false };
-    html += card(cardHead(ic("target") + " 今日任务", "自动生成 · 点击开始做题", "task"),
+    html += card(cardHead("今日任务", "自动生成 · 点击开始做题", "task"),
       '<div class="list">' + en.items.map(function (it, i) {
         return '<div class="task-item' + (en.done ? " done" : "") + '" data-action="' + (i === 0 ? "ky-start-english" : "ky-sentence-modal") + '">' +
           '<span class="task-check">' + (en.done ? ic("check") : "") + "</span>" +
           '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
           '<span class="tag">' + (en.done ? "已完成" : (i === 0 ? "去做题" : "去练习")) + "</span></div>";
       }).join("") + "</div>");
-    html += card(cardHead(ic("grid") + " 学科工具箱", "英语专属工具", "tools"),
+    html += card(cardHead("学科工具箱", "英语专属工具", "tools"),
       '<div class="grid grid-2">' +
       toolBtn("grid", "精读库", "真题篇目 + 正确率 + 定位句分析", "", "ky-reading") +
       toolBtn("edit", "长难句练习", "每日 5 句 · 拆解解析", "ky-sentence-modal", "") +
@@ -986,7 +986,7 @@
     /* 作文模板库：大作文/小作文 分类 + 自定义名称 + 上传文件 */
     var ess = gen.essayFiles || [];
     var essCats = gen.essayCats || ["大作文·图表", "大作文·图画", "小作文·书信", "小作文·通知"];
-    html += card(cardHead(ic("edit") + " 作文模板库", "大作文 / 小作文 分类上传", "essay"),
+    html += card(cardHead("作文模板库", "大作文 / 小作文 分类上传", "essay"),
       '<button class="btn small" data-action="ky-pick" data-key="essayFiles">上传模板文件（PDF/图片/Word）</button> ' +
       '<button class="btn small ghost" data-action="ky-essay-cat">＋ 新增分类名称</button>' +
       (ess.length ? '<div class="list" style="margin-top:10px;">' + ess.slice().reverse().map(function (f, i) {
@@ -999,7 +999,7 @@
 
     /* 翻译练习：每日英译汉 + 汉译英 + 上传复盘（删生词记录/语序调整） */
     var tr = gen.transFiles || [];
-    html += card(cardHead(ic("link") + " 翻译练习", "每日一道英译汉 + 一道汉译英", "trans"),
+    html += card(cardHead("翻译练习", "每日一道英译汉 + 一道汉译英", "trans"),
       '<button class="btn small" data-action="ky-pick" data-key="transFiles">上传今日翻译练习（拍照/PDF）</button>' +
       (tr.length ? '<div class="list" style="margin-top:10px;">' + tr.slice().reverse().slice(0, 6).map(function (f, i) {
         return '<div class="list-item" style="align-items:flex-start;">' +
@@ -1012,7 +1012,7 @@
     var wtCount = {};
     rl.forEach(function (r) { (r.wrongTypes || []).forEach(function (w) { wtCount[w] = (wtCount[w] || 0) + 1; }); });
     var wtItems = Object.keys(wtCount).map(function (k) { return { name: k, n: wtCount[k] }; });
-    html += card(cardHead(ic("trending") + " 阅读复盘", rl.length ? "共 " + rl.length + " 篇 · 正确率 ≥60% 得 1⭐" : "暂无记录", "reading") +
+    html += card(cardHead("阅读复盘", rl.length ? "共 " + rl.length + " 篇 · 正确率 ≥60% 得 1⭐" : "暂无记录", "reading") +
       '<button class="btn small ghost" data-action="ky-reading-record">＋ 记录阅读</button>',
       '<div class="li-sub" style="font-weight:700;margin-bottom:2px;">错题类型占比</div>' +
       pctBars(wtItems, PCT_COLORS) +
@@ -1036,14 +1036,14 @@
     html += kyAiBriefCard(gen);
     var cards = kyGenTasks(sc, t);
     var ma = cards.filter(function (c) { return c.key === "math"; })[0] || { items: [], done: false };
-    html += card(cardHead(ic("target") + " 今日任务", "按阶段自动生成", "task"),
+    html += card(cardHead("今日任务", "按阶段自动生成", "task"),
       '<div class="list">' + ma.items.map(function (it) {
         return '<div class="task-item' + (ma.done ? " done" : "") + '" data-action="ky-start-math">' +
           '<span class="task-check">' + (ma.done ? ic("check") : "") + "</span>" +
           '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
           '<span class="tag">' + (ma.done ? "已完成" : "去完成") + "</span></div>";
       }).join("") + "</div>");
-    html += card(cardHead(ic("grid") + " 学科工具箱", "数学专属工具", "tools"),
+    html += card(cardHead("学科工具箱", "数学专属工具", "tools"),
       '<div class="grid grid-2">' +
       toolBtn("edit", "公式卡", "高数/线代/概率常用公式", "ky-formula-modal", "") +
       toolBtn("file", "真题套卷专区", "各板块得分记录（选填/高数/线代/概率）", "ky-paper-modal", "") +
@@ -1051,7 +1051,7 @@
       toolBtn("link", "错题与同类题", "错题联动 + 同类题编号", "go-view", "ky-mistakes-link") +
       "</div>");
     var pr = gen.paperRecords || [];
-    html += card(cardHead(ic("file") + " 真题套卷记录", pr.length ? "共 " + pr.length + " 套" : "暂无记录", "papers") +
+    html += card(cardHead("真题套卷记录", pr.length ? "共 " + pr.length + " 套" : "暂无记录", "papers") +
       '<button class="btn small ghost" data-action="ky-paper-modal">＋ 记录套卷</button>',
       pr.length ? '<div class="list">' + pr.slice().reverse().slice(0, 6).map(function (p) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(p.paper) + " ｜ 总分 " + p.total + "</div>" +
@@ -1062,7 +1062,7 @@
     var clCount = {};
     cl.forEach(function (c) { var k = c.type || "其他"; clCount[k] = (clCount[k] || 0) + 1; });
     var clItems = Object.keys(clCount).map(function (k) { return { name: k, n: clCount[k] }; });
-    html += card(cardHead(ic("alert") + " 粗心账本", cl.length ? "共 " + cl.length + " 次失误" : "暂无记录", "careless") +
+    html += card(cardHead("粗心账本", cl.length ? "共 " + cl.length + " 次失误" : "暂无记录", "careless") +
       '<button class="btn small ghost" data-action="ky-careless-modal">＋ 记一笔</button>',
       '<div class="li-sub" style="font-weight:700;margin-bottom:2px;">错误类型占比</div>' +
       pctBars(clItems, PCT_COLORS) +
@@ -1084,14 +1084,14 @@
     html += kyAiBriefCard(gen);
     var cards = kyGenTasks(sc, t);
     var po = cards.filter(function (c) { return c.key === "politics"; })[0] || { items: [], done: false };
-    html += card(cardHead(ic("target") + " 今日任务", "知识点轮播 + 1000 题", "task"),
+    html += card(cardHead("今日任务", "知识点轮播 + 1000 题", "task"),
       '<div class="list">' + po.items.map(function (it) {
         return '<div class="task-item' + (po.done ? " done" : "") + '" data-action="ky-start-politics">' +
           '<span class="task-check">' + (po.done ? ic("check") : "") + "</span>" +
           '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
           '<span class="tag">' + (po.done ? "已完成" : "去学习") + "</span></div>";
       }).join("") + "</div>");
-    html += card(cardHead(ic("grid") + " 学科工具箱", "政治专属工具", "tools"),
+    html += card(cardHead("学科工具箱", "政治专属工具", "tools"),
       '<div class="grid grid-2">' +
       toolBtn("folder", "易错知识点", "自己记录易错点（可传文件）", "ky-points-modal", "") +
       toolBtn("help", "帽子题易错", "自己记录易错帽子题", "ky-hat-modal", "") +
@@ -1103,7 +1103,7 @@
     var pts = [];
     Object.keys(cp).forEach(function (k) { (cp[k] || []).forEach(function (t) { pts.push({ point: t, cat: k }); }); });
     var ptFiles = gen.pointsFiles || [];
-    html += card(cardHead(ic("folder") + " 易错知识点", pts.length + " 条 · 自己记录", "points"),
+    html += card(cardHead("易错知识点", pts.length + " 条 · 自己记录", "points"),
       '<button class="btn small" data-action="ky-point-add">＋ 记录易错点</button> ' +
       '<button class="btn small ghost" data-action="ky-pick" data-key="pointsFiles">上传资料</button>',
       (pts.length ? '<div class="list">' + pts.slice().reverse().slice(0, 8).map(function (p) {
@@ -1113,14 +1113,14 @@
       (ptFiles.length ? '<div style="margin-top:8px;">' + kyFileListHtml(ptFiles, "ky-file-del", "ky-file-view") + "</div>" : ""));
     /* 帽子题易错（自己记录，删自动记录） */
     var hats = gen.customHats || [];
-    html += card(cardHead(ic("help") + " 帽子题易错", hats.length + " 条 · 自己记录", "hat"),
+    html += card(cardHead("帽子题易错", hats.length + " 条 · 自己记录", "hat"),
       '<button class="btn small" data-action="ky-hat-add">＋ 记录易错帽子题</button>',
       hats.length ? '<div class="list">' + hats.slice().reverse().slice(0, 6).map(function (h) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(h.q) + " → " + esc(h.a) + "</div>" +
           '<div class="li-sub">' + esc(h.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">帽子题做错的，自己记录到这里，考前重点背</div>');
     var af = gen.currentAffairs || [];
-    html += card(cardHead(ic("file") + " 时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs") +
+    html += card(cardHead("时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs") +
       '<button class="btn small ghost" data-action="ky-affair-modal">＋ 收藏时政</button>',
       af.length ? '<div class="list">' + af.slice().reverse().slice(0, 6).map(function (a) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(a.title) + "</div>" +
@@ -1140,21 +1140,21 @@
     html += kyAiBriefCard(gen);
     var cards = kyGenTasks(sc, t);
     var mj = cards.filter(function (c) { return c.key === "major"; })[0] || { items: [], done: false };
-    html += card(cardHead(ic("target") + " 今日任务", "章节自动推进", "task"),
+    html += card(cardHead("今日任务", "章节自动推进", "task"),
       '<div class="list">' + mj.items.map(function (it) {
         return '<div class="task-item' + (mj.done ? " done" : "") + '" data-action="ky-start-major">' +
           '<span class="task-check">' + (mj.done ? ic("check") : "") + "</span>" +
           '<span class="task-title" style="font-weight:400;">' + esc(it) + "</span>" +
           '<span class="tag">' + (mj.done ? "已完成" : "去记笔记") + "</span></div>";
       }).join("") + "</div>");
-    html += card(cardHead(ic("grid") + " 学科工具箱", "专业课专属工具", "tools"),
+    html += card(cardHead("学科工具箱", "专业课专属工具", "tools"),
       '<div class="grid grid-2">' +
       toolBtn("file", "真题套卷专区", "各板块得分记录（仿数学）", "ky-major-paper-modal", "") +
       toolBtn("📒", "章节笔记", "每章笔记上传文件", "ky-notes-modal", "") +
       "</div>");
     /* 真题套卷记录（仿数学） */
     var mpr = gen.majorPaperRecords || [];
-    html += card(cardHead(ic("file") + " 真题套卷记录", mpr.length ? "共 " + mpr.length + " 套" : "暂无记录", "mpapers") +
+    html += card(cardHead("真题套卷记录", mpr.length ? "共 " + mpr.length + " 套" : "暂无记录", "mpapers") +
       '<button class="btn small ghost" data-action="ky-major-paper-modal">＋ 记录套卷</button>',
       mpr.length ? '<div class="list">' + mpr.slice().reverse().slice(0, 6).map(function (p) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(p.paper) + " ｜ 总分 " + p.total + "</div>" +
@@ -1181,7 +1181,7 @@
     var ew = gen.examWords || [];
     var om = gen.oddMeanings || [];
     var wr = gen.writingReplacements || [];
-    html += card(cardHead(ic("grid") + " 考研提分 4 项", "手动录入 · 纸质友好", "tools"),
+    html += card(cardHead("考研提分 4 项", "手动录入 · 纸质友好", "tools"),
       '<div class="grid grid-2">' +
       toolBtn("grid", "真题生词本", "单词 + 年份 + 所在短句", "ky-examword-modal", "") +
       toolBtn("help", "熟词僻义专项", "如 address → 处理/演讲", "ky-oddword-modal", "") +
@@ -1189,7 +1189,7 @@
       "</div>" +
       '<div class="li-sub" style="margin-top:10px;">生词掌握度看板：下方列表一键切换 待复习/已掌握</div>');
     var all = ew.concat(om).concat(wr).map(function (x, i) { x._i = i; return x; });
-    html += card(cardHead(ic("trending") + " 生词掌握度看板", "共 " + all.length + " 条（待复习 " + all.filter(function (x) { return !x.mastered; }).length + "）", "words") +
+    html += card(cardHead("生词掌握度看板", "共 " + all.length + " 条（待复习 " + all.filter(function (x) { return !x.mastered; }).length + "）", "words") +
       '<button class="btn small ghost" data-action="ky-word-add">＋ 添加</button>',
       all.length ? '<div class="list">' + all.slice().reverse().slice(0, 12).map(function (x) {
         var label = x.sentence ? "真题" : (x.meaning && x.example ? "僻义" : "替换");
@@ -1202,7 +1202,7 @@
   function kySubjects(dm) {
     var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
-    html += card(cardHead(ic("trending") + " 科目详情总览", "任务完成统计", "subjects"),
+    html += card(cardHead("科目详情总览", "任务完成统计", "subjects"),
       '<button class="btn ghost small" data-action="ky-subject-add" style="margin-bottom:10px;">＋ 新增科目</button>' +
       '<div class="list">' + (sc.subjects || []).map(function (s) {
         var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
@@ -1221,7 +1221,7 @@
     var html = backBar("domain:kaoyan", "考研备考");
     var archived = !!sc.archived;
     var types = { daily: "每日必做", weekly: "周计划任务", longterm: "长期领域任务" };
-    html += card(cardHead(ic("check") + " 全部领域任务", "三类任务管理", "tasks"),
+    html += card(cardHead("全部领域任务", "三类任务管理", "tasks"),
       (!archived ? '<button class="btn ghost small" data-action="ky-task-add" style="margin-bottom:10px;">＋ 新增任务</button>'
         : '<div class="li-sub" style="margin-bottom:10px;">方案已归档，仅可查看历史（新增按钮已置灰）</div>') +
       '<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">' +
@@ -1242,7 +1242,7 @@
     var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
     var wk = (sc.tasks || []).filter(function (t) { return t.type === "weekly"; });
-    html += card(cardHead(ic("calendar") + " 本周计划管理", "周计划任务", "weekly"),
+    html += card(cardHead("本周计划管理", "周计划任务", "weekly"),
       (!sc.archived ? '<button class="btn ghost small" data-action="ky-task-add" data-type="weekly" style="margin-bottom:10px;">＋ 新增周任务</button>' : "") +
       '<button class="btn small plain" data-action="ky-weekly-gen" style="margin-bottom:10px;">一键生成本周计划（按当前阶段）</button>' +
       (wk.length === 0 ? empty("本周还没有周计划任务", "点上方新增，或一键生成") :
@@ -1258,7 +1258,7 @@
     var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
     var files = sc.files || [];
-    html += card(cardHead(ic("folder") + " 备考资料库", files.length + " 份资料", "files"),
+    html += card(cardHead("备考资料库", files.length + " 份资料", "files"),
       '<button class="btn ghost small" data-action="ky-file-add" style="margin-bottom:10px;">＋ 关联资料</button>' +
       (files.length === 0 ? empty("还没有备考资料", "关联 PDF、笔记、链接到备考方案") :
         '<div class="list">' + files.map(function (f) {
@@ -1273,10 +1273,10 @@
     var sc = kyActive(dm);
     var html = backBar("domain:kaoyan", "考研备考");
     html += '<div class="grid grid-2">' +
-      card(cardHead(ic("flame") + " 28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "kaoyan"; })) +
-      card(cardHead(ic("trending") + " 每周学习时长", "最近 7 天柱状图", "bars"), weekBars(function (x) { return x.domainId === "kaoyan"; })) +
+      card(cardHead("28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "kaoyan"; })) +
+      card(cardHead("每周学习时长", "最近 7 天柱状图", "bars"), weekBars(function (x) { return x.domainId === "kaoyan"; })) +
       "</div>";
-    html += card(cardHead(ic("grid") + " 各科目任务完成进度", "唯一允许进度条的页面", "subjects"),
+    html += card(cardHead("各科目任务完成进度", "唯一允许进度条的页面", "subjects"),
       '<div class="list">' + (sc.subjects || []).map(function (s) {
         var st = (sc.tasks || []).filter(function (t) { return t.subjectId === s.id; });
         var done = st.filter(function (t) { return t.done; }).length;
@@ -1289,7 +1289,7 @@
     /* 阅读正确率趋势 + 拦路虎周报 */
     var rl = (sc.gen && sc.gen.readingLog) || [];
     if (rl.length) {
-      html += card(cardHead(ic("book") + " 英语阅读记录", "正确率趋势", "reading"),
+      html += card(cardHead("英语阅读记录", "正确率趋势", "reading"),
         '<div class="list">' + rl.slice().reverse().slice(0, 10).map(function (r) {
           return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(r.paper) + " ｜ 正确率 " + r.correct + "%" + (r.correct >= 60 ? ' <span class="tag state-done">+⭐</span>' : "") + "</div>" +
             '<div class="li-sub">' + esc(r.date) + " · " + r.minutes + " 分钟" + (r.wrongTypes.length ? " · 错题：" + esc(r.wrongTypes.join("/")) : "") + "</div></div></div>";
@@ -1300,7 +1300,7 @@
       var dist = {};
       rv.forEach(function (r) { dist[r.disturb] = (dist[r.disturb] || 0) + 1; });
       var top = Object.keys(dist).sort(function (a, b) { return dist[b] - dist[a]; });
-      html += card(cardHead(ic("trending") + " 本周拦路虎排行榜", "来自每日快捷复盘", "review"),
+      html += card(cardHead("本周拦路虎排行榜", "来自每日快捷复盘", "review"),
         '<div class="list">' + top.slice(0, 5).map(function (k, i) {
           return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + (i === 0 ? "" : "") + esc(k) + "</div>" +
             '<div class="li-sub">出现 ' + dist[k] + " 次</div></div></div>";
@@ -1313,7 +1313,7 @@
     var W = window.W, d = W.data;
     var html = backBar("today", "首页");
     var list = (d.tasks || []).slice().sort(function (a, b) { return (a.done ? 1 : 0) - (b.done ? 1 : 0); });
-    html += card(cardHead(ic("check") + " 任务管理专区", list.length + " 条任务", "task"),
+    html += card(cardHead("任务管理专区", list.length + " 条任务", "task"),
       '<button class="btn ghost small" data-action="add-task" style="margin-bottom:10px;">' + ic("plus") + "添加任务</button>" +
       (list.length === 0 ? empty("暂无任务") :
         '<div class="list">' + list.map(function (t) {
@@ -1345,7 +1345,7 @@
             '<button class="btn small ' + (w.mastered ? "plain" : "") + '" data-action="toggle-word" data-domain="cet" data-id="' + esc(w.id) + '">' + ic("check") + (w.mastered ? "已掌握" : "标记掌握") + "</button>" +
             '<button class="icon-btn" data-action="del-word" data-domain="cet" data-id="' + esc(w.id) + '">' + ic("trash") + "</button></div>";
         }).join("") + "</div>"));
-    html += card(cardHead(ic("spark") + " 艾宾浩斯复习", "对抗遗忘的节奏", "eibinghaus"),
+    html += card(cardHead("艾宾浩斯复习", "对抗遗忘的节奏", "eibinghaus"),
       '<p style="font-size:14px;color:var(--sub);line-height:1.8;">按记忆曲线安排复习：当天记住 → 第 1 天复习 → 第 2 天复习 → 第 4 天复习 → 第 7 天复习 → 第 15 天复习 → 第 30 天复习。</p>' +
       '<p style="font-size:14px;color:var(--sub);line-height:1.8;">生词本的「待复习/已掌握」标记配合这个节奏使用：掌握后隔几天回来点一下，确认还记得。</p>' +
       '<button class="btn small plain" data-action="add-word" data-domain="cet">导入 / 记录生词</button>');
@@ -1360,7 +1360,7 @@
     html += '<div class="card tint-blue"><div class="card-head"><h3>' + zone.emoji + " " + esc(zone.name) + " 专区</h3></div>" +
       '<div class="li-sub" style="margin-bottom:8px;">' + esc(zone.desc) + "</div>" +
       '进度：<span class="tag">' + (s ? (s.progress || 0) : 0) + "%</span> ｜ " + esc(dm.activeExam) + "</div>";
-    html += card(cardHead(ic("grid") + " " + zone.name + "学习素材", relRes.length + " 份", "resources"),
+    html += card(cardHead("" + zone.name + "学习素材", relRes.length + " 份", "resources"),
       relRes.length === 0 ? empty("还没有" + zone.name + "相关素材", "在资料库添加素材并打上「" + tag + "」标签，或关联到英语学习") :
         '<div class="list">' + relRes.slice(0, 10).map(function (r) {
           return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(r.title) + "</div>" +
@@ -1378,7 +1378,7 @@
   function cetGrammar(dm) {
     var W = window.W, d = W.data;
     var html = backBar("domain:cet", "英语学习");
-    html += card(cardHead(ic("search") + " 语法检查器", "粘贴英文，自动找出语法错误", "grammar-check"),
+    html += card(cardHead("语法检查器", "粘贴英文，自动找出语法错误", "grammar-check"),
       '<div class="li-sub" style="margin-bottom:8px;">粘贴一段英文（作文/句子），点击检查后会标注语法错误并给出修改建议。免费在线检查，无需配置。</div>' +
       '<textarea id="grammarText" rows="4" placeholder="粘贴英文作文或句子…" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:var(--fs-base);resize:vertical;"></textarea>' +
       '<button class="btn block" style="margin-top:8px;" data-action="grammar-check">检查语法错误</button>' +
@@ -1388,7 +1388,7 @@
     var cats = [];
     pts.forEach(function (p) { if (cats.indexOf(p.cat) < 0) cats.push(p.cat); });
     var done = pts.filter(function (p) { return p.mastered; }).length;
-    html += card(cardHead(ic("grid") + " 语法知识点", pts.length + " 条 ｜ 已掌握 " + done, "grammar-points"),
+    html += card(cardHead("语法知识点", pts.length + " 条 ｜ 已掌握 " + done, "grammar-points"),
       '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
       '<button class="btn ghost small" data-action="grammar-add">' + ic("plus") + "添加知识点</button>" +
       '<button class="btn ghost small" data-action="grammar-export">' + ic("download") + "导出知识点</button></div>" +
@@ -1453,7 +1453,7 @@
     var names = Object.keys(dm.exams || {});
     var act = names.filter(function (k) { return !dm.exams[k].archived; });
     var arc = names.filter(function (k) { return dm.exams[k].archived; });
-    html += card(cardHead(ic("folder") + " 考试管理", "活跃 " + act.length + " ｜ 已归档 " + arc.length, "exams"),
+    html += card(cardHead("考试管理", "活跃 " + act.length + " ｜ 已归档 " + arc.length, "exams"),
       '<button class="btn ghost small" data-action="add-exam" style="margin-bottom:10px;">＋ 新增考试</button>' +
       '<div class="li-sub" style="margin-bottom:6px;font-weight:600;">活跃考试</div>' +
       (act.length === 0 ? '<div class="li-sub" style="margin-bottom:10px;">暂无活跃考试</div>' :
@@ -1482,13 +1482,13 @@
   function cetStats(dm) {
     var html = backBar("domain:cet", "英语学习");
     html += '<div class="grid grid-2">' +
-      card(cardHead(ic("trending") + " 本周学习时长", "最近 7 天（英语学习）", "stats"), weekBars(function (x) { return x.domainId === "cet"; })) +
-      card(cardHead(ic("flame") + " 28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "cet"; })) +
+      card(cardHead("本周学习时长", "最近 7 天（英语学习）", "stats"), weekBars(function (x) { return x.domainId === "cet"; })) +
+      card(cardHead("28 天打卡热力图", "颜色越深学得越久", "heatmap"), heatmap28(function (x) { return x.domainId === "cet"; })) +
       "</div>";
     return html;
   }
   function zoneWriting(dm) {
-    return card(cardHead(ic("edit") + " 作文批改", "已改用微信 AI", "ai-writing"),
+    return card(cardHead("作文批改", "已改用微信 AI", "ai-writing"),
       '<div class="li-sub">网页内置批改已停用。把作文发到微信「Hermes」，会帮你修改、打分、润色，批改结果可保存到答疑库。</div>');
   }
   /* 阅读专区 */
@@ -1496,11 +1496,11 @@
     return '<div class="li-sub" style="padding:8px 0;">阅读专区：记录阅读打卡与学习时长。</div>';
   }
   function zoneSpeaking(dm) {
-    return card(cardHead(ic("send") + " 口语练习", "已改用微信 AI", "ai-speaking"),
+    return card(cardHead("口语练习", "已改用微信 AI", "ai-speaking"),
       '<div class="li-sub">网页内置口语对话已停用。在微信「Hermes」里用英文说话（可发语音或文字），会陪你练口语并纠正表达。</div>');
   }
   function zoneTranslation(dm) {
-    return card(cardHead(ic("link") + " 翻译工具", "已改用微信 AI", "ai-translate"),
+    return card(cardHead("翻译工具", "已改用微信 AI", "ai-translate"),
       '<div class="li-sub">网页内置翻译已停用。把要翻的句子发到微信「Hermes」即可。</div>' +
       '<div class="li-sub" style="margin-top:10px;">翻译练习建议：先自己翻，再让 AI 对比译文，把好句式记到答疑库。</div>');
   }
@@ -1712,7 +1712,7 @@
     var x = (d.inbox || []).filter(function (y) { return y.id === W.ui.inboxId; })[0];
     if (!x) return '<div class="card">' + esc("该条内容不存在或已删除") + "</div>";
     var html = backBar("inbox", "收集箱");
-    html += card(cardHead(ic("inbox") + " 收集内容", x.status === "待分拣" ? "待分拣" : "已分拣 · " + esc(x.movedTo || "资料库"), "inbox-detail"),
+    html += card(cardHead("收集内容", x.status === "待分拣" ? "待分拣" : "已分拣 · " + esc(x.movedTo || "资料库"), "inbox-detail"),
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
       (x.platform ? '<span class="tag platform">' + esc(x.platform) + "</span>" : "") +
       '<span class="tag">' + esc(IB_TYPE[x.type] || x.type || "文字") + "</span>" +
@@ -1792,7 +1792,7 @@
       "所有 AI 功能（答疑、拍照分析、计划调整、复盘、写作批改）改由 <b>Hermes 微信助手（daily agent）</b> 直接处理——打开微信给「Hermes」发消息即可，支持发照片、发文字、提问。分析结果会自动写回工作台（错题本 / 答疑库 / 复盘 / 任务）。</span></div>";
 
     /* 微信直连引导 */
-    html += card(cardHead(ic("send") + " 用微信直接找 AI", "比网页更准确、更灵活", "ai-wechat"),
+    html += card(cardHead("用微信直接找 AI", "比网页更准确、更灵活", "ai-wechat"),
       '<div style="font-size:14.5px;line-height:1.8;color:var(--text);">' +
       "<b>怎么用：</b>手机微信 → 找到「Hermes」联系人 → 像聊天一样发消息。<br>" +
       "<b>能做什么：</b><br>" +
@@ -2258,13 +2258,13 @@
     var all = (d.mistakes || []).slice().sort(function (a, b) { return (b.date || "") > (a.date || "") ? 1 : -1; });
     var html = "";
     html += '<div class="grid grid-2">' +
-      card(cardHead(ic("trending") + " 错题统计", "今日待复习优先", "mk-stat"),
+      card(cardHead("错题统计", "今日待复习优先", "mk-stat"),
         '<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">' +
         '<div><div class="mk-big" style="color:var(--danger);">' + all.filter(function (m) { return !m.mastered && (!m.nextReview || m.nextReview <= t); }).length + "</div><div class=\"li-sub\">今日待复习</div></div>" +
         '<div><div class="mk-big">' + all.filter(function (m) { return m.mastered; }).length + "</div><div class=\"li-sub\">已掌握 / " + all.length + "</div></div>" +
         '<div><div class="mk-big" style="color:var(--accent);">' + all.reduce(function (s, m) { return s + (m.reviewCount || 0); }, 0) + "</div><div class=\"li-sub\">累计复习次数</div></div>" +
         "</div>") +
-      card(cardHead(ic("edit") + " 快速记录", "错题是复习的宝藏", "mk-add"),
+      card(cardHead("快速记录", "错题是复习的宝藏", "mk-add"),
         '<button class="btn block" data-action="add-mistake">' + ic("plus") + "记录一道错题</button>" +
         '<div class="li-sub" style="margin-top:8px;">选科目 + 专题 + 错因，保存后自动进入复习队列（1→3→7→14→30 天）。</div>') +
       "</div>";
@@ -2280,7 +2280,7 @@
         '<div class="hd-sub">' + arr.length + " 道错题 · 待复习 " + due + "</div>" +
         '<span class="hd-go">进入 →</span></div>';
     });
-    html += card(cardHead(ic("grid") + " 错题科目", "点进科目，再按专题和错因分类", "mk-subjects"),
+    html += card(cardHead("错题科目", "点进科目，再按专题和错因分类", "mk-subjects"),
       cards.length ? '<div class="home-domains" style="grid-template-columns:repeat(3,1fr);">' + cards.join("") + "</div>"
         : empty("还没有错题", "错题是复习的宝藏，看到就记下来"));
     return html;
@@ -2307,7 +2307,7 @@
     html += '<div class="page-head-row"><div><div class="page-title">' + mkEmoji(subj) + " " + esc(subj) + "</div>" +
       '<div class="li-sub">' + arr.length + " 道错题 · 按专题分类</div></div>" +
       '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
-    html += card(cardHead(ic("folder") + " 专题", "点击进入，再按错因类型分类", "mk-topics"),
+    html += card(cardHead("专题", "点击进入，再按错因类型分类", "mk-topics"),
       '<div class="home-domains" style="grid-template-columns:repeat(2,1fr);">' + cards.join("") + "</div>");
     return html;
   }
@@ -2331,7 +2331,7 @@
     html += '<div class="page-head-row"><div><div class="page-title">' + esc(topic) + "</div>" +
       '<div class="li-sub">' + esc(subj) + " · " + arr.length + " 道错题 · 按考点类型分类</div></div>" +
       '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
-    html += card(cardHead(ic("target") + " 考点类型", "点击查看该类型的错题", "mk-types"),
+    html += card(cardHead("考点类型", "点击查看该类型的错题", "mk-types"),
       cards.length ? '<div class="home-domains" style="grid-template-columns:repeat(2,1fr);">' + cards.join("") + "</div>"
         : empty("没有错题", ""));
     return html;
@@ -2352,7 +2352,7 @@
     html += '<div class="page-head-row"><div><div class="page-title">' + esc(type) + "</div>" +
       '<div class="li-sub">' + esc(subj) + " · " + esc(topic) + " · " + list.length + " 道错题</div></div>" +
       '<button class="btn small ghost" data-action="add-mistake">＋ 记录错题</button></div>';
-    html += card(cardHead(ic("grid") + " 错题", list.length + " 道", "mk-list"),
+    html += card(cardHead("错题", list.length + " 道", "mk-list"),
       list.length === 0 ? empty("没有符合条件的错题", "") :
       '<div class="list">' + list.map(function (m) {
         return '<div class="list-item" data-action="mk-open" data-id="' + esc(m.id) + '" style="cursor:pointer;">' +
@@ -2414,7 +2414,7 @@
 
     /* 概览 */
     html += '<div class="grid grid-2">' +
-      card(cardHead(ic("trending") + " 答疑统计", "问过的题不再错", "qa-stat"),
+      card(cardHead("答疑统计", "问过的题不再错", "qa-stat"),
         '<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">' +
         '<div><div class="mk-big" style="color:var(--danger);">' + pending.length + "</div><div class=\"li-sub\">待解决</div></div>" +
         '<div><div class="mk-big" style="color:#F5B041;">' + starred.length + "</div><div class=\"li-sub\">收藏</div></div>" +
@@ -2422,7 +2422,7 @@
         "</div>" +
         '<div class="li-sub" style="margin-top:8px;">考前回顾：</div>' +
         '<button class="btn small ghost" data-action="qa-subj" data-v="" style="margin-top:4px;">查看收藏与待解决问题</button>') +
-      card(cardHead(ic("edit") + " 记录问题", "不懂就问，弄懂就记", "qa-add"),
+      card(cardHead("记录问题", "不懂就问，弄懂就记", "qa-add"),
         '<button class="btn block" data-action="add-qa">' + ic("plus") + "记录一个问题</button>" +
         '<div class="li-sub" style="margin-top:8px;">AI 帮手的解答可直接存档到答疑库（会标注「AI 回答」）。</div>') +
       "</div>";
@@ -2430,7 +2430,7 @@
     /* 考前回顾：收藏 + 待解决 */
     var reviewList = starred.concat(pending).filter(function (q, i, arr) { return arr.indexOf(q) === i; });
     if (reviewList.length) {
-      html += card(cardHead(ic("search") + " 考前回顾", "收藏 + 待解决 · " + reviewList.length + " 条", "qa-review"),
+      html += card(cardHead("考前回顾", "收藏 + 待解决 · " + reviewList.length + " 条", "qa-review"),
         '<div class="list">' + reviewList.slice(0, 8).map(function (q) {
           return '<div class="list-item" style="align-items:flex-start;">' +
             '<div class="li-main"><div class="li-title">' + (q.starred ? "" : "") + esc(q.question) + "</div>" +
@@ -2449,7 +2449,7 @@
       if (status && q.status !== status) return false;
       return true;
     });
-    html += card(cardHead(ic("grid") + " 全部答疑", filtered.length + " 条", "qa-list"),
+    html += card(cardHead("全部答疑", filtered.length + " 条", "qa-list"),
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' +
       '<button class="btn ' + (subj === "" ? "" : "plain") + ' small" data-action="qa-subj" data-v="">全部科目</button>' +
       subjects.map(function (s) { return '<button class="btn ' + (subj === s ? "" : "plain") + ' small" data-action="qa-subj" data-v="' + esc(s) + '">' + esc(s) + "</button>"; }).join("") +
@@ -2571,7 +2571,7 @@
       '<button class="btn plain" data-action="sync-pull">从云端下载（覆盖本地）</button></div>' +
       '<div class="li-sub" style="margin-top:10px;">最近上传：' + esc((d.settings.sync || {}).lastPush || "无") + " ｜ 最近下载：" + esc((d.settings.sync || {}).lastPull || "无") + "</div>");
 
-    html += card(cardHead(ic("spark") + " AI 助手", "已切换到微信直连", "api"),
+    html += card(cardHead("AI 助手", "已切换到微信直连", "api"),
       '<div class="li-sub" style="margin-bottom:10px;">网页内置 AI 对话已停用（准确率和灵活性不足）。现在所有 AI 功能通过微信直连 Hermes 助手：</div>' +
       '<div style="font-size:14px;line-height:1.9;color:var(--text);">' +
       "· 发纸质书照片 → 拍照分析、讲题<br>" +
@@ -2618,7 +2618,7 @@
       { id: "normal", name: "标准", desc: "默认" },
       { id: "large", name: "大", desc: "护眼模式" }
     ];
-    html += card(cardHead(ic("grid") + " 外观设置", "字体大小与背景", "appearance"),
+    html += card(cardHead("外观设置", "字体大小与背景", "appearance"),
       '<div class="li-sub" style="margin-bottom:8px;">字体大小：</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">' +
       fonts.map(function (f) {
