@@ -98,6 +98,9 @@ python -m http.server 8000          # 然后浏览器开 http://127.0.0.1:8000/
 python tools/serve_lan.py           # 会打印 http://<本机IP>:8000/，手机开这个
 ```
 
+> 懒人版：**双击 `tools\启动局域网访问.bat`**（同一个脚本，只是套了个窗口，窗口别关）。
+> 停止：Ctrl+C 或直接关窗口。首次要放行防火墙时用下面那条 netsh 命令（本机已加过 `workbench LAN 8000`）。
+
 > ⚠️ **绝对不要**在**仓库根目录**用 `python -m http.server 8000 --bind 0.0.0.0` 开给局域网 ——
 > 根目录里的 `.cf-env`（Cloudflare 令牌）和 `.sync-key.txt` 会被 HTTP 直接下载走
 > （2026-09-17 实测：绑 `127.0.0.1` 时只有本机能读；一旦开给局域网，同一个 Wi-Fi 下**任何人**都能拿）。
