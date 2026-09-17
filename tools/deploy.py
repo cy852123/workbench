@@ -108,6 +108,13 @@ def load_env():
     os.environ["CLOUDFLARE_API_TOKEN"] = m.group(1)
     os.environ["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
     os.environ["WRANGLER_HOME"] = os.path.join(ROOT, ".wrangler")
+    # 2026-09-17 实测定论：本机 DNS 会解析出 api.cloudflare.com 的 IPv6 地址
+    # (2606:4700:...)，而这条 IPv6 路由不通时，Node 的 fetch 会直接抛 "fetch failed"
+    # （curl 会自动回落 IPv4，Node 不会）——表现为 wrangler pages deploy 随机失败。
+    # 强制 IPv4 优先即可稳定。（curl 手测 api.cloudflare.com 可达、pages.dev 200，就是这个原因）
+    _pre = os.environ.get("NODE_OPTIONS", "")
+    if "dns-result-order" not in _pre:
+        os.environ["NODE_OPTIONS"] = (_pre + " --dns-result-order=ipv4first").strip()
     for extra in (r"E:\Software\npm-global",):
         if os.path.isdir(extra):
             os.environ["PATH"] = os.environ.get("PATH", "") + os.pathsep + extra
