@@ -426,9 +426,8 @@
     if (dm.id === "cet") {
       html += card(cardHead("英语配套功能", "搭配使用效果更好", "english-tools"),
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<button class="btn plain small" data-action="open-qa">' + ic("help") + "答疑库</button>" +
         '<button class="btn plain small" data-action="open-mistakes">' + ic("alert") + "错题本</button>" +
-        '<button class="btn plain small" data-action="open-ai">' + ic("spark") + "AI 英语帮手</button></div>" +
+        '</div>' +
         '<div class="li-sub" style="margin-top:10px;">提示：AI 帮手配置 API 密钥后可以做英语答疑、翻译、作文批改、口语对话练习。未配置时（当前未启用），本地工具照常可用。生词本、打卡、错题、答疑都可以配合英语学习使用。</div>');
     }
 
@@ -1755,10 +1754,6 @@
     push("错题", (d.mistakes || []).filter(function (m) { return (m.title + " " + (m.answer || "") + " " + (m.reason || "") + " " + (m.subject || "")).toLowerCase().indexOf(kw) >= 0; }), function (m) {
       return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(m.title) + "</div><div class=\"li-sub\">" + esc(m.subject || "") + " · " + esc(m.reason || "") + "</div></div>" +
         '<button class="btn small plain" data-action="open-mistakes">查看</button></div>';
-    });
-    push("答疑", (d.qa || []).filter(function (q) { return (q.question + " " + (q.answer || "") + " " + (q.subject || "")).toLowerCase().indexOf(kw) >= 0; }), function (q) {
-      return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(q.question) + "</div><div class=\"li-sub\">" + esc(q.subject || "") + "</div></div>" +
-        '<button class="btn small plain" data-action="open-qa">查看</button></div>';
     });
     push("复盘", (d.reviews || []).filter(function (r) { return (r.date + " " + (r.done || "") + " " + (r.undone || "") + " " + (r.adjust || "")).toLowerCase().indexOf(kw) >= 0; }), function (r) {
       return '<div class="list-item"><div class="li-main"><div class="li-title">' + esc(r.date) + " " + (r.type === "weekly" ? "周复盘" : "日复盘") + "</div></div>" +

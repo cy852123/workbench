@@ -560,14 +560,10 @@
     items.push({ view: "library", label: "资料库", icon: "📁" });
     items.push({ view: "inbox", label: "收集箱", icon: "📥", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
     items.push({ view: "mistakes", label: "错题本", icon: "📕" });
-    items.push({ view: "qa", label: "答疑库", icon: "💬" });
     items.push({ view: "reviews", label: "复盘", icon: "🔄" });
     items.push({ view: "health", label: "健康", icon: "💪" });
-    items.push({ view: "calendar", label: "日历", icon: "📅" });
-    items.push({ view: "accounts", label: "账号", icon: "👤" });
     items.push({ group: "系统" });
     items.push({ view: "search", label: "搜索", icon: "🔍" });
-    items.push({ view: "ai", label: "AI 帮手", icon: "🤖" });
     items.push({ view: "settings", label: "设置与数据", icon: "⚙️" });
     return items;
   }
