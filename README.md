@@ -319,6 +319,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - Pages 项目不连 GitHub：`git push` 只备份代码，**不会**上线（这里说的「上线」指 Cloudflare 那个地址；但 GitHub 自己的 Pages 站点**会**跟着 `git push` 自动更新，见第十节的警告）
 - **别把仓库转 private**：实测会关掉 GitHub Pages 站点，且改回 public 不自动恢复（详见第十节）。GitHub Pages 从 `main` 根目录自动部署，所以**根目录必须一直可运行**
 - `wrangler pages deploy` 报 **`fetch failed`** 时，先别怀疑 Cloudflare 或令牌 —— 本机 DNS 会解析出 `api.cloudflare.com` 的 IPv6 地址，这条 IPv6 不通时 **Node 的 fetch 直接失败**（curl 会自动回落 IPv4，所以手测 curl 完全正常，极具迷惑性）。解法：`export NODE_OPTIONS=--dns-result-order=ipv4first`。**`tools/deploy.py` 已内置这一行**，走脚本部署不会踩到
+- **「部署了但手机端不更新」的两个真因**（2026-09-17 修，用户反馈过）：① `styles.css/views.js/app.js` 走的是「缓存优先」，部署后**第一次打开必然先返回旧缓存**，要开第二次才变；② 浏览器**只在「导航」时**才检查 SW 有没有更新，而手机 PWA 切后台再切回来没有发生导航 → 永远不检查 → 一直挂旧版。解法：`index.html` 里的资源引用挂版本号（`styles.css?v=vNNN` 等），新 HTML 引用的 URL 在旧缓存里必然 miss → 直接走网络 → **一次打开就是新版**；`deploy.py` 会把这里和 SW 缓存号**同步改并读回校验**，两处不一致直接判失败。另外 SW 注册处加了主动 `update()` + 回到前台再查一次，`controllerchange` 刷新加了防重复锁
+- **排查「手机跑的是哪版」**：看左侧栏底部的版本号 —— 它是运行时从 Cache Storage 读出来的 `wb-cache-vNNN`（不是写死的字符串），显示什么就是本机实际在用的缓存。如果后面带「（有 N 份缓存）」，说明旧缓存没清干净
 
 ## 九、待办
 
