@@ -557,12 +557,15 @@
       items.push({ view: "domain:" + dm.id, label: dm.name, icon: ic, domain: true });
     });
     items.push({ group: "工具" });
+    /* F2（2026-09-17）：按「考研备考日常使用频率」重排 —— 原来基本是开发顺序。
+       高频（每天）：错题本、专注；中频：学习记录、复盘；
+       低频：资料库、收集箱、健康。 */
+    items.push({ view: "mistakes", label: "错题本", icon: "alert" });
     items.push({ view: "focus", label: "专注", icon: "timer" });
     items.push({ view: "activity", label: "学习记录", icon: "trending" });
+    items.push({ view: "reviews", label: "复盘", icon: "refresh" });
     items.push({ view: "library", label: "资料库", icon: "folder" });
     items.push({ view: "inbox", label: "收集箱", icon: "inbox", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
-    items.push({ view: "mistakes", label: "错题本", icon: "alert" });
-    items.push({ view: "reviews", label: "复盘", icon: "refresh" });
     items.push({ view: "health", label: "健康", icon: "heart" });
     items.push({ group: "系统" });
     items.push({ view: "search", label: "搜索", icon: "search" });
