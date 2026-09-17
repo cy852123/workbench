@@ -174,12 +174,19 @@ def bump_sw():
     if not m:
         note(False, "在 service-worker.js 里找不到 wb-cache-v<数字>")
         return False
-    old, new = int(m.group(1)), int(m.group(1)) + 1
+    old_s, old = m.group(1), int(m.group(1))
     if "--no-bump" in ARGS:
-        note(True, "跳过 +1（--no-bump），仍为 v%d" % old)
+        note(True, "跳过 +1（--no-bump），仍为 v%s" % old_s)
         return True
-    io.open(p, "w", encoding="utf-8", newline="").write(txt.replace("wb-cache-v%d" % old, "wb-cache-v%d" % new))
-    note(True, "缓存号 v%d → v%d" % (old, new))
+    # ★ 必须拿 m.group(0) 原文当"针"：文件里写的是 v053，若自己拼 "wb-cache-v%d" % 53
+    #   会变成 v53（丢了前导零）→ replace 静默什么都不做。这个坑真踩过：脚本报 PASS 却没改。
+    new_s = "%0*d" % (len(old_s), old + 1)
+    io.open(p, "w", encoding="utf-8", newline="").write(txt.replace(m.group(0), "wb-cache-v" + new_s, 1))
+    back = re.search(r'wb-cache-v(\d+)', io.open(p, encoding="utf-8").read())
+    if not back or back.group(1) != new_s:      # 不假设写成功，读回来确认
+        note(False, "缓存号没改成 v%s" % new_s, "读回来的仍是 v%s" % (back.group(1) if back else "?"))
+        return False
+    note(True, "缓存号 v%s → v%s（已读回确认）" % (old_s, new_s))
     return True
 
 
@@ -241,9 +248,9 @@ def verify():
         sw = fetch("/service-worker.js").decode("utf-8", "replace")
         m = re.search(r'wb-cache-v(\d+)', sw)
         local = re.search(r'wb-cache-v(\d+)', io.open(os.path.join(ROOT, "service-worker.js"), encoding="utf-8").read())
-        note(bool(m) and bool(local) and m.group(1) == local.group(1),
-             "线上 service-worker.js 真的是 SW（不是 index.html）",
-             "线上缓存号 v%s" % (m.group(1) if m else "?"))
+        same = bool(m) and bool(local) and int(m.group(1)) == int(local.group(1))
+        note(same, "线上是真正的 SW 且缓存号与本地一致（证明部署的确实是本地产物）",
+             "线上 v%s / 本地 v%s" % (m.group(1) if m else "?", local.group(1) if local else "?"))
         try:
             fetch("/api/data")
             note(False, "/api/data 无密钥应 401", "竟然可读，密钥保护可能失效")
