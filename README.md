@@ -21,7 +21,7 @@
 | 核心逻辑 | `app.js` 4500 行 / 285 KB |
 | 视图渲染 | `views.js` 2816 行 / 216 KB |
 | 样式 | `styles.css` 740 行 / 42 KB |
-| 离线 | `service-worker.js`（缓存号 **`wb-cache-v053`**；2026-09-17 首次真正上线，之后每次改前端都要 +1） |
+| 离线 | `service-worker.js`。缓存号当前是 **`wb-cache-v054`**（只此一处写死；改前端必须 +1，跑 `tools/deploy.py` 会**自动**加，别再手抄） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
 | 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交的说明 + App 内「更新日志」（21 条）** |
 
@@ -181,7 +181,7 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 
 修复：`app.js` 自带一份 `fmtSize`、把 `kyFileListHtml` 挂到既有的共享面 `window.W`、views 侧加桥接函数；顺带加固 `save()`（用户点名的 `app.js:386-394`：存前量体积 >3MB 告警、写失败把「⚠️ 未保存」留在侧边栏不消失）。已重新部署，线上自查见下。
 
-线上复验（第二次部署后，全部实测）：
+线上复验（第二次部署后，全部实测；此后 `tools/deploy.py` 又跑过两次，缓存号现为 v054）：
 
 | 检查 | 结果 |
 |---|---|
@@ -237,8 +237,8 @@ cp index.html app.js views.js styles.css service-worker.js manifest.webmanifest 
 #    api 接口（functions/ 有改动时才需要）
 cp functions/api/*.js .pages-deploy/functions/api/
 
-# 2) Service Worker 缓存号 +1（不 +1 手机会继续吃旧缓存）
-#    改 service-worker.js 里的 "wb-cache-v053" → v054
+# 2) Service Worker 缓存号 +1（跑 tools/deploy.py 会自动做；手改就是把这个数字加 1）
+#    当前值看这里：grep -o "wb-cache-v[0-9]*" service-worker.js
 
 # 3) 上传（--branch main 保证覆盖生产环境）
 wrangler pages deploy .pages-deploy --project-name workbench-sync --branch main
@@ -275,7 +275,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 ## 八、踩过的坑（别重犯）
 
 **改动类**
-- 改了 `app.js`/`views.js`/`styles.css` 之后**一定要把 `service-worker.js` 的 `wb-cache-v053` 往上加 1**，否则手机 PWA 一直吃旧缓存，看起来像「改了没生效」
+- 改了 `app.js`/`views.js`/`styles.css` 之后**一定要把 `service-worker.js` 的缓存号往上加 1**，否则手机 PWA 一直吃旧缓存，看起来像「改了没生效」。**跑 `tools/deploy.py` 会自动 +1**，手动改容易漏（已漏过）
 - `index.html` 里 `<script src="views.js">` 在 `app.js` **之前**（views 依赖 `window.W.icons`），别调换顺序
 - 事件全靠 `data-action` 委托给 `app.js`（`views.js` 只生成 HTML 字符串，不绑事件）；加按钮要同时在两边写：views 里给 `data-action="xxx"`，app 的委托分支里处理
 - 内联 HTML 拼字符串时，用户输入一律过 `esc()`（手机端尤其别漏）
