@@ -32,7 +32,7 @@ workbench/
 ├─ cloudflare-worker.js + wrangler.toml   独立 Worker（名字也叫 workbench-sync，**当前线上没用它**）
 ├─ gen_dict.py · download_dict.py         词典脚本（见第七节，目前没接进界面）
 ├─ shot_preview.js                        截图脚本：截 previews/ 下某个设计原型页（桌面+手机两张，输出到 previews/）
-├─ tests/                  **不入库**：60+ 个 UI 测试脚本（见第五节）
+├─ tests/                  **不入库**：51 个测试脚本（45 个 .js + 6 个 .py）+ 13 个截图/数据文件，共 64 个（见第五节）
 ├─ previews/               **不入库**：8/16 改版过程的设计预览图/原型页（留档，别删）
 ├─ _attic/2026-09-17/      **不入库**：本次整理归档的垃圾（.bak 副本、一次性探针、云端快照）
 ├─ downloads/              **不入库**：测试导出数据落地的地方（导出时会自动生成）
@@ -124,7 +124,16 @@ npm test                            # = node tests/test.js && node tests/test_in
 - 凭据：`.cf-env`（里面是 `CLOUDFLARE_API_TOKEN`）、`.sync-key.txt`（同步密钥）
 - 账号 ID：`2b1d0f8b5fb6631b6d9471ea98cb75f8`
 
-**现在线上是什么版本**：最后一次部署是 2026-08-16 07:05，之后本地还提交了 6 个 commit（SW v047→v052、学科页改造、英语学习板块移除……），**线上落后于本地**（实测：线上 `app.js` 里 `cet` 还出现在 84 行，本地已经删干净）。
+**现在线上是什么版本**：最后一次部署是 2026-08-16 07:05（提交 `f884293`，SW 缓存号 v048）。之后本地又提交了 **11 个 commit**（`git log f884293..HEAD`；其中 6 个是功能改动：同步部署暂存目录、AI 切微信直连、考研模块极简重构、学科页改造、移除英语学习板块、词典脚本路径随搬迁更新），**线上落后于本地**。
+
+实测对比（`curl` 线上 `app.js` + 读本地文件，同样搜 `cet`）：
+
+| | 出现次数 `grep -o cet` | 命中行数 `grep -c cet` |
+|---|---|---|
+| 线上 `app.js` | 149 | 84 |
+| 本地 `app.js` | 132 | 74 |
+
+⚠️ **本地并没有「删干净」**：这 74 行是 `migrate()` 里的**老用户兼容代码**（把旧 `cet` 领域设 `hidden = true`、修复 `exams`/`wordbook` 的坏结构）加上考研英语的 `cet4`/`cet6` 自动标记。英语学习板块的**界面入口**已移除，但**兼容与数据保留逻辑是故意留的** —— 别当垃圾清掉，清掉老用户数据会炸。
 
 **顺带查出来的问题**：`.pages-deploy/` 里**从来没有 `service-worker.js`**，所以线上 `/service-worker.js` 实际返回的是首页 HTML（实测：请求它拿到 3050 字节，正好等于 `index.html` 的大小），等于**线上的离线缓存、装到桌面的 PWA 缓存机制从来没生效过**。好处是手机不会卡旧版本；坏处是离线打不开、也没有「新版本提示刷新」。下面第 1 步的 `cp` 清单里我补上了 `service-worker.js`。
 
@@ -190,6 +199,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 
 **同步类**
 - 「云端没有有效数据」= KV 里 `wb_main` 是空或没有 `meta` 字段；先在能用的设备上「上传到云端」再在另一台「下载」
+- **用 Python `urllib` 直接读 `/api/data` 会得到 403** —— 那是 Cloudflare 拦掉了 `Python-urllib/x.y` 这个 User-Agent，**不是密钥错**（没密钥才是 401）。写排查脚本请用 `curl`，或自己加一个 `User-Agent` 头，别误判成「密钥失效了」
 - 单次上传上限 20 MB（`functions/api/data.js` 里写死）；上传文件（图片/PDF 存 base64）太多会顶到上限
 
 **部署类**
@@ -198,6 +208,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 
 ## 九、待办
 
+- [ ] **把本地这 7 个 commit 推到 GitHub**：`git push origin main`。现在整份整理成果只在本机，而 `E:\backup\workbench\` 的备份**和项目在同一块 E 盘** —— 盘坏了两份一起没。推到 GitHub 是成本最低的异地备份（仓库当前的 private/public 状态见下面 P0-5）
 - [ ] **把线上更新到当前本地版本**（见第六节；线上还停在 8/16 07:05）
 - [ ] 部署流程自动化：写个 `deploy` 脚本把「同步暂存 + SW 版本号 +1 + 上传 + 自检」一次做完（现在靠手抄，已出过一次事故）
 - [ ] `app.js` 4500 行 / `views.js` 2816 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
@@ -207,7 +218,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 
 ## 十、版本控制
 
-- 本地 git 仓库（`main`），**与 origin 同步**，身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
+- 本地 git 仓库（`main`），远端 `origin` = `git@github.com:cy852123/workbench.git`，提交身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
+- ⚠️ **2026-09-17 实测：本地领先远端 7 个 commit（`git status -sb` 显示 `ahead 7`），还没 push** —— 远端 HEAD 仍是 `8003f2e`（8/16 09:08）。也就是说**这本手册、`OPTIMIZE-PLAN.md`、仓库瘦身、词典脚本路径更新，全都只存在这台电脑上**
 - **只跟踪 23 个文件**：源码（4 件套 + SW + 图标 + PWA 配置） + `functions/api/` 4 个接口 + Worker + 2 个词典脚本 + `README.md` + `OPTIMIZE-PLAN.md`。产物/凭据/个人数据/测试/截图一律不入库（清单见 `.gitignore`）
 - 2026-09-17 做过一次「仓库瘦身」：把 73 个产物类文件（66 MB 词典、部署暂存、设计预览图、个人数据导出）从索引摘除，**磁盘文件一个没删**。要恢复跟踪，直接 `git add .pages-deploy previews ecdict_full.csv ecdict.zip downloads` 再加进 `.gitignore` 白名单即可（文件本来就在磁盘上，不会丢）
 - 回滚整棵树：`git reset --hard <提交号>`；只回滚某文件：`git checkout <提交号> -- <文件>`

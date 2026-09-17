@@ -22,12 +22,14 @@
 | 核心文件 | `app.js` 4500 行 / 285 KB；`views.js` 2816 行 / 216 KB；`styles.css` 740 行 / 42 KB | `wc -l`、`ls -l` |
 | 仓库跟踪文件 | 23 个（本次瘦身前 95 个） | `git ls-files \| wc -l` |
 | UI 回归现状 | `npm test` = **40 项断言全过**（桌面+手机 3 种宽度+交互） | 真跑，见下 |
-| 线上版本 | 落后本地 6 个 commit；线上 `app.js` 里 `cet` 仍出现在 84 行 | 下载线上文件比对 md5 + `grep -c cet` |
+| 线上版本 | 落后本地 **11 个 commit**（`git log f884293..HEAD`，其中 6 个功能改动）；线上 `app.js` 里 `cet` 命中 **84 行 / 149 处**（本地 74 行 / 132 处，均为 migrate 兼容代码） | 下载线上文件比对 md5 + `grep -c cet` / `grep -o cet` |
 | 线上 Service Worker | **不存在**（请求 `/service-worker.js` 返回 3050 字节 = `index.html` 的大小） | `curl` + md5 比对 |
 | 云端数据 | KV `WB_KV` 里 3 个键：`wb_main`（主数据）、`wb_tasks`、`wb_learnpack`；单次上限 20 MB | Cloudflare API 只读查询 |
 | 数据规模 | 主数据 JSON 约 11 KB（云端快照实测） | 快照文件大小 |
 | 上传文件上限 | 每个文件 2 MB，**以 base64 形式塞进主数据**（`app.js:790 KY_FILE_MAX`） | 读代码 |
 | 保存失败处理 | `localStorage` 写失败只弹「保存失败：浏览器存储空间可能已满」，**改动不落盘**（`app.js:386-394`） | 读代码 |
+
+> 2026-09-17 21:1x 独立复核（另起一次会话重跑）：`npm test` 仍 **40/40 通过**（test.js 26 项 + test_interact.js 14 项）；上表各行逐一核对过代码或线上实测 —— `KY_FILE_MAX` 确在 `app.js:790`、`esc(` 在 `views.js` 出现 351 处、`WB_DICT` 零引用（词典链路确实悬空）、`defaultData()` 在 `app.js:82`、`views.js:2645` 写死 `v0.1.0`、`service-worker.js` 里是 `wb-cache-v052`、`tests/test.js` 确实往仓库根目录写 `shot_*.png`。
 
 ---
 
@@ -37,7 +39,7 @@
 
 | # | 类别 | 问题 | 证据 | 影响 |
 |---|---|---|---|---|
-| **P0-1** | 正确性/UX | **线上是旧版**：Pages 项目不连 GitHub（Git Provider = No），`git push` 不会上线；而部署靠手动把文件 `cp` 到 `.pages-deploy/` 再上传，很容易漏 | 线上 `app.js` md5 ≠ 本地；线上还有 149 处 `cet`；`wrangler pages project list` 显示 workbench-sync 是直传项目 | 你在手机上看到的功能和你改的代码不一致，会误以为"改了没生效" |
+| **P0-1** | 正确性/UX | **线上是旧版**：Pages 项目不连 GitHub（Git Provider = No），`git push` 不会上线；而部署靠手动把文件 `cp` 到 `.pages-deploy/` 再上传，很容易漏 | 线上 `app.js` md5 ≠ 本地；线上 `cet` 149 处 / 84 行（本地 132 处 / 74 行，是 migrate 兼容代码）；`wrangler pages project list` 显示 workbench-sync 是直传项目 | 你在手机上看到的功能和你改的代码不一致，会误以为"改了没生效" |
 | **P0-2** | 正确性 | **`.pages-deploy/` 里从来没有 `service-worker.js`** → 线上离线/PWA 缓存机制从未生效（也就没有"新版本提示刷新"） | 请求线上 `/service-worker.js` 得到 3050 B，md5 = 本地 `index.html` | ① 断网打不开；② 以后一旦把 SW 补上线，就必须遵守"改前端 → 缓存号 +1"，否则手机锁在旧版 |
 | **P0-3** | 数据安全 | **只有 localStorage，没有定期备份**；云端快照里 `sync.auto = false`，而且**云端主数据停在 2026-08-16 05:15**（之后没成功上传过） | 实测 `curl -H "X-Sync-Key: …" .../api/data` 返回 `meta.updated = "2026-08-16 05:15"`；快照 `settings.sync.auto=false` | 清浏览器数据 / 换手机 / 存储写满 → 全部学习记录消失；两台设备数据也在各自漂移 |
 | **P0-4** | 正确性 | **上传文件 = base64 进 localStorage**：2 MB 上限 × 2~3 个文件就可能把 localStorage（一般 5~10 MB）撑满，之后所有保存静默失败 | `app.js:790`（上限）、`app.js:386-394`（失败只弹提示） | 撑满后你以为保存了，其实没存 → 数据丢失，且现象难查 |
