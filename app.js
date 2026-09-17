@@ -77,6 +77,14 @@
     clearTimeout(t._timer);
     t._timer = setTimeout(function () { t.className = "toast"; }, 2800);
   }
+  /* 文件体积显示。注意：views.js 里另有一份同名实现 —— 两个文件各自是 IIFE，
+     作用域互相看不见（本文件曾因「调用了 views.js 的 fmtSize」而崩，2026-09-17 修） */
+  function fmtSize(n) {
+    n = Number(n) || 0;
+    if (n > 1048576) return (n / 1048576).toFixed(1) + " MB";
+    if (n > 1024) return Math.round(n / 1024) + " KB";
+    return n + " B";
+  }
 
   /* ---------- 默认数据（含示例数据，可清空） ---------- */
   function defaultData() {
@@ -383,15 +391,44 @@
     data = defaultData();
     if (migrate()) save(true);
   }
+  /* 保存前的容量自检：localStorage 一般只有 5MB 左右，而上传的文件是 base64 存进这份
+     数据里的 —— 几个 2MB 的 PDF/图片就能把它撑爆。撑爆后 setItem 会直接抛异常，
+     旧版只弹一句「可能已满」就算了，用户会以为存上了。现在：
+     ① 存之前先量体积，超过提醒线就明确告警；② 真写失败时把未保存状态留在侧边栏不消失。 */
+  var STORE_WARN = 3 * 1024 * 1024;   /* 3MB 起告警：留约 2MB 给备份键和浏览器开销 */
+  function setSaveState(txt, bad) {
+    var el = $id("sideSave");
+    if (!el) return;
+    el.textContent = (bad ? "⚠️ " : "") + txt;
+    el.title = bad ? txt : "";
+  }
   function save(quiet) {
     data.meta.updated = nowStr();
+    var str;
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(data));
-      if (!quiet) { var el = $id("sideSave"); if (el) el.textContent = "已保存 " + data.meta.updated.slice(11); }
+      str = JSON.stringify(data);
     } catch (e) {
-      toast("保存失败：浏览器存储空间可能已满", true);
+      setSaveState("未保存：数据无法序列化", true);
+      toast("保存失败：数据无法序列化（" + (e && e.message ? e.message : e) + "）。这次改动没存下来，请先「导出数据」备份。", true);
+      return false;
+    }
+    if (str.length > STORE_WARN) {
+      toast("注意：数据已到 " + fmtSize(str.length) + "，接近浏览器存储上限。建议先「导出数据」备份，再删掉一些上传的图片/PDF。", true);
+    }
+    try {
+      localStorage.setItem(STORE_KEY, str);
+      if (str.length > STORE_WARN) setSaveState("已保存 " + data.meta.updated.slice(11) + "（数据已 " + fmtSize(str.length) + "，接近上限）", true);
+      else if (!quiet) setSaveState("已保存 " + data.meta.updated.slice(11), false);
+    } catch (e) {
+      var quota = e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014);
+      setSaveState("未保存：空间不足（本次 " + fmtSize(str.length) + "）", true);
+      toast(quota
+        ? "保存失败：浏览器存储空间已满（当前数据 " + fmtSize(str.length) + "）。这次改动没有存下来！请先「导出数据」备份，再删掉一些上传的图片/PDF 后重试。"
+        : "保存失败：" + (e && e.message ? e.message : e) + "。这次改动没有存下来。", true);
+      return false;
     }
     scheduleSync();
+    return true;
   }
 
   /* ---------- 云端同步（Cloudflare Worker + KV，需在设置里填地址与密钥） ---------- */
@@ -825,9 +862,12 @@
         '<div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;cursor:pointer;" data-action="' + (viewAction || "ky-file-view") + '" data-idx="' + i + '">' +
         (isImg ? "🖼 " : "📄 ") + esc(f.name) + "</div>" +
         '<div class="li-sub">' + fmtSize(f.size) + " · " + esc(f.date || "") + " · 点击查看</div></div>" +
-        '<button class="icon-btn" data-action="' + (delAction || "ky-file-del") + '" data-idx="' + i + '">' + ic("trash") + "</button></div>";
+        '<button class="icon-btn" data-action="' + (delAction || "ky-file-del") + '" data-idx="' + i + '">' + ICONS.trash + "</button></div>";
     }).join("") + "</div>";
   }
+  /* 导出给 views.js 用：它是另一个 IIFE，作用域互相看不见（政治/专业课页要调这个组件）。
+     2026-09-17 之前 views.js 裸调 kyFileListHtml 会 ReferenceError，整页渲染中断。 */
+  W.kyFileListHtml = kyFileListHtml;
   function kyFileView(idx, storeKey) {
     var sc = kyActiveScheme(); if (!sc) return;
     var list = (sc.gen && sc.gen[storeKey]) || [];

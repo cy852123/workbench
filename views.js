@@ -12,6 +12,13 @@
     var W = window.W;
     return W && W.icons && W.icons[name] ? W.icons[name] : "";
   }
+  /* 通用文件列表组件：真正的实现在 app.js（W.kyFileListHtml）。两个 IIFE 作用域互相
+     看不见，必须走 window.W 桥接 —— 2026-09-17 之前这里裸调同名函数，必然 ReferenceError。 */
+  function kyFileListHtml(items, delAction, viewAction) {
+    var f = window.W && window.W.kyFileListHtml;
+    if (typeof f !== "function") return '<div class="li-sub">（文件列表组件未加载）</div>';
+    return f(items, delAction, viewAction);
+  }
   function todayStr() {
     var d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -2651,6 +2658,10 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-09-17 · 修复保存与文件列表<span class="log-tag">修复</span></div>' +
+      '<p>🐞 修了三个一点就崩的地方：①上传过作文模板后，「作文模板库」弹窗打不开（点进去没反应）；②政治学科页的「知识点资料」、专业课的「章节笔记」，只要传过文件就会让整页渲染中断（后面的卡片全不见）。根因是这几处调用的函数定义在另一个文件里、两个文件作用域互相看不见。</p>' +
+      '<p>💾 保存更安全：以前浏览器存储满时只弹一句提示、其实这次改动没存下来；现在保存前先量数据体积，快满时提前告警，真存不下就把「⚠️ 未保存」留在左下角不消失，并告诉你怎么处理。</p>' +
+      '<p>影响范围：考研英语/政治/专业课页 + 所有保存动作。数据：无影响，不删任何数据。你需要的操作：无。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-08-16 · 英语学习板块移除<span class="log-tag">调整</span></div>' +
       '<p>🚫 英语学习板块（四六级）已从网页移除，入口不再显示。你的历史数据（生词本、学习记录等）完整保留在本机浏览器，不删除；如需恢复可告诉我。考研模块中的英语学科页不受影响。</p>' +
       '<p>影响范围：英语学习板块。数据：保留在本机。你需要的操作：无。</p></div>' +
