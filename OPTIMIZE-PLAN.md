@@ -20,7 +20,7 @@
 | 项 | 实测值 | 怎么测的 |
 |---|---|---|
 | 核心文件 | `app.js` 4500 行 / 285 KB；`views.js` 2816 行 / 216 KB；`styles.css` 740 行 / 42 KB | `wc -l`、`ls -l` |
-| 仓库跟踪文件 | 21 个（本次瘦身前 95 个） | `git ls-files \| wc -l` |
+| 仓库跟踪文件 | 23 个（本次瘦身前 95 个） | `git ls-files \| wc -l` |
 | UI 回归现状 | `npm test` = **39 项断言全过**（桌面+手机 3 种宽度+交互） | 真跑，见下 |
 | 线上版本 | 落后本地 6 个 commit；线上 `app.js` 里 `cet` 仍出现在 84 行 | 下载线上文件比对 md5 + `grep -c cet` |
 | 线上 Service Worker | **不存在**（请求 `/service-worker.js` 返回 3050 字节 = `index.html` 的大小） | `curl` + md5 比对 |

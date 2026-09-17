@@ -124,7 +124,7 @@ npm test                            # = node tests/test.js && node tests/test_in
 - 凭据：`.cf-env`（里面是 `CLOUDFLARE_API_TOKEN`）、`.sync-key.txt`（同步密钥）
 - 账号 ID：`2b1d0f8b5fb6631b6d9471ea98cb75f8`
 
-**现在线上是什么版本**：最后一次部署是 2026-08-16 07:05，之后本地还提交了 6 个 commit（SW v047→v052、学科页改造、英语学习板块移除……），**线上落后于本地**（实测：线上 `app.js` 里还有 149 处 `cet`，本地已经删了）。
+**现在线上是什么版本**：最后一次部署是 2026-08-16 07:05，之后本地还提交了 6 个 commit（SW v047→v052、学科页改造、英语学习板块移除……），**线上落后于本地**（实测：线上 `app.js` 里 `cet` 还出现在 84 行，本地已经删干净）。
 
 **顺带查出来的问题**：`.pages-deploy/` 里**从来没有 `service-worker.js`**，所以线上 `/service-worker.js` 实际返回的是首页 HTML（实测：请求它拿到 3050 字节，正好等于 `index.html` 的大小），等于**线上的离线缓存、装到桌面的 PWA 缓存机制从来没生效过**。好处是手机不会卡旧版本；坏处是离线打不开、也没有「新版本提示刷新」。下面第 1 步的 `cp` 清单里我补上了 `service-worker.js`。
 
@@ -208,7 +208,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 ## 十、版本控制
 
 - 本地 git 仓库（`main`），**与 origin 同步**，身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
-- **只跟踪 21 个文件**：源码 + 图标 + 配置 + 2 个词典脚本。产物/凭据/个人数据/测试/截图一律不入库（清单见 `.gitignore`）
+- **只跟踪 23 个文件**：源码（4 件套 + SW + 图标 + PWA 配置） + `functions/api/` 4 个接口 + Worker + 2 个词典脚本 + `README.md` + `OPTIMIZE-PLAN.md`。产物/凭据/个人数据/测试/截图一律不入库（清单见 `.gitignore`）
 - 2026-09-17 做过一次「仓库瘦身」：把 73 个产物类文件（66 MB 词典、部署暂存、设计预览图、个人数据导出）从索引摘除，**磁盘文件一个没删**。要恢复跟踪，直接 `git add .pages-deploy previews ecdict_full.csv ecdict.zip downloads` 再加进 `.gitignore` 白名单即可（文件本来就在磁盘上，不会丢）
 - 回滚整棵树：`git reset --hard <提交号>`；只回滚某文件：`git checkout <提交号> -- <文件>`
 - 备份（都在 E 盘）：
