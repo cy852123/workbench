@@ -91,7 +91,26 @@ python -m http.server 8000          # 然后浏览器开 http://127.0.0.1:8000/
 ```
 
 端口用 **8000**（`tests/` 里的测试脚本写死了 8000，换端口测试会连不上）。
-手机同局域网访问：把 `127.0.0.1` 换成电脑的局域网 IP。
+
+**手机要用电脑上的本地版本（同一个 Wi-Fi）—— 用这个脚本，别自己 bind：**
+
+```bash
+python tools/serve_lan.py           # 会打印 http://<本机IP>:8000/，手机开这个
+```
+
+> ⚠️ **绝对不要**在**仓库根目录**用 `python -m http.server 8000 --bind 0.0.0.0` 开给局域网 ——
+> 根目录里的 `.cf-env`（Cloudflare 令牌）和 `.sync-key.txt` 会被 HTTP 直接下载走
+> （2026-09-17 实测：绑 `127.0.0.1` 时只有本机能读；一旦开给局域网，同一个 Wi-Fi 下**任何人**都能拿）。
+> `tools/serve_lan.py` 只把 8 个前端文件拷到 `_attic/lan-serve/` 再开，凭据不在服务范围内（实测 `/.cf-env` → 404）。
+
+> **手机打不开电脑的本地地址（显示"禁止访问/无法访问"）的两个原因**：
+> ① 服务只绑了 `127.0.0.1`（本机实测就是这种）—— `127.0.0.1` 永远指"设备自己"，
+> 在手机上它指手机本身，所以怎么输都连不上；必须绑 `0.0.0.0`（`serve_lan.py` 已经这么做）。
+> ② Windows 防火墙拦了 python 入站（本机实测：防火墙三档全开、且没有 python 的放行规则）。
+> 放行一次即可（管理员身份 cmd）：
+> `netsh advfirewall firewall add rule name="workbench LAN 8000" dir=in action=allow protocol=TCP localport=8000`
+>
+> **日常在手机上用，直接开 `https://workbench-sync-c9e.pages.dev` 最省事** —— 不需要电脑开机、不用管防火墙、还是 https（有 PWA/离线能力）。局域网地址只是 http、非 localhost，浏览器**不会**注册 Service Worker，没有离线能力。
 
 ## 五、改完必须验证（三条）
 
