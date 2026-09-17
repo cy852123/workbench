@@ -161,6 +161,7 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 
 - `b684b1e` 令牌层：17 个荧光模块色 → 同族低饱和；35 处近似灰/阴影/圆角收敛成令牌；字重 800/900 → 650/700；删掉「每页头顶 4px 彩条」和「课程卡顶部色条」；补 `:focus-visible` 焦点环；触控区 22→28px
 - `3357ec7` 层级/密度/空状态：白卡 vs 浅底分层；`max-width 1180` 居中；卡间距 20px；列表分隔线降一档；`.empty` 加纯 CSS「空页」图形；手机端反向收紧
+- `92f8d5d` 手机端「拥挤」专项（**数据驱动**）：先跑 `node tests/_crowd.js http://127.0.0.1:8000/` 在 390px 下量拥挤度，据此修两处病根 —— ① `views.js` 里 5 处**内联** `font-size:11px/12px`（内联优先级高于样式表，光在 CSS 里覆盖压不住）抬到 12.5px；② 资料库三行筛选加 `.filter-row`，手机端改一行横向滑动；另补手机端 12.5px 最小字号兜底 + 留白放宽。**复测：资料库 <13px 占比 74%→40%，全站再无 11px 文字**
 
 **回滚**：`git checkout <上一版hash> -- styles.css`（只改这一个文件）；改完必须 `npm test` 40 项全过 + 人眼比对截图。
 
