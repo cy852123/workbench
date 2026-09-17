@@ -75,7 +75,12 @@ def md5_local(path):
     return h.hexdigest()
 
 
-def fetch(path):
+def fetch(path, bust=False):
+    """读线上文件。bust=True 时加时间戳参数绕开边缘缓存 ——
+    Cloudflare Pages 部署后边缘生效有延迟，不加时间戳会取到上一版的副本，
+    导致自检误报「线上 md5 与本地不一致」（2026-09-17 真踩过）。"""
+    if bust:
+        path = path + ("&" if "?" in path else "?") + "v=%d" % int(time.time() * 1000)
     req = urllib.request.Request(SITE + path, headers=UA)
     with urllib.request.urlopen(req, timeout=30) as r:
         return r.read()
@@ -243,9 +248,21 @@ def verify():
     try:
         for f in CHECK_MD5:
             want = md5_local(os.path.join(ROOT, f))
-            got = hashlib.md5(fetch("/" + f)).hexdigest()
-            note(want == got, "线上 %s 与本地 md5 一致" % f, "" if want == got else "线上=%s 本地=%s" % (got[:8], want[:8]))
-        sw = fetch("/service-worker.js").decode("utf-8", "replace")
+            got, tries = None, 0
+            for i in range(3):                      # 边缘缓存有延迟：重试 3 次再判失败
+                tries = i + 1
+                try:
+                    got = hashlib.md5(fetch("/" + f, bust=True)).hexdigest()
+                except Exception:
+                    got = None
+                if got == want:
+                    break
+                time.sleep(3)
+            detail = "" if got == want else "线上=%s 本地=%s（重试 %d 次仍不一致）" % ((got or "?")[:8], want[:8], tries)
+            if got == want and tries > 1:
+                detail = "第 %d 次才取到（边缘缓存延迟，非问题）" % tries
+            note(got == want, "线上 %s 与本地 md5 一致" % f, detail)
+        sw = fetch("/service-worker.js", bust=True).decode("utf-8", "replace")
         m = re.search(r'wb-cache-v(\d+)', sw)
         local = re.search(r'wb-cache-v(\d+)', io.open(os.path.join(ROOT, "service-worker.js"), encoding="utf-8").read())
         same = bool(m) and bool(local) and int(m.group(1)) == int(local.group(1))
