@@ -832,7 +832,7 @@
         '<div class="progress-seg" style="left:25%;"></div><div class="progress-seg" style="left:50%;"></div><div class="progress-seg" style="left:75%;"></div>' +
         "</div>" +
         '<span class="li-sub" style="font-weight:600;color:' + segCol + ';">当前：' + seg[0] + '段</span></div>' +
-        '<div class="li-sub" style="font-size:11px;margin-top:4px;">' +
+        '<div class="li-sub" style="font-size:12.5px;margin-top:4px;">' +
         ['初学','复习','复盘','冲刺'].map(function (s, i) { return '<span style="color:' + (i <= seg[1] ? "#202124" : "#B9BDB6") + ';">' + s + '</span>'; }).join(" → ") +
         "</div></div>";
     }).join("") + "</div>";
@@ -846,7 +846,7 @@
         return '<div class="task-item' + (done ? " done" : "") + '">' +
           '<span class="task-check" data-action="ky-toggle-subj" data-idx="' + i + '">' + (done ? ic("check") : "") + "</span>" +
           '<span class="task-title" style="font-weight:600;">' + esc(c.name) + "</span>" +
-          '<span class="li-sub" style="flex:1;font-size:12px;color:#6F7277;">' + esc(c.count) + "</span>" +
+          '<span class="li-sub" style="flex:1;font-size:12.5px;color:#6F7277;">' + esc(c.count) + "</span>" +
           '<span class="tag">' + (done ? "已完成" : "未完成") + "</span>" +
           "</div>";
       }).join("") + "</div>" +
@@ -933,9 +933,9 @@
       var p = Math.round((x.n || 0) / total * 100);
       var c = colors[i % colors.length];
       return '<div style="display:flex;align-items:center;gap:8px;">' +
-        '<span style="font-size:12px;color:#6F7277;min-width:64px;text-align:right;">' + esc(x.name) + "</span>" +
+        '<span style="font-size:12.5px;color:#6F7277;min-width:64px;text-align:right;">' + esc(x.name) + "</span>" +
         '<div class="progress-track" style="flex:1;height:12px;"><div class="progress-fill" style="width:' + p + "%;background:" + c + ';"></div></div>' +
-        '<span style="font-size:12px;font-weight:700;min-width:34px;">' + p + "%</span></div>";
+        '<span style="font-size:12.5px;font-weight:700;min-width:34px;">' + p + "%</span></div>";
     }).join("") + "</div>";
   }
   var PCT_COLORS = ["#2F6B57", "#AFC9EA", "#E9A8CF", "#F4D85A", "#B8CB9A", "#8FA3C0"];
@@ -1609,11 +1609,11 @@
       '<div class="search-input-wrap" style="margin-bottom:0;flex:1;min-width:200px;">' +
       '<input id="libKw" placeholder="搜索资料…" value="' + esc(kw) + '">' +
       '<button class="btn" data-action="lib-search">' + ic("search") + "</button></div></div>" +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">' +
+      '<div class="filter-row" style="margin-top:10px;">' +
       cats.map(function (c) { return '<button class="btn ' + (filterCat === (c === "全部" ? "" : c) ? "" : "plain") + ' small" data-action="lib-cat" data-v="' + esc(c) + '">' + c + "</button>"; }).join("") + "</div>" +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">' +
+      '<div class="filter-row" style="margin-top:8px;">' +
       states.map(function (s) { return '<button class="btn ' + (filterState === (s === "全部状态" ? "" : s) ? "" : "plain") + ' small" data-action="lib-state" data-v="' + esc(s) + '">' + s + "</button>"; }).join("") + "</div>" +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">' +
+      '<div class="filter-row" style="margin-top:8px;">' +
       '<button class="btn ' + (filterDom === "" ? "" : "plain") + ' small" data-action="lib-dom" data-v="">全部领域</button>' +
       d.domains.filter(function (x) { return !x.hidden; }).map(function (dm) { return '<button class="btn ' + (filterDom === dm.id ? "" : "plain") + ' small" data-action="lib-dom" data-v="' + esc(dm.id) + '">' + esc(dm.name) + "</button>"; }).join("") + "</div>" +
       '<button class="btn block" data-action="add-resource" style="margin-top:14px;">' + ic("plus") + "新建资料（粘贴链接自动识别平台）</button>");
@@ -2091,7 +2091,7 @@
           var h = Math.round(x.m / maxM * 52);
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
             '<div style="width:100%;max-width:26px;height:' + (h > 0 ? h : 3) + 'px;background:' + (x.m > 0 ? "var(--accent)" : "#EDEFEC") + ';border-radius:3px;"></div>' +
-            '<div class="li-sub" style="font-size:11px;">' + x.label + "</div></div>";
+            '<div class="li-sub" style="font-size:12.5px;">' + x.label + "</div></div>";
         }).join("") +
         "</div>" +
         '<div class="li-sub" style="margin-top:8px;">' + days.filter(function (x) { return x.m > 0; }).length + " 天有学习记录" + (calcStreak() >= 2 ? " · 连续打卡 " + calcStreak() + " 天" : "") + "</div>");

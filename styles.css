@@ -880,6 +880,42 @@ img, svg, video { max-width: 100%; }
 }
 .empty .empty-tip { margin-top: 8px; font-size: var(--t-sm); color: var(--muted); }
 
+
+/* ============================================================
+   v2 第三批：手机端「拥挤」专项（2026-09-17）
+   依据 tests/_crowd.js 的实测：390px 下多个页面 43-74% 的文字小于 13px，
+   资料库首屏塞了 31 个可点元素（三行筛选 chip 各折成两行）。
+   下面按测量结果修，改完用同一脚本复测对比。
+   ============================================================ */
+
+/* 筛选 chip 行：桌面折行；手机改成一行横向滑动，首屏不再被筛选项占满 */
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 767px) {
+  .filter-row {
+    flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;
+    margin-left: -2px; margin-right: -2px;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-row > * { flex: 0 0 auto; }
+}
+
+@media (max-width: 767px) {
+  /* 手机端最小字号兜底：原来有 11 / 11.5 / 12px 的文字，手机上太挤，全部抬到 ≥12.5px */
+  :root { --fs-sm: 13px; --fs-xs: 12.5px; }
+  .mobile-nav .mn-item { font-size: 12px; }
+  .st3-label, .st4-label, .f-st-label, .h3-btn, .ht-late, .f-his-type { font-size: 12.5px; }
+  .h3-label, .bar-val, .bar-label, .hm-legend, .cal-head, .li-meta,
+  .ky-pressure, .ky-ring-label, .ky-coupon, .f-his-time, .cc-tag { font-size: 12px; }
+  .chip, .tag { font-size: 12.5px; }
+  .li-sub, .tool-sub, .hd-sub, .cc-sub { font-size: 13px; }
+  .card-head .hint { font-size: 12.5px; }
+
+  /* 密度：卡片之间多留一点气，列表行也放宽 */
+  .card { margin-bottom: 18px; padding: 15px; }
+  .list-item { padding: 13px 8px; }
+}
+
 /* E. 手机端：桌面放宽，手机反而要更紧凑 -------------------------- */
 @media (max-width: 767px) {
   .view-wrap { padding: 10px 14px 96px; }
