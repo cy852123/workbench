@@ -23,13 +23,15 @@
 | 仓库跟踪文件 | 23 个（本次瘦身前 95 个） | `git ls-files \| wc -l` |
 | UI 回归现状 | `npm test` = **40 项断言全过**（桌面+手机 3 种宽度+交互） | 真跑，见下 |
 | 线上版本 | ✅ **2026-09-17 已更新**：部署前落后本地 11 个 commit、`cet` 84 行/149 处；部署后 8 个前端文件与本地 **md5 逐文件一致**、0 JS 错误，`cet` 两边都是 74 行/132 处（全是 migrate 兼容代码，不是界面入口） | `curl` 线上 + `md5sum` 逐文件比对 |
-| 线上 Service Worker | **不存在**（请求 `/service-worker.js` 返回 3050 字节 = `index.html` 的大小） | `curl` + md5 比对 |
+| 线上 Service Worker | ✅ **2026-09-17 已修复**：修复前「不存在」（请求返回 3050 字节 = `index.html`）；现在返回 2022 B / `application/javascript`，缓存号 `wb-cache-v053`，浏览器实测 `controller` 非空、8 个文件已入缓存 | `curl` + 浏览器 `caches.keys()` |
 | 云端数据 | KV `WB_KV` 里 3 个键：`wb_main`（主数据）、`wb_tasks`、`wb_learnpack`；单次上限 20 MB | Cloudflare API 只读查询 |
 | 数据规模 | 主数据 JSON 约 11 KB（云端快照实测） | 快照文件大小 |
 | 上传文件上限 | 每个文件 2 MB，**以 base64 形式塞进主数据**（`app.js:790 KY_FILE_MAX`） | 读代码 |
 | 保存失败处理 | `localStorage` 写失败只弹「保存失败：浏览器存储空间可能已满」，**改动不落盘**（`app.js:386-394`） | 读代码 |
 
-> 2026-09-17 21:1x 独立复核（另起一次会话重跑）：`npm test` 仍 **40/40 通过**（test.js 26 项 + test_interact.js 14 项）；上表各行逐一核对过代码或线上实测 —— `KY_FILE_MAX` 确在 `app.js:790`、`esc(` 在 `views.js` 出现 351 处、`WB_DICT` 零引用（词典链路确实悬空）、`defaultData()` 在 `app.js:82`、`views.js:2645` 写死 `v0.1.0`、`service-worker.js` 里是 `wb-cache-v052`、`tests/test.js` 确实往仓库根目录写 `shot_*.png`。
+> 2026-09-17 21:1x 独立复核（另起一次会话重跑）：`npm test` 仍 **40/40 通过**（test.js 26 项 + test_interact.js 14 项）；上表各行逐一核对过代码或线上实测 —— `KY_FILE_MAX` 确在 `app.js:790`、`esc(` 在 `views.js` 出现 351 处、`WB_DICT` 零引用（词典链路确实悬空）、`defaultData()` 在 `app.js:82`、`views.js:2645` 写死 `v0.1.0`、`service-worker.js` 里当时是 `wb-cache-v052`（现已 v053）、`tests/test.js` 确实往仓库根目录写 `shot_*.png`。
+>
+> ⚠️ **同一轮复核还查出这 40 项门禁的盲区**：2026-09-17 线上出现过 3 个「上传过文件才触发」的崩溃（见 `b663e1e`），`npm test` 40/40 全过却一个都没抓到 —— 因为测试用的是**干净数据**。已补一个专测探针 `tests/_verify_filelist_crash_independent.js`（并留了「已知会崩」的旧代码副本 `_attic/2026-09-17/prefix-verify/` 证明它会失败：修复前 3/13、修复后 13/13）。**结论：门禁过了 ≠ 没 bug，上传文件相关路径必须用带数据的探针单独测。**
 
 ---
 
@@ -42,15 +44,15 @@
 | **P0-1** | 正确性/UX | ✅ **2026-09-17 已修复**（已重新部署，线上 == 本地）。但**根因还在**：Pages 不连 GitHub（`git push` 不会上线），部署靠手动 `cp` + `wrangler`，很容易再漏 | `wrangler pages project list` 显示 workbench-sync 是直传项目；本次是靠手动 `cp` 同步才补上的 | 会**再次发生**，直到下一条「写 deploy 脚本」做完 |
 | **P0-2** | 正确性 | ✅ **2026-09-17 已修复**：`service-worker.js` 已随本次部署上线（此前 `.pages-deploy/` 里从来没有它） | 修复前：线上 `/service-worker.js` = 3050 B（就是 `index.html`）；修复后：**2022 B、`Content-Type: application/javascript`** | ① 离线现在能打开了；② **从下次改前端起必须遵守「改前端 → 缓存号 +1」**，否则手机吃旧缓存 |
 | **P0-3** | 数据安全 | **只有 localStorage，没有定期备份**；云端快照里 `sync.auto = false`，而且**云端主数据停在 2026-08-16 05:15**（之后没成功上传过） | 实测 `curl -H "X-Sync-Key: …" .../api/data` 返回 `meta.updated = "2026-08-16 05:15"`；快照 `settings.sync.auto=false` | 清浏览器数据 / 换手机 / 存储写满 → 全部学习记录消失；两台设备数据也在各自漂移 |
-| **P0-4** | 正确性 | **上传文件 = base64 进 localStorage**：2 MB 上限 × 2~3 个文件就可能把 localStorage（一般 5~10 MB）撑满，之后所有保存静默失败 | `app.js:790`（上限）、`app.js:386-394`（失败只弹提示） | 撑满后你以为保存了，其实没存 → 数据丢失，且现象难查 |
+| **P0-4** | 正确性 | **上传文件 = base64 进 localStorage**：2 MB 上限 × 2~3 个文件就可能把 localStorage（一般 5~10 MB）撑满。⚠️ **2026-09-17 已做掉「B 方案」（`b663e1e`）**：存前量体积、**>3 MB 明确告警**，写失败把「⚠️ 未保存」**留在侧边栏不消失**并区分 `QuotaExceededError`；**仍未做**：把文件挪出主数据（原 A 方案） | `app.js:790`（单文件上限）、`save()` 里的 `STORE_WARN = 3MB` | 至少不会再「你以为存了其实没存」；但数据量本身仍受 5 MB 限制，导出的 JSON 会越来越大 |
 | **P0-5** | 安全 | ⚠️ **2026-09-17 实测：不建议靠「转 private」来修** —— 一转就**关掉 GitHub Pages**（`https://cy852123.github.io/workbench` → 404），而该站点**一直在从 main 根目录自动部署**、手机图标可能指着它；改回 public 也**不会自动恢复**（需手动重建）。**已当场回滚为 public**。历史里仍有个人数据导出文件（`downloads/工作台备份_2026-08-16.json`，含课程/错题/答疑；已确认**不含同步密钥、不含 API 密钥**） | `git log -S<密钥>` 在全部历史里 = 0 个 commit；转 private 后 Pages 站点实测 404 | 要清掉历史里的个人数据，正路是 **另建一个干净仓库**（或 `git filter-repo` 强推），**别动可见性** |
 
 ### P1 —— 结构性的，需要小步做
 
 | # | 类别 | 问题 | 证据 | 影响 |
 |---|---|---|---|---|
-| **P1-1** | 可维护性 | **没有一条"一键验证"**：`tests/` 60+ 个脚本不入库、无基线文件、没有回归门禁 | `tests/` 在 `.gitignore` 里；`package.json` 的 `test` 只跑 2 个脚本 | 改完不知道有没有改坏别处；换电脑/重装就丢了整套测试 |
-| **P1-2** | 可维护性 | **Service Worker 缓存号靠手改**、App 内版本号写死 `v0.1.0`（真实已经到 v0.1.20+） | `service-worker.js` 里硬编码 `wb-cache-v052`；`views.js:2645` 写死 v0.1.0 | 版本号不敢信；漏改缓存号会让手机吃旧缓存 |
+| **P1-1** | 可维护性 | **没有一条"一键验证"**：`tests/` 51 个脚本（45 .js + 6 .py，共 64 个文件）不入库、无基线文件、没有回归门禁 | `tests/` 在 `.gitignore` 里；`package.json` 的 `test` 只跑 2 个脚本；**且这 40 项覆盖不到「上传过文件」的路径（实测漏掉 3 个必崩点）** | 改完不知道有没有改坏别处；换电脑/重装就丢了整套测试 |
+| **P1-2** | 可维护性 | **Service Worker 缓存号靠手改**（已是 `wb-cache-v053`）、App 内版本号写死 `v0.1.0`（真实已经到 v0.1.20+） | `service-worker.js` 里硬编码 `wb-cache-v053`；`views.js:2645` 写死 v0.1.0 | 版本号不敢信；漏改缓存号会让手机吃旧缓存 |
 | **P1-3** | 正确性 | **同步是"最后写入赢"，没有冲突处理**：两台设备都改了，后上传的整份覆盖前一份（下载前有本地备份，能救但不易发现） | `app.js:441-449`（`Object.assign` 整份替换）；`syncPush` 传整个 data | 手机和电脑同时用会互相覆盖 |
 | **P1-4** | 可维护性 | **单文件过大**：`app.js` 4500 行一个 IIFE、`views.js` 2816 行 | `wc -l` | 定位改动慢、冲突多、新功能只能堆在同一个文件里 |
 | **P1-5** | 正确性 | 仓库历史仍背着 66 MB 词典与 300 KB+ 的截图（瘦身只摘了索引，历史里还在） | GitHub API `"size": 39400`（KB） | clone 慢；不影响使用，纯浪费 |
@@ -92,7 +94,7 @@ wrangler pages deploy .pages-deploy --project-name workbench-sync --branch main
 **验证**（2026-09-17 实测通过，命令行可直接抄）：
 ```bash
 B=https://workbench-sync-c9e.pages.dev
-curl -s $B/service-worker.js | grep -o 'wb-cache-v[0-9]*'   # 应打印 wb-cache-v052
+curl -s $B/service-worker.js | grep -o 'wb-cache-v[0-9]*'   # 应打印 wb-cache-v053
 curl -s $B/app.js | md5sum ; md5sum < app.js                # 两行必须相同 ← 最可靠的判据
 curl -s -o /dev/null -w '%{http_code}\n' $B/api/data        # 401（无密钥，正常）
 curl -sL -o /dev/null -w '%{http_code}\n' $B/               # 200
@@ -184,6 +186,7 @@ curl -sL -o /dev/null -w '%{http_code}\n' $B/               # 200
 
 | 批次 | 内容 | 预计 | 回滚方式 |
 |---|---|---|---|
+| ~~第 0 批~~ | ~~修复 `v0.1.20` 的 3 个必崩点 + 重新部署~~ ✅ **2026-09-17 已完成**（`b663e1e`） | — | `git revert b663e1e` + 重新部署 |
 | 第 1 批 | P0-3 数据兜底（App 内操作，不涉及代码） | 5 分钟 | 不需要 |
 | ~~第 2 批~~ | ~~P0-1 + P0-2 更新线上（含 SW）~~ ✅ **2026-09-17 已完成** | — | Pages 控制台 Rollback |
 | ~~第 3 批~~ | ~~P0-5-A 仓库转 private~~ ⚠️ **2026-09-17 试过并已回滚**（副作用：关掉了 GitHub Pages） | — | 已回滚为 public |

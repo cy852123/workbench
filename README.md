@@ -21,7 +21,7 @@
 | 核心逻辑 | `app.js` 4500 行 / 285 KB |
 | 视图渲染 | `views.js` 2816 行 / 216 KB |
 | 样式 | `styles.css` 740 行 / 42 KB |
-| 离线 | `service-worker.js`（缓存号 `wb-cache-v052`；**2026-09-17 首次真正上线**，之后每次改前端都要 +1） |
+| 离线 | `service-worker.js`（缓存号 **`wb-cache-v053`**；2026-09-17 首次真正上线，之后每次改前端都要 +1） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
 | 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交的说明 + App 内「设置与数据 → 更新日志」（20 条）** |
 
@@ -120,6 +120,29 @@ npm test                            # = node tests/test.js && node tests/test_in
 
 > 根目录那 7 张 `shot_*.png` 是 **`tests/test.js` 每次跑 `npm test` 时自动重写的**（`tests/test.js` 第 45 行 `page.screenshot({path:"shot_desktop.png"})`）。所以它们是测试产物、不该入库，也**不用手动更新** —— 只要跑一次 `npm test` 就是最新的。
 
+### 补充门禁：`tests/_verify_filelist_crash_independent.js`（2026-09-17 新增）
+
+`npm test` 的 40 项用的是**干净数据**，测不到「已经上传过文件」的路径 —— 而 2026-09-17 那 3 个崩溃恰好只在有上传文件时触发。这个探针专门补这个盲区：
+
+```bash
+cd E:\Software\workbench
+python -m http.server 8000 --bind 127.0.0.1    # 先起服务
+node tests/_verify_filelist_crash_independent.js http://127.0.0.1:8000/          # 本地
+node tests/_verify_filelist_crash_independent.js https://workbench-sync-c9e.pages.dev/   # 线上也行
+```
+
+它会往 localStorage 里种 3 个「上传过的文件」，然后依次走**政治页 / 专业课页 / 作文模板库弹窗**，13 项断言：不但要求无 JS 报错，还要求**种进去的文件名真的出现在页面上**（渲染中断时必然不出现）。
+
+**怎么证明这个门禁不是「永远通过」的**：拿修复前的旧代码跑一遍必须挂 —— 那份已知会崩的副本留在 `_attic/2026-09-17/prefix-verify/`：
+
+```bash
+cd E:\Software\workbench\_attic\2026-09-17\prefix-verify && python -m http.server 8001 --bind 127.0.0.1
+cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js http://127.0.0.1:8001/
+# 预期：3/13 通过 + 打印 kyFileListHtml is not defined / fmtSize is not defined，退出码 1
+```
+
+> 注意：Python 的 `http.server` 带 `allow_reuse_address`，**同一个端口能在 Windows 上被多个进程同时绑定**，请求随机命中一个 —— 出现莫名其妙的 `ERR_EMPTY_RESPONSE` 时先 `netstat -ano | grep ":8000 "` 看是不是有好几个监听，`taskkill /F /PID <pid>` 清掉再起。
+
 ## 六、怎么部署（Cloudflare Pages）
 
 - Pages 项目：**`workbench-sync`**，地址 `https://workbench-sync-c9e.pages.dev`（固定域名，手机装的就是它）
@@ -145,7 +168,29 @@ npm test                            # = node tests/test.js && node tests/test_in
 > (async()=>{const ks=await caches.keys();const c=await caches.open(ks[0]);return{controlled:!!navigator.serviceWorker.controller,cacheNames:ks,cachedFiles:(await c.keys()).map(r=>r.url.replace(location.origin,''))};})()
 > ```
 
-**本次故意没有把 SW 缓存号 +1**：手机上从来没成功注册过 SW（`/service-worker.js` 一直返回 HTML、MIME 类型不对，注册必然失败），所以没有任何旧缓存需要失效。**从下一次改前端开始，就必须遵守「改前端 → 缓存号 +1」**。
+**第一次部署时故意没有把 SW 缓存号 +1**（当时手机从未成功注册过 SW，没有任何旧缓存需要失效）。**第二次部署起照规矩做了：v052 → v053**，「改前端 → 缓存号 +1」从此必须遵守。
+
+**2026-09-17 22:4x 第二次部署（修复三个必崩点）**：第一次部署把 `v0.1.20` 的代码推上线后，才发现里面带着 **3 个「一点就崩」的 bug**（提交 `b663e1e`）——`app.js` 与 `views.js` 各自是 IIFE、作用域互相看不见，却裸调了对方的私有函数：
+
+| 崩在哪 | 现象 | 根因（ReferenceError） |
+|---|---|---|
+| 政治学科页「知识点资料」 | **传过文件**后整页只渲染 3 张卡就中断 | `kyFileListHtml is not defined` |
+| 专业课学科页「章节笔记」 | 同上（3 张卡） | `kyFileListHtml is not defined` |
+| 作文模板库弹窗 | **传过模板**后点开是空的 / 根本弹不出 | `fmtSize is not defined` |
+
+修复：`app.js` 自带一份 `fmtSize`、把 `kyFileListHtml` 挂到既有的共享面 `window.W`、views 侧加桥接函数；顺带加固 `save()`（用户点名的 `app.js:386-394`：存前量体积 >3MB 告警、写失败把「⚠️ 未保存」留在侧边栏不消失）。已重新部署，线上自查见下。
+
+线上复验（第二次部署后，全部实测）：
+
+| 检查 | 结果 |
+|---|---|
+| 线上/本地 md5 | `app.js`、`views.js`、`styles.css`、`service-worker.js` **逐文件一致** ✓ |
+| 线上 SW | 缓存号已升为 **`wb-cache-v053`**，2022 B、`application/javascript` ✓ |
+| 线上浏览器 | **0 条 console 消息、0 个 JS 错误**；SW 已接管，`wb-cache-v053` 里有 8 个文件（旧 v052 缓存已被自动清除）✓ |
+| **独立探针直接打线上** | **13/13 通过** —— 三个崩溃路径在真实线上站点确认修好 ✓ |
+| `/api/data` | 无密钥 **401**（保护未破坏）✓ |
+
+> ⚠️ **重要教训：`npm test` 那 40 项断言覆盖不到上面这三个 bug** —— 它们只在「已经上传过文件」的数据下才触发，而测试用的是干净数据。**这个门禁有盲区。** 为此留了两样东西（都在本地、不入库）：`tests/_verify_filelist_crash_independent.js`（专测这三条路径的探针）和 `_attic/2026-09-17/prefix-verify/`（**修复前**的整站副本，用来证明探针真的会失败 —— 实测修复前 3/13、修复后 13/13）。
 
 部署前后 `cet` 数量对比（部署前线上是旧版、界面上还挂着「英语学习」入口）：
 
@@ -172,7 +217,7 @@ cp index.html app.js views.js styles.css service-worker.js manifest.webmanifest 
 cp functions/api/*.js .pages-deploy/functions/api/
 
 # 2) Service Worker 缓存号 +1（不 +1 手机会继续吃旧缓存）
-#    改 service-worker.js 里的 "wb-cache-v052" → v053
+#    改 service-worker.js 里的 "wb-cache-v053" → v054
 
 # 3) 上传（--branch main 保证覆盖生产环境）
 wrangler pages deploy .pages-deploy --project-name workbench-sync --branch main
@@ -209,7 +254,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 ## 八、踩过的坑（别重犯）
 
 **改动类**
-- 改了 `app.js`/`views.js`/`styles.css` 之后**一定要把 `service-worker.js` 的 `wb-cache-v052` 往上加 1**，否则手机 PWA 一直吃旧缓存，看起来像「改了没生效」
+- 改了 `app.js`/`views.js`/`styles.css` 之后**一定要把 `service-worker.js` 的 `wb-cache-v053` 往上加 1**，否则手机 PWA 一直吃旧缓存，看起来像「改了没生效」
 - `index.html` 里 `<script src="views.js">` 在 `app.js` **之前**（views 依赖 `window.W.icons`），别调换顺序
 - 事件全靠 `data-action` 委托给 `app.js`（`views.js` 只生成 HTML 字符串，不绑事件）；加按钮要同时在两边写：views 里给 `data-action="xxx"`，app 的委托分支里处理
 - 内联 HTML 拼字符串时，用户输入一律过 `esc()`（手机端尤其别漏）
@@ -238,7 +283,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - [ ] 词典脚本 `gen_dict.py` 生成的 `dict.js` 目前**没有任何代码引用**（查词功能没接回界面），66 MB 原料因此白占地方
 - [ ] `tests/` 60+ 个脚本没入库：其中真正当回归门禁用的（`test.js`/`test_interact.js`）建议入库，其余 scratch 留在本地
 - [ ] **要不要转 private —— 先别转**。2026-09-17 实测：转 private 会**关掉 GitHub Pages**（`https://cy852123.github.io/workbench` 变 404），改回 public 也不自动恢复（已手动重建）。现在状态是 **public**。真要转之前：先确认手机桌面图标用的是不是 Pages 地址，并准备好重建 Pages
-- [ ] **确认 GitHub Pages 站点已恢复**：`curl -s -o /dev/null -w '%{http_code}\n' https://cy852123.github.io/workbench/` 应为 **200**（重建后需要几分钟 build，实测当时是 `building` 状态）；若仍是 404，去 Settings → Pages 确认 Source = `main` / `/(root)` 后等 build 完成
+- [x] ~~确认 GitHub Pages 站点已恢复~~ ✅ 2026-09-17 完成：http_code **200**，Pages API `status: built`、source = `main` / `/`，且已自动重新部署到修复后的版本（v053）
 - [ ] **论文写作领域还是 `hidden:true`**（入口不显示）
 
 ## 十、版本控制
