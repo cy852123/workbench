@@ -155,13 +155,15 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 | 字号 / 字重 | 字号走 `--t-display…--t-xs`；**字重只用 2 档**（400 正文 / 650 `--w-strong`）—— 层级靠字号，不靠加粗 |
 | 圆角 / 阴影 | 圆角只用 4 档 `--r-sm/md/lg/pill`；阴影只用 2 档 `--shadow-1/2` |
 | 层级靠底色分层 | 白 `.card` / `.ky-card` / `.course-card` = **主要内容**；`var(--soft)` 浅底 = 统计块 / 卡内小组件 / 空状态 |
-| 图标 | CSS 顶部规范写着"统一 SVG（`ic()` / `W.icons`）"，但**当前界面实际用的是 emoji**（用户 2026-08-16 特意选的「可爱 emoji 风格」）—— 想换回去再议，别擅自改 |
+| 图标 | CSS 顶部规范写着"统一 SVG（`ic()` / `W.icons`）"，但**当前界面实际用的是 emoji**（用户 2026-08-16 特意选的「可爱 emoji 风格」）—— **2026-09-17 用户拍板：全站去掉装饰性图标**（原话「图标可以删掉，怎么好看高级怎么来」），层级改由字号 / 字重 / 留白 + 细线承担。做法见下方第四批。功能性命号（关闭 ×）保留 |
 
-**两批改动**（都只动 `styles.css`，HTML/JS 一行未改）：
+**四批改动**（前三批只动 `styles.css`；第四批动了 `views.js` + `app.js`）：
 
 - `b684b1e` 令牌层：17 个荧光模块色 → 同族低饱和；35 处近似灰/阴影/圆角收敛成令牌；字重 800/900 → 650/700；删掉「每页头顶 4px 彩条」和「课程卡顶部色条」；补 `:focus-visible` 焦点环；触控区 22→28px
 - `3357ec7` 层级/密度/空状态：白卡 vs 浅底分层；`max-width 1180` 居中；卡间距 20px；列表分隔线降一档；`.empty` 加纯 CSS「空页」图形；手机端反向收紧
 - `92f8d5d` 手机端「拥挤」专项（**数据驱动**）：先跑 `node tests/_crowd.js http://127.0.0.1:8000/` 在 390px 下量拥挤度，据此修两处病根 —— ① `views.js` 里 5 处**内联** `font-size:11px/12px`（内联优先级高于样式表，光在 CSS 里覆盖压不住）抬到 12.5px；② 资料库三行筛选加 `.filter-row`，手机端改一行横向滑动；另补手机端 12.5px 最小字号兜底 + 留白放宽。**复测：资料库 <13px 占比 74%→40%，全站再无 11px 文字**
+- `020ef08` **第四批 · 去图标**：装饰性图标全站不显示（CSS 隐藏图标位 + `cardHead()` 调用里的图标前缀整体去掉）。同时修掉 3 个真 bug：收集箱类型标签显示英文代码、首页问候语把 `moon` 当文字打出、**69 处卡片标题被 `esc()` 转义成字面 SVG 代码**（用户反馈「有些板块是英语」的就是这个）
+- `78ed7ce` + `060c025` **F2 + F1**：侧边栏「工具」按使用频率重排（错题本/专注提前）；首页减法 —— 「hero 卡 + 最底部状态条卡」合并成一张顶部概览卡（3 个 29px 大号 KPI 数字：今日完成率 / 连续打卡 / 本周有效时长），AI 下发任务收进 `<details>` 折叠区，学习领域改紧凑单行。**首屏平级卡 5 张 → 2 张**
 
 **回滚**：`git checkout <上一版hash> -- styles.css`（只改这一个文件）；改完必须 `npm test` 40 项全过 + 人眼比对截图。
 
@@ -300,6 +302,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - `index.html` 里 `<script src="views.js">` 在 `app.js` **之前**（views 依赖 `window.W.icons`），别调换顺序
 - 事件全靠 `data-action` 委托给 `app.js`（`views.js` 只生成 HTML 字符串，不绑事件）；加按钮要同时在两边写：views 里给 `data-action="xxx"`，app 的委托分支里处理
 - 内联 HTML 拼字符串时，用户输入一律过 `esc()`（手机端尤其别漏）
+- **`cardHead(标题, ...)` 内部会对标题做 `esc()`，所以别把 HTML（图标、标签）拼进标题字符串**。2026-09-17 就把 `<svg viewBox=...>` 拼进了 69 处标题，结果被转义成字面文字显示在页面上，用户看到一串"英文乱码"反馈「有些板块是英语」。图标要么放标题外面，要么别放。泄漏探针 `tests/_iconleak.js` 现在会拦这类问题
+- 首页等页面用 `<details>` 折叠内容时注意：折叠区里的元素虽然还在 DOM 里，但**取坐标会得到隐藏元素的陈旧值**（`tests/test.js` 的"内容不被遮挡"就因此误报过）。量可见性要先排除「祖先里有未展开 details」的元素
 
 **数据类**
 - 加载时 `load()` 会跑 `migrate()` 做结构升级（如 `cet.exams` 被写坏成字符串时自动转正、旧日期纠正），**改结构要走 migrate，不要直接改历史数据**
@@ -314,6 +318,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - `.pages-deploy/` 是**手动同步**的旧副本，很容易忘记同步 → 部署出旧版（现在就发生了）
 - Pages 项目不连 GitHub：`git push` 只备份代码，**不会**上线（这里说的「上线」指 Cloudflare 那个地址；但 GitHub 自己的 Pages 站点**会**跟着 `git push` 自动更新，见第十节的警告）
 - **别把仓库转 private**：实测会关掉 GitHub Pages 站点，且改回 public 不自动恢复（详见第十节）。GitHub Pages 从 `main` 根目录自动部署，所以**根目录必须一直可运行**
+- `wrangler pages deploy` 报 **`fetch failed`** 时，先别怀疑 Cloudflare 或令牌 —— 本机 DNS 会解析出 `api.cloudflare.com` 的 IPv6 地址，这条 IPv6 不通时 **Node 的 fetch 直接失败**（curl 会自动回落 IPv4，所以手测 curl 完全正常，极具迷惑性）。解法：`export NODE_OPTIONS=--dns-result-order=ipv4first`。**`tools/deploy.py` 已内置这一行**，走脚本部署不会踩到
 
 ## 九、待办
 
