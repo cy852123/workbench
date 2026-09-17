@@ -1,4 +1,40 @@
+# ===== 个人工作台 · 哪些东西不入库 =====
+# 原则：仓库只放「源码 + 图标」，产物 / 凭据 / 个人数据 / 截图 全部留在磁盘上不入库。
+# 这些文件不会因为被 ignore 而消失，只是不再被 git 跟踪。
+
+## 依赖
 node_modules/
-tests/
+
+## 凭据（绝不上传；本地留着，同步与部署要用）
 .cf-env
 .sync-key.txt
+
+## 个人数据（云端同步快照、导出的备份；含同步密钥，千万别入库）
+downloads/
+data_tmp.json
+wb_cloud_check.json
+wb_now.json
+
+## 测试与探针（本地留着跑，不入库）
+tests/
+logs/
+*.bak
+_dump.py
+_inspect.py
+*.tmp
+*.log
+
+## 归档（历史垃圾都挪进这里，不删）
+_attic/
+
+## 构建产物 / 部署暂存 / 截图（文件留在磁盘，部署脚本直接用）
+.pages-deploy/
+.wrangler/
+previews/
+shots/
+shot_*.png
+
+## 词典源数据（66MB CSV + 5MB zip，用 download_dict.py 重新下载；dict.js 由 gen_dict.py 生成）
+ecdict_full.csv
+ecdict.zip
+dict.js
