@@ -95,6 +95,17 @@ if ("serviceWorker" in navigator) {
     window.location.reload();
   });
 }
+/* 侧边栏版本号 = 本机实际在用的缓存号（Cache Storage 里那个 wb-cache-vNNN）。
+   2026-09-17 加：之前写死 "v0.1.0"，手机端到底跑的是哪版只能靠猜，
+   排查「部署了但没更新」时完全没有依据。 */
+if (window.caches && caches.keys) {
+  caches.keys().then(function (ks) {
+    var mine = ks.filter(function (k) { return k.indexOf("wb-cache-") === 0; }).sort();
+    var k = mine[mine.length - 1];
+    var el = document.getElementById("sideVer");
+    if (k && el) el.textContent = k.replace("wb-cache-", "") + (mine.length > 1 ? "（有 " + mine.length + " 份缓存）" : "");
+  }).catch(function () {});
+}
 </script>
 </body>
 </html>
