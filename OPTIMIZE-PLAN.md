@@ -9,7 +9,7 @@
 
 | 顺序 | 事情 | 为什么急 | 风险 |
 |---|---|---|---|
-| **1** | **把线上更新一次**（并把 `service-worker.js` 一起部署） | 你手机上那个 App 现在跑的是 8/16 07:05 的旧版：没有「学科页改造」「英语学习板块移除」这些你已经提交的改动。**你每天在用的其实不是你以为的那版** | 低（部署脚本可回滚：Pages 控制台可回滚到上一次部署） |
+| ~~1~~ | ✅ **把线上更新一次**（并把 `service-worker.js` 一起部署）—— **2026-09-17 已完成** | 此前你手机上跑的确实是 8/16 07:05 的旧版；现已与本地逐文件 md5 一致、浏览器 0 JS 错误 | 已落地（回滚：Pages 控制台 → Deployments → Rollback） |
 | **2** | **确认数据兜底**：打开自动同步 + 手动导出一次备份 | 数据只活在浏览器 localStorage 里。那一份云端快照里 `sync.auto` 是 **false**（自动同步没开）。换手机/清缓存/存满 → 全没了 | 极低（导出就是下载一个 JSON） |
 | **3** | **写一个 `deploy` 脚本**（同步暂存 + 缓存号+1 + 上传 + 自检） | 现在部署靠手抄 4 条命令，已经出过一次事故（见下面 P0-1 的证据） | 低（新增文件，不动现有代码） |
 
@@ -22,7 +22,7 @@
 | 核心文件 | `app.js` 4500 行 / 285 KB；`views.js` 2816 行 / 216 KB；`styles.css` 740 行 / 42 KB | `wc -l`、`ls -l` |
 | 仓库跟踪文件 | 23 个（本次瘦身前 95 个） | `git ls-files \| wc -l` |
 | UI 回归现状 | `npm test` = **40 项断言全过**（桌面+手机 3 种宽度+交互） | 真跑，见下 |
-| 线上版本 | 落后本地 **11 个 commit**（`git log f884293..HEAD`，其中 6 个功能改动）；线上 `app.js` 里 `cet` 命中 **84 行 / 149 处**（本地 74 行 / 132 处，均为 migrate 兼容代码） | 下载线上文件比对 md5 + `grep -c cet` / `grep -o cet` |
+| 线上版本 | ✅ **2026-09-17 已更新**：部署前落后本地 11 个 commit、`cet` 84 行/149 处；部署后 8 个前端文件与本地 **md5 逐文件一致**、0 JS 错误，`cet` 两边都是 74 行/132 处（全是 migrate 兼容代码，不是界面入口） | `curl` 线上 + `md5sum` 逐文件比对 |
 | 线上 Service Worker | **不存在**（请求 `/service-worker.js` 返回 3050 字节 = `index.html` 的大小） | `curl` + md5 比对 |
 | 云端数据 | KV `WB_KV` 里 3 个键：`wb_main`（主数据）、`wb_tasks`、`wb_learnpack`；单次上限 20 MB | Cloudflare API 只读查询 |
 | 数据规模 | 主数据 JSON 约 11 KB（云端快照实测） | 快照文件大小 |
@@ -39,8 +39,8 @@
 
 | # | 类别 | 问题 | 证据 | 影响 |
 |---|---|---|---|---|
-| **P0-1** | 正确性/UX | **线上是旧版**：Pages 项目不连 GitHub（Git Provider = No），`git push` 不会上线；而部署靠手动把文件 `cp` 到 `.pages-deploy/` 再上传，很容易漏 | 线上 `app.js` md5 ≠ 本地；线上 `cet` 149 处 / 84 行（本地 132 处 / 74 行，是 migrate 兼容代码）；`wrangler pages project list` 显示 workbench-sync 是直传项目 | 你在手机上看到的功能和你改的代码不一致，会误以为"改了没生效" |
-| **P0-2** | 正确性 | **`.pages-deploy/` 里从来没有 `service-worker.js`** → 线上离线/PWA 缓存机制从未生效（也就没有"新版本提示刷新"） | 请求线上 `/service-worker.js` 得到 3050 B，md5 = 本地 `index.html` | ① 断网打不开；② 以后一旦把 SW 补上线，就必须遵守"改前端 → 缓存号 +1"，否则手机锁在旧版 |
+| **P0-1** | 正确性/UX | ✅ **2026-09-17 已修复**（已重新部署，线上 == 本地）。但**根因还在**：Pages 不连 GitHub（`git push` 不会上线），部署靠手动 `cp` + `wrangler`，很容易再漏 | `wrangler pages project list` 显示 workbench-sync 是直传项目；本次是靠手动 `cp` 同步才补上的 | 会**再次发生**，直到下一条「写 deploy 脚本」做完 |
+| **P0-2** | 正确性 | ✅ **2026-09-17 已修复**：`service-worker.js` 已随本次部署上线（此前 `.pages-deploy/` 里从来没有它） | 修复前：线上 `/service-worker.js` = 3050 B（就是 `index.html`）；修复后：**2022 B、`Content-Type: application/javascript`** | ① 离线现在能打开了；② **从下次改前端起必须遵守「改前端 → 缓存号 +1」**，否则手机吃旧缓存 |
 | **P0-3** | 数据安全 | **只有 localStorage，没有定期备份**；云端快照里 `sync.auto = false`，而且**云端主数据停在 2026-08-16 05:15**（之后没成功上传过） | 实测 `curl -H "X-Sync-Key: …" .../api/data` 返回 `meta.updated = "2026-08-16 05:15"`；快照 `settings.sync.auto=false` | 清浏览器数据 / 换手机 / 存储写满 → 全部学习记录消失；两台设备数据也在各自漂移 |
 | **P0-4** | 正确性 | **上传文件 = base64 进 localStorage**：2 MB 上限 × 2~3 个文件就可能把 localStorage（一般 5~10 MB）撑满，之后所有保存静默失败 | `app.js:790`（上限）、`app.js:386-394`（失败只弹提示） | 撑满后你以为保存了，其实没存 → 数据丢失，且现象难查 |
 | **P0-5** | 安全 | 仓库是 **public**，历史里已经有个人数据导出文件（`downloads/工作台备份_2026-08-16.json`，含课程/错题/答疑等记录；**已确认不含同步密钥、不含 API 密钥**） | GitHub API：`"private": false`；`git log -S<密钥>` 为空 | 隐私暴露；也提醒以后别把 `data_tmp.json` 这类文件误提交 |
@@ -89,11 +89,16 @@ wrangler pages deploy .pages-deploy --project-name workbench-sync --branch main
 ```
 **风险**：中低。这是一次真实上线，会改变你手机上的界面。
 **→ 建议**：先在一台设备上试；**先在浏览器里用 `python -m http.server 8000` 看一遍本地版**（本地已经是新代码），确认没问题再上线。
-**验证**：
+**验证**（2026-09-17 实测通过，命令行可直接抄）：
 ```bash
-curl -s https://workbench-sync-c9e.pages.dev/service-worker.js | grep -o 'wb-cache-v[0-9]*'   # 应打印 wb-cache-v053
-curl -s https://workbench-sync-c9e.pages.dev/app.js | grep -c cet                            # 应为 0
+B=https://workbench-sync-c9e.pages.dev
+curl -s $B/service-worker.js | grep -o 'wb-cache-v[0-9]*'   # 应打印 wb-cache-v052
+curl -s $B/app.js | md5sum ; md5sum < app.js                # 两行必须相同 ← 最可靠的判据
+curl -s -o /dev/null -w '%{http_code}\n' $B/api/data        # 401（无密钥，正常）
+curl -sL -o /dev/null -w '%{http_code}\n' $B/               # 200
 ```
+> ⚠️ **不要用 `grep -c cet` 判新旧**（初稿这里写的是「应为 0」，是**错的**）：本地 `app.js` 本来就有 74 行含 `cet`，那是 `migrate()` 的老用户兼容代码 + 考研英语 `cet4/cet6` 标记，更新后线上也会是 74 而不是 0。判新旧请一律用 **md5 比对**。
+> ⚠️ `curl $B/index.html` 会拿到 **308 空 body**（Pages 把 `/index.html` 重定向到 `/`），别再误判成「线上文件是空的」。
 **回滚**：Cloudflare 控制台 → Pages → workbench-sync → Deployments → 选上一次 → "Rollback"。
 
 ### P0-3：数据兜底（5 分钟）
@@ -167,7 +172,7 @@ curl -s https://workbench-sync-c9e.pages.dev/app.js | grep -c cet               
 
 ## 4. 需要你拍板的 4 个决策点
 
-1. **要不要更新线上？**（P0-1/P0-2；我建议要，且建议先本地看一眼新版本再上线）
+1. ~~**要不要更新线上？**（P0-1/P0-2）~~ ✅ **2026-09-17 已执行**：先本地 `npm test` 40/40 + 看 7 张截图确认，再部署，再线上自查（md5 + 浏览器 0 报错）
 2. **`app.js`/`views.js` 拆不拆？** 选 A / B / C（我建议 A 或 B，不建议 C）
 3. **仓库要不要转 private？**（P0-5；我建议转，零成本）
 4. **上传文件要不要改存 IndexedDB？**（P0-4；代价是"文件不再自动同步到手机"）
@@ -179,7 +184,7 @@ curl -s https://workbench-sync-c9e.pages.dev/app.js | grep -c cet               
 | 批次 | 内容 | 预计 | 回滚方式 |
 |---|---|---|---|
 | 第 1 批 | P0-3 数据兜底（App 内操作，不涉及代码） | 5 分钟 | 不需要 |
-| 第 2 批 | P0-1 + P0-2 更新线上（含 SW） | 15 分钟 | Pages 控制台 Rollback |
+| ~~第 2 批~~ | ~~P0-1 + P0-2 更新线上（含 SW）~~ ✅ **2026-09-17 已完成** | — | Pages 控制台 Rollback |
 | 第 3 批 | P0-5-A 仓库转 private | 1 分钟 | 改回 public |
 | 第 4 批 | P1-1 回归门禁 + P1-2 版本号单一来源 | 半天 | `git revert` |
 | 第 5 批 | 写 `deploy` 脚本（把第 2 批那 3 步固化成一条命令 + 自检） | 半天 | 删脚本即可，部署仍可手动 |

@@ -6,7 +6,7 @@
 **仓库**：`git@github.com:cy852123/workbench.git`（public）
 **本机路径**：`E:\Software\workbench`（2026-09-17 从 `C:\Users\Administrator\workbench` 迁到 E 盘）
 
-> ⚠️ 2026-09-17 维护记录：**线上还是 8/16 07:05 的旧版**（没有 8/16 之后的「英语学习板块移除、学科页改造」等改动）。原因和部署命令见第六节。
+> ✅ 2026-09-17 维护记录：**线上已更新到本地当前版本**（首次把 `service-worker.js` 一起部署，PWA 离线缓存首次生效）。部署前的状态、命令与自查结果见第六节。
 
 ---
 
@@ -18,7 +18,7 @@
 | 核心逻辑 | `app.js` 4500 行 / 285 KB |
 | 视图渲染 | `views.js` 2816 行 / 216 KB |
 | 样式 | `styles.css` 740 行 / 42 KB |
-| 离线 | `service-worker.js`（缓存号 `wb-cache-v052`，改完前端要 +1） |
+| 离线 | `service-worker.js`（缓存号 `wb-cache-v052`；**2026-09-17 首次真正上线**，之后每次改前端都要 +1） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
 | 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交的说明 + App 内「设置与数据 → 更新日志」（20 条）** |
 
@@ -124,18 +124,30 @@ npm test                            # = node tests/test.js && node tests/test_in
 - 凭据：`.cf-env`（里面是 `CLOUDFLARE_API_TOKEN`）、`.sync-key.txt`（同步密钥）
 - 账号 ID：`2b1d0f8b5fb6631b6d9471ea98cb75f8`
 
-**现在线上是什么版本**：最后一次部署是 2026-08-16 07:05（提交 `f884293`，SW 缓存号 v048）。之后本地又提交了 **11 个 commit**（`git log f884293..HEAD`；其中 6 个是功能改动：同步部署暂存目录、AI 切微信直连、考研模块极简重构、学科页改造、移除英语学习板块、词典脚本路径随搬迁更新），**线上落后于本地**。
+**现在线上是什么版本**（2026-09-17 21:2x 已重新部署）：部署**之前**线上停在 2026-08-16 07:05（提交 `f884293`、SW 缓存号 v048），落后本地 **11 个 commit**（`git log f884293..HEAD`，其中 6 个功能改动：同步部署暂存目录、AI 切微信直连、考研模块极简重构、学科页改造、移除英语学习板块、词典脚本路径随搬迁更新）。本次把 **8 个前端文件（首次包含 `service-worker.js`）+ 4 个 API** 一起传上去，**现在线上 == 本地**。
 
-实测对比（`curl` 线上 `app.js` + 读本地文件，同样搜 `cet`）：
+部署后自查（`curl` 线上 + `md5sum` 本地，逐文件比对，全部一致）：
+
+| 检查 | 结果 |
+|---|---|
+| `app.js` / `views.js` / `styles.css` / `manifest.webmanifest` / `service-worker.js` | 线上与本地 **md5 完全相同** ✓ |
+| `index.html` | 线上 `/index.html` 会 **308 重定向到 `/`**，比 md5 要 `GET /` —— 该 md5 与本地一致 ✓ |
+| `/service-worker.js` | **2022 字节、`Content-Type: application/javascript`**（修复前是 3050 字节的 HTML）→ **离线缓存首次真正生效** ✓ |
+| `/api/data` | 无密钥 **401**、带密钥 **200** —— 同步接口保护没被破坏 ✓ |
+| 真实浏览器打开线上站 | **0 条 console 消息、0 个 JS 错误**，导航 17 项正常 ✓ |
+
+**本次故意没有把 SW 缓存号 +1**：手机上从来没成功注册过 SW（`/service-worker.js` 一直返回 HTML、MIME 类型不对，注册必然失败），所以没有任何旧缓存需要失效。**从下一次改前端开始，就必须遵守「改前端 → 缓存号 +1」**。
+
+部署前后 `cet` 数量对比（部署前线上是旧版、界面上还挂着「英语学习」入口）：
 
 | | 出现次数 `grep -o cet` | 命中行数 `grep -c cet` |
 |---|---|---|
-| 线上 `app.js` | 149 | 84 |
-| 本地 `app.js` | 132 | 74 |
+| 线上 `app.js`（部署前，8/16 旧版） | 149 | 84 |
+| 线上 `app.js`（部署后）= 本地 | 132 | 74 |
 
 ⚠️ **本地并没有「删干净」**：这 74 行是 `migrate()` 里的**老用户兼容代码**（把旧 `cet` 领域设 `hidden = true`、修复 `exams`/`wordbook` 的坏结构）加上考研英语的 `cet4`/`cet6` 自动标记。英语学习板块的**界面入口**已移除，但**兼容与数据保留逻辑是故意留的** —— 别当垃圾清掉，清掉老用户数据会炸。
 
-**顺带查出来的问题**：`.pages-deploy/` 里**从来没有 `service-worker.js`**，所以线上 `/service-worker.js` 实际返回的是首页 HTML（实测：请求它拿到 3050 字节，正好等于 `index.html` 的大小），等于**线上的离线缓存、装到桌面的 PWA 缓存机制从来没生效过**。好处是手机不会卡旧版本；坏处是离线打不开、也没有「新版本提示刷新」。下面第 1 步的 `cp` 清单里我补上了 `service-worker.js`。
+**顺带查出来的问题（2026-09-17 已修复）**：`.pages-deploy/` 里**曾经从来没有 `service-worker.js`**，所以线上 `/service-worker.js` 返回的一直是首页 HTML（3050 字节 = `index.html` 的大小），等于**线上 PWA 的离线缓存从来没生效过**。好处是手机不会卡旧版本；坏处是离线打不开。下面第 1 步的 `cp` 清单里补上了 `service-worker.js`，本次已随部署上线。
 
 重新部署的步骤（改完前端 → 同步暂存目录 → 上传）：
 
@@ -208,8 +220,9 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 
 ## 九、待办
 
-- [ ] **把本地这 7 个 commit 推到 GitHub**：`git push origin main`。现在整份整理成果只在本机，而 `E:\backup\workbench\` 的备份**和项目在同一块 E 盘** —— 盘坏了两份一起没。推到 GitHub 是成本最低的异地备份（仓库当前的 private/public 状态见下面 P0-5）
-- [ ] **把线上更新到当前本地版本**（见第六节；线上还停在 8/16 07:05）
+- [x] ~~把本地这 7 个 commit 推到 GitHub~~ ✅ 2026-09-17 完成（`8003f2e..626b90a`）。**注意**：`E:\backup\workbench\` 的备份和项目在**同一块 E 盘**，盘坏了两份一起没，GitHub 才是异地那一份
+- [x] ~~把线上更新到当前本地版本（含首次部署 `service-worker.js`）~~ ✅ 2026-09-17 完成，见第六节的部署记录与 md5 自查表
+- [ ] **以后每次改前端**必须走完整流程：`cp` 到 `.pages-deploy/` → **SW 缓存号 +1** → `wrangler pages deploy`。漏掉任何一步就会出「改了没生效」或「线上还是旧版」（已发生过一次）——所以下面那条「写 deploy 脚本」优先级很高
 - [ ] 部署流程自动化：写个 `deploy` 脚本把「同步暂存 + SW 版本号 +1 + 上传 + 自检」一次做完（现在靠手抄，已出过一次事故）
 - [ ] `app.js` 4500 行 / `views.js` 2816 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
 - [ ] 词典脚本 `gen_dict.py` 生成的 `dict.js` 目前**没有任何代码引用**（查词功能没接回界面），66 MB 原料因此白占地方
@@ -219,7 +232,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 ## 十、版本控制
 
 - 本地 git 仓库（`main`），远端 `origin` = `git@github.com:cy852123/workbench.git`，提交身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
-- ⚠️ **2026-09-17 实测：本地领先远端 7 个 commit（`git status -sb` 显示 `ahead 7`），还没 push** —— 远端 HEAD 仍是 `8003f2e`（8/16 09:08）。也就是说**这本手册、`OPTIMIZE-PLAN.md`、仓库瘦身、词典脚本路径更新，全都只存在这台电脑上**
+- ✅ **2026-09-17 已 `git push origin main`**（`8003f2e..626b90a`），现在与 origin 同步。推送前审计过：**同步密钥与 Cloudflare 令牌在全部历史里出现 0 次**，当前 23 个跟踪文件也无明文——所以 push 是安全的
 - **只跟踪 23 个文件**：源码（4 件套 + SW + 图标 + PWA 配置） + `functions/api/` 4 个接口 + Worker + 2 个词典脚本 + `README.md` + `OPTIMIZE-PLAN.md`。产物/凭据/个人数据/测试/截图一律不入库（清单见 `.gitignore`）
 - 2026-09-17 做过一次「仓库瘦身」：把 73 个产物类文件（66 MB 词典、部署暂存、设计预览图、个人数据导出）从索引摘除，**磁盘文件一个没删**。要恢复跟踪，直接 `git add .pages-deploy previews ecdict_full.csv ecdict.zip downloads` 再加进 `.gitignore` 白名单即可（文件本来就在磁盘上，不会丢）
 - 回滚整棵树：`git reset --hard <提交号>`；只回滚某文件：`git checkout <提交号> -- <文件>`
