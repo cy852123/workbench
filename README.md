@@ -3,7 +3,10 @@
 个人学习管理 PWA（考研备考为主）。纯前端、零构建、离线可用：数据存在浏览器 localStorage，通过 Cloudflare 同步到云端，手机「添加到主屏幕」就是一个 App。
 
 **线上**：https://workbench-sync-c9e.pages.dev
-**仓库**：`git@github.com:cy852123/workbench.git`（**2026-09-17 已从 public 改为 private** —— 历史里有个人数据导出文件，转私密后外部看不到；未登录访问 API 实测返回 404。要改回去：`gh repo edit cy852123/workbench --visibility public`）
+**仓库**：`git@github.com:cy852123/workbench.git`（**public**）
+
+> ⚠️ **别把仓库转成 private** —— 2026-09-17 实测：一改成 private，**GitHub Pages 站点就被关掉**（`https://cy852123.github.io/workbench` → 404），而且**改回 public 也不会自动恢复**，必须手动重建（`POST /repos/cy852123/workbench/pages`，source = `main` / `/`）。已当场回滚为 public 并重建 Pages。
+> 关键背景：**这个仓库的 GitHub Pages 一直是开着的**，配置是「从 `main` 分支根目录部署」——也就是说**每次 `git push` 都会自动把根目录重新发布一次**，`https://cy852123.github.io/workbench` 就是这个站点（手机上的桌面图标可能指着它）。所以**仓库根目录必须一直保持可运行**（`index.html` 别挪走、别改加载顺序）。
 **本机路径**：`E:\Software\workbench`（2026-09-17 从 `C:\Users\Administrator\workbench` 迁到 E 盘）
 
 > ✅ 2026-09-17 维护记录：**线上已更新到本地当前版本**（首次把 `service-worker.js` 一起部署，PWA 离线缓存首次生效）。部署前的状态、命令与自查结果见第六节。
@@ -135,6 +138,12 @@ npm test                            # = node tests/test.js && node tests/test_in
 | `/service-worker.js` | **2022 字节、`Content-Type: application/javascript`**（修复前是 3050 字节的 HTML）→ **离线缓存首次真正生效** ✓ |
 | `/api/data` | 无密钥 **401**、带密钥 **200** —— 同步接口保护没被破坏 ✓ |
 | 真实浏览器打开线上站 | **0 条 console 消息、0 个 JS 错误**，导航 17 项正常 ✓ |
+| Service Worker 真的注册上了吗 | ✅ 页面已被 SW 接管（`navigator.serviceWorker.controller` 非空），缓存 `wb-cache-v052` 里躺着 **8 个文件**（`/`、`/index.html`、`/styles.css`、`/views.js`、`/app.js`、`/manifest.webmanifest`、两个图标）✓ |
+
+> **想自己复查 SW 有没有生效**：在线上站按 F12 → Console，粘这段回车，看 `controlled: true` 且 `cachedFiles` 有 8 项即可：
+> ```js
+> (async()=>{const ks=await caches.keys();const c=await caches.open(ks[0]);return{controlled:!!navigator.serviceWorker.controller,cacheNames:ks,cachedFiles:(await c.keys()).map(r=>r.url.replace(location.origin,''))};})()
+> ```
 
 **本次故意没有把 SW 缓存号 +1**：手机上从来没成功注册过 SW（`/service-worker.js` 一直返回 HTML、MIME 类型不对，注册必然失败），所以没有任何旧缓存需要失效。**从下一次改前端开始，就必须遵守「改前端 → 缓存号 +1」**。
 
@@ -216,7 +225,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 
 **部署类**
 - `.pages-deploy/` 是**手动同步**的旧副本，很容易忘记同步 → 部署出旧版（现在就发生了）
-- Pages 项目不连 GitHub：`git push` 只备份代码，**不会**上线
+- Pages 项目不连 GitHub：`git push` 只备份代码，**不会**上线（这里说的「上线」指 Cloudflare 那个地址；但 GitHub 自己的 Pages 站点**会**跟着 `git push` 自动更新，见第十节的警告）
+- **别把仓库转 private**：实测会关掉 GitHub Pages 站点，且改回 public 不自动恢复（详见第十节）。GitHub Pages 从 `main` 根目录自动部署，所以**根目录必须一直可运行**
 
 ## 九、待办
 
@@ -227,7 +237,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - [ ] `app.js` 4500 行 / `views.js` 2816 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
 - [ ] 词典脚本 `gen_dict.py` 生成的 `dict.js` 目前**没有任何代码引用**（查词功能没接回界面），66 MB 原料因此白占地方
 - [ ] `tests/` 60+ 个脚本没入库：其中真正当回归门禁用的（`test.js`/`test_interact.js`）建议入库，其余 scratch 留在本地
-- [x] ~~仓库转 private~~ ✅ 2026-09-17 完成（`gh repo edit cy852123/workbench --visibility private`，现 `isPrivate:true`，未登录 API 返回 404）
+- [ ] **要不要转 private —— 先别转**。2026-09-17 实测：转 private 会**关掉 GitHub Pages**（`https://cy852123.github.io/workbench` 变 404），改回 public 也不自动恢复（已手动重建）。现在状态是 **public**。真要转之前：先确认手机桌面图标用的是不是 Pages 地址，并准备好重建 Pages
+- [ ] **确认 GitHub Pages 站点已恢复**：`curl -s -o /dev/null -w '%{http_code}\n' https://cy852123.github.io/workbench/` 应为 **200**（重建后需要几分钟 build，实测当时是 `building` 状态）；若仍是 404，去 Settings → Pages 确认 Source = `main` / `/(root)` 后等 build 完成
 - [ ] **论文写作领域还是 `hidden:true`**（入口不显示）
 
 ## 十、版本控制
