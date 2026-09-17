@@ -1,7 +1,7 @@
 import requests, os, time
 
 url = "https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv"
-dest = r"C:\Users\Administrator\workbench\ecdict_full.csv"
+dest = r"E:\Software\workbench\ecdict_full.csv"
 headers = {"User-Agent": "Mozilla/5.0"}
 
 if os.path.exists(dest):

@@ -1,7 +1,7 @@
 import csv, json, os
 
-SRC = r"C:\Users\Administrator\workbench\ecdict_full.csv"
-DST = r"C:\Users\Administrator\workbench\dict.js"
+SRC = r"E:\Software\workbench\ecdict_full.csv"
+DST = r"E:\Software\workbench\dict.js"
 LIMIT = 8000
 
 if not os.path.exists(SRC):
