@@ -17,8 +17,12 @@ data_tmp.json
 wb_cloud_check.json
 wb_now.json
 
-## 测试与探针（本地留着跑，不入库）
-tests/
+## 测试与探针
+# tests/ 入库了 —— 生产门禁必须跟着代码走（回归网没有版本控制等于没有回归网）。
+# 现在 tests/ 只放三个文件：test.js（桌面+手机三尺寸）、test_interact.js（交互与防回归）、
+# baseline.json（单一基线：所有随数据/界面变化的数字只在这里维护一处）。
+# 一次性探针、历史版本测试、旧截图：已归档到 _attic/tests-archive/（_attic/ 整目录不入库）。
+tests/*.png
 logs/
 *.bak
 _dump.py
