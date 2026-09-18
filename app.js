@@ -772,7 +772,15 @@
     "ky-add-task", "ky-upload-files", "ky-add-knowledge",
     "ky-upload-submit", "ky-import-template", "ky-import-template-ok",
     /* 2026-09-18 二轮补漏：测试遍历全视图后抓出来的 */
-    "add-domain"
+    "add-domain",
+    /* 2026-09-18 三轮补漏（用户授权「你看着办」）：二级页残留的录入入口
+       —— ＋考试 / 批量导入生词 / 新建备考方案。
+       同批把死路弹窗「任务说明与调整」也一起摘了（它的文案指向已下线的「添加自定义任务」）。 */
+    "add-exam", "import-words", "submit-import-words", "import-words-ok",
+    "ky-scheme-create", "ky-task-notes",
+    /* 2026-09-18 四轮补漏：测试铺满 23 个视图后按"可见文字"抓出来的
+       （名字里没有 add/upload 这类关键词，对账脚本按名字扫不到） */
+    "ky-essay-cat", "ky-reading-record"
   ];
   function stripManualInput(root) {
     if (!root) return;
@@ -786,6 +794,27 @@
     });
   }
 
+  /* ---------- 领域取用兜底（2026-09-18 修）----------
+     原来每个视图都写成 data.domains.filter(...)[0] 直接传进视图，取不到就是 undefined，
+     进页面立刻抛 "Cannot read properties of undefined (reading 'exams')" ——
+     实测 cet-* 的 7 个页面全崩（用户数据里已经没有「英语学习」领域了）。
+     这里统一取一次并兜底，别让 undefined 流进视图。 */
+  function domainOf(id) {
+    return data.domains.filter(function (x) { return x.id === id; })[0] || null;
+  }
+  function domainMissing(name) {
+    return '<div class="card"><div class="card-head"><h3>' + esc(name) + "</h3></div>" +
+      '<div class="li-sub">这个领域已经不在工作台里了（领域可以删掉或隐藏）。' +
+      "要恢复：在 Hermes 对话里说一句「把" + esc(name) + "领域加回来」，它写好会同步过来。</div></div>";
+  }
+  /* 哪些视图必须先有某个领域才能渲染 */
+  function requiredDomain(view) {
+    if (view.indexOf("ky-") === 0) return { id: "kaoyan", name: "考研备考" };
+    if (view.indexOf("cet-") === 0) return { id: "cet", name: "英语学习" };
+    if (view === "ai-history") return { id: "ai", name: "AI 知识学习" };
+    return null;
+  }
+
   function renderView() {
     var wrap = $id("viewWrap");
     var view = W.ui.view;
@@ -794,9 +823,21 @@
       '<span class="topbar-help"><button class="icon-btn lg" data-action="help" data-help="' + view + '" title="帮助">' + ICONS.help + "</button></span>";
 
     var html = "";
+    /* 领域兜底：ky-* 要 kaoyan、cet-* 要 cet、ai-history 要 ai。
+       领域被删/隐藏时原来会把 undefined 传进视图 → 整页抛错。先拦住，给说明卡。 */
+    var need = requiredDomain(view);
+    if (need && !domainOf(need.id)) {
+      wrap.innerHTML = domainMissing(need.name);
+      closeDrawer();
+      window.scrollTo(0, 0);
+      return;
+    }
     if (view === "today") html = Views.today();
     else if (view === "hermes") html = Views.hermes();
-    else if (view.indexOf("domain:") === 0) html = Views.domainView(data.domains.filter(function (x) { return x.id === view.slice(7); })[0]);
+    else if (view.indexOf("domain:") === 0) {
+      var dvdm = domainOf(view.slice(7));
+      html = dvdm ? Views.domainView(dvdm) : domainMissing(view.slice(7));
+    }
     else if (view === "library") html = Views.library();
     else if (view === "lib-detail") html = Views.libraryDetail();
     else if (view === "inbox") html = Views.inbox();

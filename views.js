@@ -52,9 +52,18 @@
     if (p === "中") return '<span class="tag pri-mid">中</span>';
     return '<span class="tag pri-lo">低</span>';
   }
+  /* 2026-09-18：分区块的「?」圆钮全部停用。
+     一个页面里挂 3 个悬浮问号是装饰噪音（用户原话「感官不好」），而且是
+     Progressive Disclosure 的反面 —— 帮助应该在**页面级别**给一次
+     （顶栏右上角那个 icon-btn），不该每个区块重复一遍。
+     帮助内容仍全在 app.js 的 HELPS 表里，顶栏入口照常可用。
+     要恢复区块级问号：把下面这行改回返回原来的 button 即可。 */
   function helpDot(key) {
-    return '<button class="help-dot" data-action="help" data-help="' + esc(key) + '" title="帮助">?</button>';
+    return "";
   }
+  /* 原实现（备查）：
+     return '<button class="help-dot" data-action="help" data-help="' + esc(key) +
+            '" title="帮助">?</button>'; */
   function card(head, body, cls) {
     return '<div class="card ' + (cls || "") + '"><div class="card-head">' + head + '</div>' + body + '</div>';
   }
@@ -789,8 +798,7 @@
     var sc = kyActive(dm);
     if (!sc) {
       html += card(cardHead("考研备考", "暂未创建备考方案", "empty"),
-        '<div class="li-sub" style="margin-bottom:12px;">创建一套备考方案，开始你的考研旅程。</div>' +
-        '<button class="btn" data-action="ky-scheme-create">新建备考方案</button>');
+        '<div class="li-sub">备考方案由 Hermes 建档：在对话里说一句「帮我建考研备考方案」，它写好会同步过来。</div>');
       return html;
     }
     var t = todayStr();
@@ -800,36 +808,42 @@
     var prog = sc.progress || { math: 0, english: 0, politics: 0, major: 0 };
     sc.progress = prog;
 
-    /* 顶部状态行：距初试 + 生成按钮 */
+    /* 顶部状态行：距初试 + 生成按钮
+       2026-09-18 降噪（依据：uxmagic《Dashboard UI Design》「装饰性红绿灯配色是典型错误，
+       颜色只留给警示」）：原来是一条琥珀底色 + 描边的大色块 + 两个实心棕按钮，
+       整页视觉最重的东西却只是倒计时和两个 AI 动作。改成纸面色行 + 发丝线，
+       倒计时数字当锚点，两个按钮降为纯文字按钮。 */
     html += '<div class="ky-top">' +
       '<div class="ky-top-item"><span>距初试</span><b class="ky-num">' + (exd != null && exd >= 0 ? exd : "--") + '</b><span>天</span></div>' +
-      '<button class="ky-stage-btn" data-action="ky-review-ai">生成今日复盘</button>' +
-      '<button class="ky-stage-btn" data-action="ky-plan-tomorrow">生成明日计划</button>' +
+      '<button class="btn plain small" data-action="ky-review-ai">生成今日复盘</button>' +
+      '<button class="btn plain small" data-action="ky-plan-tomorrow">生成明日计划</button>' +
       '</div>';
 
-    /* 4 科整体进度卡（初学→复习→复盘→冲刺 进度桥） */
+    /* 4 科整体进度（2026-09-18 按"渐进式披露"重整 —— 依据 Timothy Graf《The Architecture of
+       Complexity: Mastering Progressive Disclosure》Level 1：「摘要指标 + 状态，0.5 秒内
+       看懂好坏」。原来每张卡都印一遍「当前：X段」+ 整条「初学→复习→复盘→冲刺」阶段链，
+       四张卡重复四遍；而且每科一个高饱和身份色（紫/蓝/红/绿）+ 四档糖果色阶段字，
+       一屏出现 8 种颜色 —— 正是 uxmagic 点名的「装饰性红绿灯配色」。
+       现在只留 Level 1：科目名 + 百分比 + 进度条 + 当前阶段。
+       阶段链属于 Level 2（点进科目页看），进度条上的 25/50/75 刻度已经把分段画出来了。 */
     var kyCards = [
-      { key: "math", name: "数学", color: "#8E44AD", view: "ky-math" },
-      { key: "english", name: "英语", color: "#2980B9", view: "ky-english" },
-      { key: "politics", name: "政治", color: "#E74C3C", view: "ky-politics" },
-      { key: "major", name: "专业课", color: "#27AE60", view: "ky-major" }
+      { key: "math", name: "数学", view: "ky-math" },
+      { key: "english", name: "英语", view: "ky-english" },
+      { key: "politics", name: "政治", view: "ky-politics" },
+      { key: "major", name: "专业课", view: "ky-major" }
     ];
     html += '<div class="ky-cards">' + kyCards.map(function (c) {
       var p = Math.max(0, Math.min(100, Math.round(prog[c.key] || 0)));
-      var seg = p < 25 ? ["初学", 0] : p < 50 ? ["复习", 1] : p < 75 ? ["复盘", 2] : ["冲刺", 3];
-      var segCol = ["#B8CB9A", "#AFC9EA", "#E9A8CF", "#F4D85A"][seg[1]];
-      return '<div class="ky-card" style="--kc:' + c.color + ';" data-action="go-view" data-view="' + c.view + '">' +
+      var seg = p < 25 ? "初学" : p < 50 ? "复习" : p < 75 ? "复盘" : "冲刺";
+      return '<div class="ky-card" data-action="go-view" data-view="' + c.view + '">' +
         '<div class="ky-card-name">' + esc(c.name) + '</div>' +
         '<div class="ky-card-count">' + p + '%</div>' +
         '<div class="ky-card-prog">' +
         '<div class="progress-track" style="position:relative;">' +
-        '<div class="progress-fill" style="width:' + p + "%;background:var(--kc);\"></div>" +
+        '<div class="progress-fill" style="width:' + p + '%;"></div>' +
         '<div class="progress-seg" style="left:25%;"></div><div class="progress-seg" style="left:50%;"></div><div class="progress-seg" style="left:75%;"></div>' +
         "</div>" +
-        '<span class="li-sub" style="font-weight:600;color:' + segCol + ';">当前：' + seg[0] + '段</span></div>' +
-        '<div class="li-sub" style="font-size:12.5px;margin-top:4px;">' +
-        ['初学','复习','复盘','冲刺'].map(function (s, i) { return '<span style="color:' + (i <= seg[1] ? "#202124" : "#B9BDB6") + ';">' + s + '</span>'; }).join(" → ") +
-        "</div></div>";
+        '<span class="ky-seg">' + seg + '段</span></div></div>';
     }).join("") + "</div>";
 
     /* 今日日程：任务列表（勾选 + 菜单）+ 添加 */
@@ -844,26 +858,22 @@
           '<span class="li-sub" style="flex:1;font-size:12.5px;color:#6F7277;">' + esc(c.count) + "</span>" +
           '<span class="tag">' + (done ? "已完成" : "未完成") + "</span>" +
           "</div>";
-      }).join("") + "</div>" +
-      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
-      '<button class="btn small ghost" data-action="ky-add-task">＋ 添加自定义任务</button>' +
-      '<button class="btn small ghost" data-action="ky-task-notes">任务说明与调整</button>' +
-      "</div>");
+      }).join("") + "</div>");
+    /* 2026-09-18：原来这里还有一行「＋ 添加自定义任务 / 任务说明与调整」两个按钮。
+       「添加自定义任务」是录入入口（C 组已下线），而「任务说明与调整」那个弹窗的文案是
+       「暂无自定义任务，用『添加自定义任务』加」—— 指向一个已经不存在的按钮，纯死路。
+       自定义任务的勾选本身就在上面的列表里（点圆圈即完成），所以整行一起删。
+       ky 自定义任务的数据字段没动，历史记录照常显示在列表里。 */
 
-    /* 错题集：批量上传 + 知识点总结 */
+    /* 错题集（2026-09-18 精简）
+       依据 uxmagic《Dashboard UI Design》「一屏太多卡片 → 砍掉不触发行动的元素」：
+       ① 原来还有一块「知识点总结」子区块：上传按钮已按 C 组下线，只剩标题 + 空态文字，
+          看着像能添加其实不能 —— 纯死区块，删掉。总结内容本身在「知识点总结」页看，
+          数据字段 sc.knowledge 一个都没动。
+       ② 副标题「放材料的地方 · 批量上传」也在描述已下线的上传入口，改成实际情况。 */
     var mf = sc.mistakeFiles || [];
-    var kn = sc.knowledge || [];
-    html += card(cardHead("错题集", "放材料的地方 · 批量上传", "mistakes"),
-      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">' +
-      '<button class="btn small" data-action="ky-upload-files">＋ 上传 PDF / 图片 / 压缩包</button>' +
-      '<button class="btn small ghost" data-action="go-view" data-view="ky-mistake-files">查看错题材料（' + mf.length + '）</button>' +
-      "</div>" +
-      '<div class="li-sub" style="margin-bottom:10px;">知识点总结（你自己找 AI 总结后放这里，或微信发我）：</div>' +
-      (kn.length ? '<div class="list">' + kn.slice().reverse().slice(0, 5).map(function (k) {
-        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:600;font-size:13px;">' + esc(k.title) + "</div>" +
-          '<div class="li-sub">' + esc(String(k.content || "").slice(0, 60)) + " · " + esc(k.date || "") + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:4px 0;">暂无知识点总结</div>') +
-      '<button class="btn small plain" style="margin-top:8px;" data-action="ky-add-knowledge">＋ 添加知识点总结</button>');
+    html += card(cardHead("错题集", "Hermes 传过来的材料", "mistakes"),
+      '<button class="btn small ghost" data-action="go-view" data-view="ky-mistake-files">查看错题材料（' + mf.length + '）</button>');
 
     /* 复盘区 */
     html += card(cardHead("复盘", "每天结束时生成", "review"),

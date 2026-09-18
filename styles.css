@@ -1152,6 +1152,44 @@ img, svg, video { max-width: 100%; }
   .card-head h3 { font-size: var(--t-h3); }
 }
 
+/* ===== 2026-09-18 · 第三遍：考研页降噪（整段可删即回滚）=====
+   研究依据（Exa 检索，详见 views.js 同处注释）：
+   · uxmagic《Dashboard UI Design》:「装饰性红绿灯配色 everywhere」是典型错误，
+     颜色只留给警示；「一屏太多卡片」→ 砍掉不触发行动的元素
+   · Timothy Graf《Progressive Disclosure》: Level 1 只放「0.5 秒内看懂好坏」的摘要
+   那个页面「乱」的三个来源就是这三条，逐条对治。 */
+
+/* ① 顶部倒计时：琥珀色块 + 描边 → 纸面色行 + 发丝线（颜色不再被装饰占用） */
+.ky-top {
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 2px 0 12px;
+  margin-bottom: 18px;
+}
+/* 倒计时数字当这一行的唯一视觉锚点（只此一处大号重字重） */
+.ky-top-item .ky-num {
+  font-size: 26px;
+  font-weight: 680;
+  color: var(--ink);
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+/* 两个 AI 动作降为纯文字按钮：不抢视线，但仍一眼可见可点 */
+.ky-top .btn.plain.small { color: var(--accent); font-weight: 650; padding: 6px 2px; }
+
+/* ② 科目卡：百分比升级为卡内的锚点（原来只有 13px 灰字，进度条才是主角） */
+.ky-card-count {
+  font-size: 22px;
+  font-weight: 680;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+/* 「当前：X段」→ 中性小字。原来是四档糖果色（绿/蓝/粉/黄）一个字一个颜色 */
+.ky-seg { font-size: 12px; color: var(--sub); white-space: nowrap; }
+
 /* ⑦ 领域入口的「进入 →」原本一色一个（橙/蓝/紫/绿…），5 种色并列 = 杂乱。
       参考项目整站只有一个交互色，这里统一成次级墨色，靠字重区分。 */
 .hd-go, .hd-go.ky, .hd-go.en, .hd-go.ai, .hd-go.pa, .hd-go.cu { color: var(--sub); font-weight: 650; }
