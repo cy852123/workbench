@@ -1189,6 +1189,16 @@ img, svg, video { max-width: 100%; }
 }
 /* 「当前：X段」→ 中性小字。原来是四档糖果色（绿/蓝/粉/黄）一个字一个颜色 */
 .ky-seg { font-size: 12px; color: var(--sub); white-space: nowrap; }
+/* 阶段链删掉后卡内留白虚大：原来 .ky-card-count 是 flex:1，专门把进度条顶到卡底、
+   给那段链子腾位置；现在内容少了，让它自然堆叠，别撑出一段空。 */
+.ky-card-count { flex: 0 0 auto; }
+.ky-card { gap: 6px; min-height: 0; }
+/* 4 张卡原来挤在写死的 5 列网格里（第 5 列永远空着）→ 按数量自适应 */
+.ky-cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+@media (max-width: 767px) {
+  .ky-cards { gap: 0; }
+  .ky-card { padding: 12px 0; gap: 5px; }
+}
 
 /* ⑦ 领域入口的「进入 →」原本一色一个（橙/蓝/紫/绿…），5 种色并列 = 杂乱。
       参考项目整站只有一个交互色，这里统一成次级墨色，靠字重区分。 */
