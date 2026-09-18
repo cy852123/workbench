@@ -11,48 +11,57 @@
 
 :root {
   /* ── 墨与灰阶：全站只用这几档，别再引入近似色 ── */
-  --ink: #1D1F1D;
-  --ink-2: #3C423D;
-  --sub: #6E736E;
-  --muted: #9BA19B;
-  /* ── 底 / 线 ── */
-  --bg: #F6F5F2;
-  --card: #FFFFFF;
-  --line: #E7E8E4;
-  --line-soft: #EFF0EC;
-  --soft: var(--soft);
-  --chip: #F0F1ED;
-  /* ── 强调色：全站唯一的交互色（绿系两档 + 一档浅底） ── */
-  --accent: #2F6B57;
-  --accent-dark: #224C3E;
-  --accent-soft: #E8F0EB;
-  /* ── 语义色：只给状态用，不拿去做装饰 ── */
-  --ok: #2F6B57;     --ok-bg: #E8F0EB;
-  --warn: #8A6212;   --warn-bg: #F7EFDC;  --warn-line: #EBD9B0;
-  --danger: #A32A22; --danger-bg: #F8E9E7;
-  /* ── 圆角：只用这 4 档 ── */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-pill: 999px;
-  /* ── 阴影：只用这 2 档 ── */
-  --shadow-1: 0 1px 2px rgba(29,31,29,.05), 0 1px 3px rgba(29,31,29,.04);
-  --shadow-2: 0 8px 28px rgba(29,31,29,.14);
+  /* 2026-09-18：视觉与 english-trainer（cet6-jingdu）对齐 ——
+     ① 颜色改为 OKLCH 纸感色阶（无纯黑纯白、无零彩中性）
+     ② 层级靠 1px 描边 + 纸面色阶表达，卡片阴影已去掉（--shadow-1: none）
+     ③ 标题改用衬线字体（Georgia + 宋体 SC），正文仍用系统黑体
+     旧变量名（--text/--border/--radius/--shadow/--fs-*）全部保留，既有规则无需改动。 */
+  /* ── 墨与灰阶 ── */
+  --ink: oklch(23.0% 0.012 65);
+  --ink-2: oklch(42.0% 0.010 65);
+  --sub: oklch(56.0% 0.008 65);
+  --muted: oklch(68.0% 0.008 65);
+  /* ── 纸面（三级）与线（两级）── */
+  --bg: oklch(97.2% 0.008 75);
+  --card: oklch(99.0% 0.004 75);
+  --line: oklch(88.0% 0.008 75);
+  --line-soft: oklch(93.2% 0.008 75);
+  --soft: oklch(94.6% 0.010 75);
+  --chip: oklch(94.6% 0.010 75);
+  /* ── 强调色：松绿（全站唯一交互色）── */
+  --accent: oklch(43.0% 0.078 158);
+  --accent-dark: oklch(34.0% 0.070 158);
+  --accent-soft: oklch(94.0% 0.022 158);
+  /* ── 语义色：只给状态用 ── */
+  --ok: oklch(46.0% 0.090 155);     --ok-bg: oklch(95.0% 0.024 155);
+  --warn: oklch(55.0% 0.095 72);    --warn-bg: oklch(96.0% 0.020 72);  --warn-line: oklch(88.0% 0.045 72);
+  --danger: oklch(50.0% 0.135 32);  --danger-bg: oklch(95.5% 0.026 32);
+  /* ── 圆角：收小一档（对齐参照项目）── */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+  /* ── 阴影：卡片零阴影；只给弹窗/抽屉保留一档 ── */
+  --shadow-1: none;
+  --shadow-2: 0 10px 34px oklch(23% 0.012 65 / .16);
   /* ── 间距 4pt 阶梯 ── */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px;
-  /* ── 字阶：拉开差距，层级靠字重对比而不是全靠 800 ── */
+  /* ── 字阶 ── */
   --t-display: 27px; --t-h1: 21px; --t-h2: 17px; --t-h3: 15px;
   --t-body: 15px; --t-sm: 13px; --t-xs: 12px;
   --w-strong: 650;
-  /* ── 旧变量名保留（大量既有规则在引用，不要删） ── */
+  /* ── 字体：标题衬线 / 正文黑体，两族 ── */
+  --font-display: Georgia, "Songti SC", "Source Han Serif SC", "Noto Serif CJK SC", "SimSun", serif;
+  --font-body: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, -apple-system, sans-serif;
+  /* ── 旧变量名保留 ── */
   --text: var(--ink);
   --border: var(--line);
   --radius: var(--r-md);
   --shadow: var(--shadow-1);
   --fs-base: var(--t-body); --fs-sm: var(--t-sm); --fs-h3: var(--t-h3);
   --sidebar-w: 212px;
-  /* 装饰色统一降饱和（原来是荧光黄/粉/蓝/土绿） */
-  --yellow: #F7EFDC;
-  --pink: #F7EBF1;
-  --blue: #EAEFF7;
-  --green: #E8F0EB;
+  /* 装饰色统一降到纸面色阶里 */
+  --yellow: oklch(96.0% 0.020 72);
+  --pink: oklch(95.5% 0.014 330);
+  --blue: oklch(95.5% 0.014 250);
+  --green: oklch(94.0% 0.022 158);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -60,10 +69,11 @@
 html, body {
   background: var(--bg);
   color: var(--text);
-  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
   font-size: var(--fs-base);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
   transition: background 0.3s;
 }
@@ -318,7 +328,12 @@ body.bg-gradient {
 button { font-family: inherit; font-size: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 input, select, textarea { font-family: inherit; font-size: var(--fs-base); color: var(--text); }
 a { color: var(--accent); text-decoration: none; }
-h1, h2, h3, h4 { font-weight: 700; }
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -.015em;
+  line-height: 1.28;
+}
 
 /* ===== 桌面侧边栏（变体C 紧凑浅色） ===== */
 .sidebar {
@@ -1073,4 +1088,69 @@ img, svg, video { max-width: 100%; }
   .empty { padding: 22px 14px; }
   .rev-item { padding: 12px 6px; }
   .rev-num { font-size: 26px; }
+}
+
+/* ===== 2026-09-18：区块去盒 + 细线列表（对齐 english-trainer）=====
+   放在文件末尾，优先级覆盖前面所有 .card 的 padding/border/background 定义。
+   设计原则（照搬参照项目）：层级 = 留白 + 小标题 + 1px 细线，不用白盒子也不用阴影。
+   想整体回退：删掉这一整段即可。 */
+
+/* ① 区块：无盒、无内边距、无边框 —— 靠区块之间的留白分区 */
+.card {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 26px;
+}
+
+/* ② 彩色提示卡保留盒子外观（这些在语义上就是要被突出） */
+.card.tint-gold, .card.tint-yellow, .card.tint-pink, .card.tint-blue, .card.tint-green {
+  border-radius: var(--r-md);
+  padding: 15px 16px;
+  border: 1px solid transparent;
+}
+.card.tint-gold { background: var(--warn-bg); border-color: var(--warn-line); }
+.card.tint-yellow { background: var(--yellow); }
+.card.tint-pink { background: var(--pink); }
+.card.tint-blue { background: var(--blue); }
+.card.tint-green { background: var(--green); }
+
+/* ③ 嵌套卡（统计块 / 网格里的小卡）保留淡底，否则会糊成一片 */
+.card .card {
+  background: var(--soft);
+  border-radius: var(--r-md);
+  padding: 14px 15px;
+  margin-bottom: 10px;
+}
+
+/* ④ 区块头：去掉原来的发丝线，改成左对齐的小标题 */
+.card-head {
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-bottom: 10px;
+}
+.card-head h3 { font-weight: 650; }
+
+/* ⑤ 列表：纸面 + 细线分隔的行（参照项目 .rows / .row） */
+.card .list { border-top: 1px solid var(--line); }
+.list-item {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+  border-radius: 0;
+}
+.list-item:last-child { border-bottom: 0; }
+.list-item:hover { background: none; }
+.list-item .li-title { font-size: 14px; }
+
+/* ⑥ 手机端：字号收一档、区块间距收紧（原文案密度高，字小了反而更清楚） */
+@media (max-width: 767px) {
+  :root { --t-body: 14px; --t-sm: 12.5px; --fs-base: 14px; --fs-sm: 12.5px; }
+  .card { margin-bottom: 22px; }
+  .ph-txt h1 { font-size: 20px; }
+  .topbar-sub { font-size: 12px; }
+  .list-item .li-title { font-size: 13.5px; }
+  .list-item .li-sub { font-size: 12px; }
+  .card-head h3 { font-size: var(--t-h3); }
 }
