@@ -13,6 +13,51 @@
 
 ---
 
+## 🧭 产品定位（2026-09-18 重大变更 —— 接手先读这节）
+
+**网页端 = 配合 Hermes（电脑端 AI）的「查看端」**。用户 2026-09-18 明确定位：
+
+> 网页端只负责**看和勾**，一切**录入**都发给 Hermes。
+
+据此做了四组改动（全部已上线，当前缓存号 **v068**）：
+
+| 组 | 改动 | commit |
+|---|---|---|
+| A | 删掉「手机本身就有且更方便」的 5 个板块：专注/番茄钟、目标、健康、日历、账号 | `7615c3c` |
+| B | 删掉与 Hermes 重复的：网页 AI 帮手、语法检查器、口语专区、答疑库（本来就无入口的孤儿页）、时政收藏夹、AI 生成类按钮 | `7615c3c` |
+| C | 删掉全部手动录入入口（24 类、约 40 处），只留勾选/打卡/复习评分/分拣/删除/搜索/同步/导入导出/配置 | `7845f91` `19cc393` |
+| D | 新增「今日复习队列」（首屏）+「Hermes」板块（资料流 + 周报月报） | `dfe699b` `5adcf33` |
+
+**导航现状（12 项）**：今日 / **Hermes** / 考研备考 / AI 知识学习 / 学业课程 / 错题本 / 学习记录 / 复盘 / 资料库 / 收集箱 / 搜索 / 设置与数据
+**手机底部导航（4 项）**：今日 / 考研备考 / **错题本** / 更多
+
+### ⚠️ 数据一个都没删
+A/B/C 三组只删**界面入口**。数据字段（`d.goals`、`d.health`、`d.calendar`、`d.accounts`、`d.mistakes` 等）原样保留，随时可恢复。
+
+### 怎么恢复某个录入入口
+改 `app.js` 的 `MANUAL_INPUT_ACTIONS` 数组 —— **把某一项删掉，那个「＋新增」按钮就回来了**。
+> 实现方式：渲染完成后按 `data-action` 移除按钮，而不是改 HTML 模板。
+> **原因（踩坑记录）**：模板里有大量动态拼接（如 `data-domain="' + esc(dm.id) + '"`），
+> 用正则批量删按钮会**切坏 JS 字符串**（实测报 `SyntaxError: Invalid or unexpected token`）。
+> 详见 commit `7845f91` 的提交说明。
+
+### Hermes 写入通道（2026-09-18 新增）
+`functions/api/store.js` —— 白名单 key 的 KV 读写，供 Hermes 往网页端推内容：
+
+```bash
+BASE=https://workbench-sync-c9e.pages.dev
+KEY=$(cat .sync-key.txt)
+curl -s -H "X-Sync-Key: $KEY" "$BASE/api/store?key=feed"                       # 读资料流
+curl -s -X PUT -H "X-Sync-Key: $KEY" --data-binary @feed.json "$BASE/api/store?key=feed"   # 写
+```
+
+- 白名单：`key=feed`（资料流）、`key=report`（周报月报）。**非法 key 返回 400**；无密钥 401
+- 数据格式：`{"items":[{"id","date","type","title","body"}]}`
+- 网页端进「Hermes」板块时自动拉取（`hermesPull()`，同 `aiLearnPull` 模式：只读、失败静默）
+- 用户点「标记掌握」的状态存在 `d.hermes.done`，跟着 `/api/data` 一起同步，换设备不丢
+
+---
+
 ## 一、当前状态（2026-09-17）
 
 | 项 | 内容 |
