@@ -407,6 +407,9 @@
      旧版只弹一句「可能已满」就算了，用户会以为存上了。现在：
      ① 存之前先量体积，超过提醒线就明确告警；② 真写失败时把未保存状态留在侧边栏不消失。 */
   var STORE_WARN = 3 * 1024 * 1024;   /* 3MB 起告警：留约 2MB 给备份键和浏览器开销 */
+  /* 云端同步的未同步提示（P1-6）：自动同步是静默的，失败原来只在控制台消失。
+     现在把「⚠️ 云端未同步 hh:mm」记在这里，侧边栏一直挂着，直到下一次同步成功。 */
+  var syncWarn = "";
   function setSaveState(txt, bad) {
     var el = $id("sideSave");
     if (!el) return;
@@ -429,7 +432,7 @@
     try {
       localStorage.setItem(STORE_KEY, str);
       if (str.length > STORE_WARN) setSaveState("已保存 " + data.meta.updated.slice(11) + "（数据已 " + fmtSize(str.length) + "，接近上限）", true);
-      else if (!quiet) setSaveState("已保存 " + data.meta.updated.slice(11), false);
+      else if (!quiet) setSaveState(syncWarn || ("已保存 " + data.meta.updated.slice(11)), !!syncWarn);
     } catch (e) {
       var quota = e && (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014);
       setSaveState("未保存：空间不足（本次 " + fmtSize(str.length) + "）", true);
@@ -466,9 +469,16 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       data.settings.sync.lastPush = nowStr();
       save(true);
+      /* 同步成功：把上一次失败留下的警告清掉（P1-6） */
+      syncWarn = "";
+      setSaveState("已保存 " + data.meta.updated.slice(11) + " · 云端已同步", false);
       if (!silent) toast("已上传到云端（" + (data.settings.sync.lastPush || "").slice(11) + "）");
     }).catch(function (e) {
       if (!silent) toast("上传失败：" + e.message, true);
+      /* ★ P1-6（2026-09-18）：silent=true 是自动同步（改一条数据后 30 秒触发）。原来它失败
+         只在控制台里消失，用户以为云上是新的，其实停在几天前。现在把警告留在侧边栏
+         （不自动消失），下一次同步成功才恢复成「已保存」。 */
+      else { syncWarn = "⚠️ 云端未同步 " + nowStr().slice(11); setSaveState(syncWarn + "（本地已保存）", true); }
     });
   }
   function syncPull() {
@@ -553,7 +563,9 @@
     data: data,
     settings: null,
     ui: { view: "today", libraryCat: "", libraryState: "", libraryDom: "", libraryKw: "", searchKw: "", mistakeSubj: "", mistakeId: "", grammarIdx: null, qaId: "", reviewId: "", inboxId: "", libId: "", focusType: "pomodoro" },
-    timer: { total: 1500, left: 1500, running: false, iv: null }
+    timer: { total: 1500, left: 1500, running: false, iv: null },
+    /* 同步（测试与排障用；门禁 test_interact.js 直接调它验证 P1-6 的失败提示） */
+    syncPush: syncPush
   };
   window.W = W;
 
@@ -1026,7 +1038,7 @@
     "trash": { t: "回收站", c: ["删除的内容先进这里，可恢复。", "清空回收站后不可恢复，请谨慎。"] },
     "domains": { t: "领域管理", c: ["你的学习领域可增删：考研、英语学习、AI 学习、课程、论文。", "新建领域：输入名称、选择类型（通用/课程/论文）。", "手机底部导航第二个入口可设置为你最常用的领域。", "删除领域：领域下关联的资料不会删除，仍留在资料库。"] },
     "subgroups": { t: "专项", c: ["领域里单独划出的专项，如英语学习里的四六级。", "专项有自己的考试倒计时和科目进度（听力/阅读/写作/翻译）。", "点科目右侧按钮更新进度，与主领域互不影响。", "示例：英语学习（长期）→ 四六级（专项）+ 词汇/口语等长期技能。"] },
-    "wordbook": { t: "生词本", c: ["记录英语生词：单词、释义、备注。", "点「标记掌握」进入已掌握列表，未掌握的一直显示待复习。", "复习节奏建议：当天记 → 3 天后复习 → 1 周后复习 → 掌握后隔几周回顾。", "删除进回收站可恢复。", "未来可接入开源词典数据做自动释义（升级功能，当前未启用）。"] },
+    "wordbook": { t: "生词本", c: ["记录英语生词：单词、释义、备注。", "点「标记掌握」进入已掌握列表，未掌握的一直显示待复习。", "复习节奏建议：当天记 → 3 天后复习 → 1 周后复习 → 掌握后隔几周回顾。", "删除进回收站可恢复。"] },
     "english-tools": { t: "英语配套功能", c: ["英语学习领域专属的快捷入口。", "答疑库：记录英语问题与解答；错题本：记录英语错题；AI 帮手：配置 API 后可做翻译、作文批改、口语对话（当前未配置时不可用，本地工具不受影响）。"] },
     "changelog": { t: "更新日志", c: ["每次更新记录：日期、版本、修改内容、影响范围、是否需要你操作。"] }
   };
@@ -3586,10 +3598,10 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
     toast("已导出「" + dm.activeExam + "」生词本");
   }
-  /* 批量导入生词（支持"单词 释义"每行一个，缺释义自动查内置词库，去重） */
+  /* 批量导入生词（支持"单词 释义"每行一个，去重） */
   function importWordsModal() {
     var dm = data.domains.filter(function (x) { return x.id === "cet"; })[0];
-    modalOpen("批量导入生词", '<div class="li-sub" style="margin-bottom:10px;">导入到「<b>' + esc(dm.activeExam) + "</b>」生词本。每行一个单词，格式：<b>单词 释义</b>（释义可选，缺省自动从内置词库补充；已有单词自动跳过）。</div>" +
+    modalOpen("批量导入生词", '<div class="li-sub" style="margin-bottom:10px;">导入到「<b>' + esc(dm.activeExam) + "</b>」生词本。每行一个单词，格式：<b>单词 释义</b>（释义可选；已有单词自动跳过）。</div>" +
       '<textarea id="iwText" placeholder="abandon&#10;abandoned 被抛弃的&#10;abide 遵守" style="min-height:150px;width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;"></textarea>',
       cancelBtn() + '<button class="btn" data-action="submit-import-words">' + ICONS.check + "预览并导入</button>");
   }
@@ -3600,7 +3612,6 @@
     ex.wordbook = ex.wordbook || [];
     var raw = fval("iwText") || "";
     var lines = raw.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
-    var dict = {};
     var parsed = [], skipped = 0;
     lines.forEach(function (line) {
       line = line.trim();
@@ -3616,13 +3627,13 @@
       word = String(word).toLowerCase();
       if (!word || word.length > 40) return;
       if (ex.wordbook.some(function (w) { return String(w.word).toLowerCase() === word; })) { skipped++; return; }
-      var m2 = meaning || (dict[word] ? dict[word].t : "") || "";
+      var m2 = meaning || "";
       parsed.push({ word: word, meaning: m2 });
     });
     if (!parsed.length) { modalClose(); toast(skipped ? "全部已存在（跳过 " + skipped + " 个）" : "没有可导入的单词", true); return; }
     window.__importWords = parsed;
     modalOpen("确认导入",
-      '将导入 <b>' + parsed.length + "</b> 个新单词到「" + esc(dm.activeExam) + "」生词本" + (skipped ? "（跳过已存在 " + skipped + " 个）" : "") + "。缺释义的已自动从内置词库补充。" +
+      '将导入 <b>' + parsed.length + "</b> 个新单词到「" + esc(dm.activeExam) + "」生词本" + (skipped ? "（跳过已存在 " + skipped + " 个）" : "") + "。" +
       '<div class="list" style="max-height:200px;overflow-y:auto;margin-top:10px;">' + parsed.slice(0, 8).map(function (w) {
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;font-size:14px;">' + esc(w.word) + "</div>" +
           '<div class="li-sub">' + esc((w.meaning || "无释义").slice(0, 40)) + "</div></div></div>";

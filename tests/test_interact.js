@@ -261,6 +261,18 @@ const URL = "http://localhost:8000";
   const trashCount = await page.$$eval("#viewWrap .list-item", els => els.length);
   check("删除进回收站", trashCount > 0, "回收站条目=" + trashCount);
 
+  /* ---------- 11. 云端同步静默失败要说话（P1-6 防回归）
+     背景：自动同步是沉默的（silent=true），失败原来只在控制台里消失 —— 用户以为云上是最新的。
+     现在失败会把「⚠️ 云端未同步 hh:mm」留在侧边栏，成功才恢复。
+     这里用一个必然连不上的地址（127.0.0.1:9 discard 端口）触发失败分支。 ---------- */
+  await page.evaluate(() => {
+    W.data.settings.sync = { auto: false, url: "http://127.0.0.1:9", key: "test-key" };
+    W.syncPush(true);
+  });
+  await wait(1500);
+  const sideTxt = await page.$eval("#sideSave", el => el.textContent);
+  check("同步失败时侧边栏留下「未同步」警告（P1-6）", /未同步/.test(sideTxt), "侧边栏=\"" + sideTxt + "\"");
+
   check("全程无JS错误", errors.length === 0, errors.join(" ;; ").slice(0, 200));
 
   await browser.close();

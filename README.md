@@ -63,12 +63,12 @@ curl -s -X PUT -H "X-Sync-Key: $KEY" --data-binary @feed.json "$BASE/api/store?k
 | 项 | 内容 |
 |---|---|
 | 入口 | `index.html`（引 `views.js` + `app.js`，无框架、无打包） |
-| 核心逻辑 | `app.js` 4646 行 / 288 KB |
+| 核心逻辑 | `app.js` 4657 行 / 289 KB |
 | 视图渲染 | `views.js` 2874 行 / 218 KB |
 | 样式 | `styles.css` 1262 行 / 70 KB。**0 处 hex 硬编码** —— 颜色全走 `:root` 的 OKLCH 纸感令牌 |
 | 离线 | `service-worker.js`。缓存号当前 **`wb-cache-v075`**（只此一处写死；改前端必须 +1，跑 `tools/deploy.py` 会自动加，别手抄） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
-| 门禁 | `npm test` **45 项**：`tests/test.js`（桌面 + 手机三尺寸）、`tests/test_interact.js`（交互与防回归） |
+| 门禁 | `npm test` **46 项**：`tests/test.js`（桌面 + 手机三尺寸）、`tests/test_interact.js`（交互与防回归） |
 | 数字基线 | `tests/baseline.json` —— **所有随数据/界面变化的数字只在这里维护一处**，门禁脚本不写字面量 |
 | 脚本地图 | `tools/README.md` —— 哪个脚本是生产用的、哪个是一次性探针、每条命令怎么敲 |
 | 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交说明 + App 内「更新日志」（22 条）** |
@@ -94,7 +94,6 @@ workbench/
 ├─ _attic/                  **不入库**：归档（只挪不删）
 │   ├─ 2026-09-17/ · backup-*/ · removed-skills/   历史归档与改动前备份
 │   ├─ tests-archive/       71 个一次性探针与历史版本测试
-│   ├─ dict-source/         ecdict 原料 + 词典脚本（查词功能没接回界面，见第九节）
 │   ├─ design-previews/     8/16 改版过程的设计原型页
 │   └─ shots*/ · downloads-test/   截图与导出测试的落地目录（根目录不留测试垃圾）
 ├─ downloads/               **不入库**：手动导出数据的落地目录
@@ -179,7 +178,7 @@ cd E:\Software\workbench
 # ① 语法：改完 app.js/views.js 立刻查
 node --check app.js && node --check views.js && node --check service-worker.js
 
-# ② 门禁（45 项断言；需要先起 8000 服务）
+# ② 门禁（46 项断言；需要先起 8000 服务）
 python tools/serve_lan.py 8000     # 起本地服务（另一个窗口；已在跑就不用再起）
 npm test
 ```
@@ -189,7 +188,7 @@ npm test
 | 门禁 | 覆盖 |
 |---|---|
 | `tests/test.js`（27 项） | 桌面 1440×900 ＋ 手机 360/375/390：导航、卡片数、横向滚动、内容不被底部导航遮挡、触控区 ≥44px、无 JS 错误 |
-| `tests/test_interact.js`（18 项） | 交互与防回归：录入入口已下线（按 action 名 ＋ 按可见文字遍历 23 个视图）、指向已下线功能的残留文案扫描、示例资料迁移、勾选/打卡/搜索/导出/回收站 |
+| `tests/test_interact.js`（19 项） | 交互与防回归：录入入口已下线（按 action 名 ＋ 按可见文字遍历 23 个视图）、指向已下线功能的残留文案扫描、示例资料迁移、勾选/打卡/搜索/导出/回收站、**自动同步失败要报警（P1-6）** |
 | `tests/baseline.json` | **单一基线** —— 会随数据/界面漂的数字（导航项数、底部导航入口数、已删板块表…）只在这里改 |
 
 **判据**：退出码 0，且两个门禁各打出一行 `DONE  N PASS / 0 FAIL`。
@@ -206,9 +205,9 @@ npm test
 python _attic/mutation_probe.py     # 需先起 8000 服务
 ```
 
-故意改坏 `app.js` 三处（把「专注」板块加回导航 / 清空录入入口白名单 / 让示例资料迁移失效），
+故意改坏 `app.js` 四处（把「专注」板块加回导航 / 清空录入入口白名单 / 让示例资料迁移失效 / 让自动同步失败不再报警），
 要求每次都 **非 0 退出 且 打出 FAIL 且 不含 Traceback**（排除"它只是崩了"），跑完按字节还原并校验 md5。
-2026-09-18 实测：3 个变异 3 个被抓到、app.js md5 与原件一致。
+2026-09-18 实测：4 个变异 4 个被抓到、app.js md5 与原件一致。
 
 ### 一次性探针别往 `tests/` 里塞
 
@@ -427,19 +426,27 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - **无头截图必须绕过 Service Worker**：`page.setBypassServiceWorker(true)` + `page.setCacheEnabled(false)`。不绕的话第二次加载命中 SW 缓存，截出来是旧样式，会得出"我的改动没生效"的错误结论。参考 `_attic/shoot-local-full.js`（自带一个小体检：数页面上还有多少个"描边+圆角"盒子，`boxy: []` 就说明细线化到位了）
 - **`deploy.py --dry-run` 原来有副作用**（2026-09-18 修）：它只跳过"上传"这一步，但 `bump_sw()` 照样把本地 `service-worker.js` / `index.html` 的版本号 +1 —— 于是干跑一次就变成「本地 v076 / 线上 v075」，本地与线上对不上。现在干跑只报告"真跑会变成什么"，一个字节都不写。**判据：干跑后 `git status` 不该多出 service-worker.js / index.html 的改动。**
 - **门禁的退出码要单独验证**：两个门禁原来断言全 FAIL 也 `exit(0)`（末尾只有 `console.log("DONE")`）。「永远返回 0 的门禁等于没有门禁」—— 是变异测试（`_attic/mutation_probe.py`）才抓出来的。改门禁后先确认它**能失败**再看它通过。
+- **删功能要连"话"一起删，别只删代码**：`submitImportWords()` 里有句 `var dict = {};` 后接 `dict[word] ? dict[word].t : ""` —— 词典删掉后它永远取不到值，可弹窗文案还写着「缺释义的已自动从内置词库补充」。**功能没了、承诺还在，比没有更坑**（以后接手的人会以为有词库）。判据：删任何功能后 grep 一遍它的名字 + 读一遍相关页面的可见文案。
 
 ## 九、待办
 
 - [x] ~~把本地这 7 个 commit 推到 GitHub~~ ✅ 2026-09-17 完成（`8003f2e..626b90a`）。**注意**：`E:\backup\workbench\` 的备份和项目在**同一块 E 盘**，盘坏了两份一起没，GitHub 才是异地那一份
 - [x] ~~把线上更新到当前本地版本（含首次部署 `service-worker.js`）~~ ✅ 2026-09-17 完成，见第六节的部署记录与 md5 自查表
-- [ ] **以后每次改前端**必须走完整流程：`cp` 到 `.pages-deploy/` → **SW 缓存号 +1** → `wrangler pages deploy`。漏掉任何一步就会出「改了没生效」或「线上还是旧版」（已发生过一次）——所以下面那条「写 deploy 脚本」优先级很高
+- [x] ~~**以后每次改前端**必须走完整流程：`cp` 到 `.pages-deploy/` → **SW 缓存号 +1** → `wrangler pages deploy`~~ ✅ 2026-09-17 完成：`tools/deploy.py` 一条命令把这三步 + 18 项线上自检全干了。**现在「改前端」的正确姿势就是跑它**，别再手抄步骤（漏一步就会出「改了没生效」）
 - [x] ~~部署流程自动化~~ ✅ 2026-09-17 完成：`tools/deploy.py`（含 `--test/--dry-run/--no-bump/--commit`），已实测跑通
-- [ ] `app.js` 4646 行 / `views.js` 2874 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
-- [x] ~~词典脚本 `gen_dict.py` 生成的 `dict.js` 目前没有任何代码引用~~ ✅ 2026-09-18：确认全站无引用（`service-worker.js` 的资源清单里也没有），66 MB `ecdict_full.csv` + 5 MB `ecdict.zip` + 两个词典脚本已归档到 `_attic/dict-source/`。要恢复查词功能就从那里取回并按 `gen_dict.py` 头部的路径改回根目录
+- [ ] `app.js` 4657 行 / `views.js` 2874 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
+- [x] ~~词典链路（`gen_dict.py` → `dict.js` → 界面查词）~~ ✅ **2026-09-18 彻底删掉，不留悬空链路**。用户拍板：手机上本来就有翻译软件，工作台不做查词。删了什么：
+  - **磁盘**：`_attic/dict-source/` 整个删掉（`ecdict_full.csv` 66 MB + `ecdict.zip` 5 MB + 两个脚本，共 68 MB）—— `_attic/` 因此从 98 MB 降到 30 MB
+  - **代码**：`submitImportWords()` 里那个永远是空对象、却让文案宣称「缺释义的已自动从内置词库补充」的 `var dict = {}` 拿掉（这是句假话，会骗到以后接手的人）；`HELPS.wordbook` 里「未来可接入开源词典数据」那条也删了
+  - **配置/文档**：`.gitignore` 里词典那三条目删掉；README 目录树里的 `dict-source/` 行删掉
+  - **要是哪天想恢复**（别再靠记忆）：脚本在 git 历史里 —— `git show 0bd47a7^:gen_dict.py`、`git show 0bd47a7^:download_dict.py`；词表上游是 **ECDICT**（`https://raw.githubusercontent.com/skywind3000/ECDICT/master/ecdict.csv`）；`E:\backup\workbench\workbench-20260917.tar.gz` 里也还留着一份 66 MB 的 `ecdict_full.csv`
 - [x] ~~`tests/` 60+ 个脚本没入库~~ ✅ 2026-09-18：**tests/ 已入库**（只留 `test.js` + `test_interact.js` + `baseline.json`）；71 个一次性探针与历史版本测试归档到 `_attic/tests-archive/`（留档，别再往 tests/ 里塞）
 - [x] ~~数字散落在门禁脚本里~~ ✅ 2026-09-18：建 `tests/baseline.json` 单一基线，两个门禁的数字全部改成读它
-- [ ] **GitHub 推送未完成**：2026-09-18 多次失败（`Failed to connect to github.com port 443` / `Empty reply from server`），本机提交领先远端若干个。网络恢复后补推：`git push https://github.com/cy852123/workbench.git main:main`
-- [ ] **旧 Workers 可能还在 Cloudflare 上**：`wrangler.toml` 的 Worker 名也叫 `workbench-sync`（旧版同步实现）。现在线上走 Pages Functions，但那个 Worker 若不删可能让人困惑（`wrangler deployments list` 查、`wrangler delete` 删）。**没验证过，别盲删** —— 先确认 `/api/data` 走的是 Pages 不是 Worker
+- [x] ~~**GitHub 推送未完成**~~ ✅ **2026-09-18 补推成功**（`339875d..9fe309e main -> main`）。**判据别用 `git status` 的 ahead**（显式 URL 推送不更新 `origin/main` 引用）—— 用 `git ls-remote https://github.com/cy852123/workbench.git main` 跟 `git rev-parse HEAD` 对，两边相等才算推上去了
+- [ ] **旧 Workers 还活着（2026-09-18 查清，等你一句话决定删不删）**：`wrangler deployments list --name workbench-sync` → **确实还在**（最后一次部署 2026-08-15 21:10，`wrangler whoami` 账号 `2b1d0f8b5fb6631b6d9471ea98cb75f8`）。但它**不是线上**：线上 `/api/data` 走 Pages Functions（`workbench-sync-c9e.pages.dev` 这个主机名归 Pages 项目，Worker 路由挂不上 `*.pages.dev`；旧 Worker 只有 `workbench-sync.cy852123.workers.dev/data` 这个入口，本机实测连不上、外面也早就没人用）
+  - **风险不是"它抢了流量"，是"它读写同一个 KV 键 `wb_main`"**：万一哪台旧设备/旧书签还指着 workers.dev 那个地址，一按同步就会用**陈旧数据覆盖真数据**
+  - 要删（一条命令，源码在本仓库根目录，随时能 `wrangler deploy` 回来）：`npx wrangler delete --name workbench-sync`（会连 Worker 一起删掉绑定声明，**KV 里的数据不动** —— 删完先 `curl -H "X-Sync-Key: …" .../api/data` 复核数据还在）
+  - ⚠️ **2026-09-18 我没有自作主张删它**：删云上资源不可逆（虽然能重新部署），用户明确说过「不要乱删我没让你删的东西」
 - [ ] **要不要转 private —— 先别转**。2026-09-17 实测：转 private 会**关掉 GitHub Pages**（`https://cy852123.github.io/workbench` 变 404），改回 public 也不自动恢复（已手动重建）。现在状态是 **public**。真要转之前：先确认手机桌面图标用的是不是 Pages 地址，并准备好重建 Pages
 - [x] ~~确认 GitHub Pages 站点已恢复~~ ✅ 2026-09-17 完成：http_code **200**，Pages API `status: built`、source = `main` / `/`，且已自动重新部署到修复后的版本（v053）
 - [ ] **论文写作领域还是 `hidden:true`**（入口不显示）
@@ -463,9 +470,9 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - ⚠️ **push 即发布**：仓库 public + main 根目录自动发 GitHub Pages（`https://cy852123.github.io/workbench`）→
   `index.html` 别挪位置、别改 `views.js`/`app.js` 的加载顺序
 - ⚠️ **别把仓库转 private**：实测会关掉 GitHub Pages，改回 public 也不自动恢复（2026-09-17 已踩）
-- 2026-09-17 做过一次「仓库瘦身」：把 73 个产物类文件（66 MB 词典、部署暂存、设计预览图、个人数据导出）从索引摘除，**磁盘文件一个没删**。要恢复跟踪，直接 `git add .pages-deploy previews ecdict_full.csv ecdict.zip downloads` 再加进 `.gitignore` 白名单即可（文件本来就在磁盘上，不会丢）
+- 2026-09-17 做过一次「仓库瘦身」：把 73 个产物类文件（66 MB 词典、部署暂存、设计预览图、个人数据导出）从索引摘除，**当时磁盘文件一个没删**；**2026-09-18 又把词典原料 68 MB 从磁盘真删了**，所以「词典文件本来就在磁盘上」这句话已经过期。要恢复跟踪其它产物仍可 `git add .pages-deploy previews downloads`；要找回词典见第九节那条（git 历史里的脚本 + ECDICT 上游地址 + 0917 备份）
 - 回滚整棵树：`git reset --hard <提交号>`；只回滚某文件：`git checkout <提交号> -- <文件>`
 - 备份（都在 E 盘）：
-  - `E:\backup\workbench\workbench-20260917.tar.gz`（搬迁前的整树，含大词典与 .git）
+  - `E:\backup\workbench\workbench-20260917.tar.gz`（搬迁前的整树，**含 66 MB `ecdict_full.csv` 与 .git** —— 词典已从项目里删掉，所以这份现在是词典原料的唯一磁盘副本）
   - `E:\backup\workbench\workbench-before-maintain-20260917.tar.gz`（本次整理前的整树）
   - `E:\backup\workbench\uncommitted-tracked-20260917.diff`（本次整理前那批未提交改动的完整 diff）

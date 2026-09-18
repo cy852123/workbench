@@ -25,7 +25,7 @@
 
 | 脚本 | 作用 | 命令 |
 |---|---|---|
-| `_attic/mutation_probe.py` | **变异测试**：故意改坏 `app.js` 三处（把「专注」加回导航 / 清空录入入口白名单 / 让示例资料迁移失效），要求门禁每次都**非 0 退出 且 打出 FAIL 且 不含 Traceback**（排除"它只是崩了"），跑完按字节还原并校验 md5 与原件一致 | `python _attic/mutation_probe.py`<br>（需先起 8000 服务） |
+| `_attic/mutation_probe.py` | **变异测试**：故意改坏 `app.js` 四处（把「专注」加回导航 / 清空录入入口白名单 / 让示例资料迁移失效 / 让自动同步失败不再报警），要求门禁每次都**非 0 退出 且 打出 FAIL 且 不含 Traceback**（排除"它只是崩了"），跑完按字节还原并校验 md5 与原件一致 | `python _attic/mutation_probe.py`<br>（需先起 8000 服务） |
 
 ```bash
 npm test      # = node --check views.js && node --check app.js && node tests/test.js && node tests/test_interact.js

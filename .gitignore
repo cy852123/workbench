@@ -39,8 +39,3 @@ _attic/
 previews/
 shots/
 shot_*.png
-
-## 词典源数据（66MB CSV + 5MB zip，用 download_dict.py 重新下载；dict.js 由 gen_dict.py 生成）
-ecdict_full.csv
-ecdict.zip
-dict.js
