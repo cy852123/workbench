@@ -2582,8 +2582,11 @@
       '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
       '<button class="btn" data-action="export-data">' + ic("download") + "导出全部数据（备份）</button>" +
       '<button class="btn plain" data-action="import-data">' + ic("upload") + "导入数据（恢复）</button>" +
-      '<button class="btn plain" data-action="reset-example">' + ic("refresh") + "清空示例数据</button></div>" +
-      '<div class="li-sub" style="margin-top:10px;">导出 = 下载一个 JSON 文件，请妥善保存。导入 = 选择之前导出的文件恢复。导入前会自动备份当前数据。清空示例数据只删除开始时预置的示例内容，你自己的数据不动。</div>');
+      /* 2026-09-18 修正误导性文案：这个按钮叫「清空示例数据」、提示还写「你自己的数据不动」，
+         但 reset-example-ok 的实际行为是**清空全部记录**（任务/错题/答疑/资料/收集箱/复盘/
+         健康/账号/日历/课程…只保留设置）。照原文案点下去会丢全部数据 —— 文案改成与行为一致。 */
+      '<button class="btn plain" data-action="reset-example">' + ic("refresh") + "清空所有数据（重新开始）</button></div>" +
+      '<div class="li-sub" style="margin-top:10px;">导出 = 下载一个 JSON 文件，请妥善保存。导入 = 选择之前导出的文件恢复，导入前会自动备份当前数据。<b>⚠️「清空所有数据」会把全部记录删掉</b>（任务、错题、答疑、资料、收集箱、复盘、健康、日历…只保留设置），执行前会把当前数据备份到浏览器里。</div>');
 
     var deleted = d.deleted || [];
     html += card(cardHead("回收站", deleted.length + " 项，可恢复", "trash"),

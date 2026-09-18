@@ -178,11 +178,11 @@
       qa: [
         { id: "q1", subject: "英语", question: "as 引导的定语从句和状语从句怎么区分？", answer: "看 as 在从句中是否充当成分：作成分（主语/宾语）是定语从句；不作成分、表示原因/时间等是状语从句。", date: "2026-08-13" }
       ],
-      resources: [
-        { id: "r1", title: "【考研数学】汤家凤 高等数学基础班（示例）", category: "考研", tags: ["高数"], url: "https://www.bilibili.com/video/BV1bW411n7xE", platform: "哔哩哔哩", extractCode: "", status: "在看", note: "跟着第 3 章，配合习题", domainId: "kaoyan", createdAt: nowStr(), updatedAt: nowStr() },
-        { id: "r2", title: "材料科学基础 复习资料合集（示例）", category: "课程", tags: ["专业课"], url: "https://pan.baidu.com/s/example123", platform: "百度网盘", extractCode: "a1b2", status: "未看", note: "", domainId: "courses", createdAt: nowStr(), updatedAt: nowStr() },
-        { id: "r3", title: "AI 入门学习路线（示例）", category: "课外", tags: ["AI"], url: "https://zhuanlan.zhihu.com/p/example", platform: "知乎", extractCode: "", status: "未看", note: "", domainId: "ai", createdAt: nowStr(), updatedAt: nowStr() }
-      ],
+      /* 2026-09-18：原来这里预置了 3 条示例资料，其中 2 条网址是假的
+         （pan.baidu.com/s/example123、zhuanlan.zhihu.com/p/example）—— 点「打开」永远是
+         「文件已取消 / 页面不存在」，用户以为功能坏了。示例本身没价值，去掉；
+         资料库以后只在 Hermes 真的写进内容时才有东西。数据字段 resources 保留。 */
+      resources: [],
       inbox: [
         { id: "i1", type: "link", content: "", url: "https://www.bilibili.com/video/BV1GJ411x7h7", platform: "哔哩哔哩", status: "待分拣", suggestion: "看起来是学习视频，建议放入「考研备考」或资料库", createdAt: nowStr() },
         { id: "i2", type: "text", content: "看到一篇讲记忆曲线的文章，待会细读", url: "", platform: "", status: "待分拣", suggestion: "文字笔记，建议放入资料库（课外分类）", createdAt: nowStr() }
