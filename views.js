@@ -126,7 +126,6 @@
       '<div class="home-date">' + dateCN(t) + " " + weekCN() + "</div></div>" +
       '<div class="home-cta">' +
       '<button class="btn ghost" data-action="punch" data-domain="">快速打卡</button>' +
-      '<button class="btn" data-action="add-goal">设定今日目标</button>' +
       "</div></div>" +
       '<div class="home-kpi">' +
       '<div class="kpi"><div class="kpi-num">' + actPct + '%</div><div class="kpi-label">今日完成率</div></div>' +
@@ -135,20 +134,9 @@
       (kyStars ? '<div class="kpi"><div class="kpi-num">' + kyStars + '</div><div class="kpi-label">累计星星</div></div>' : "") +
       "</div></div>";
 
-    /* 今日行动大卡 */
-    var g = (d.goals || []).filter(function (x) { return x.date === t; });
-    var doneMin = 0, planMin = 0;
-    g.forEach(function (x) { planMin += (x.minutes || 0); });
-    (d.studyLog || []).filter(function (x) { return x.date === t; }).forEach(function (x) { doneMin += (x.minutes || 0); });
-    var goalLine;
-    if (g.length === 0) {
-      goalLine = '<span class="gl">今日小目标：尚未设置，点右边设定一个吧</span>' +
-        '<button class="btn small" data-action="add-goal">设定</button>';
-    } else {
-      var gp = planMin > 0 ? Math.min(100, Math.round(doneMin / planMin * 100)) : 0;
-      goalLine = '<span class="gl has">目标 ' + fmtMin(planMin) + " · 已学 " + fmtMin(doneMin) + "（" + gp + "%）</span>" +
-        '<button class="btn small ghost" data-action="add-goal">调整</button>';
-    }
+    /* 今日行动大卡
+       A 组（2026-09-18）：目标功能已从界面删除 —— 手机提醒事项更顺手，云端 goals 恒 0 条。
+       d.goals 数据字段保留不动，需要时随时可恢复。 */
     var todayTasks = (d.tasks || []).filter(function (x) { return x.date === t ? !x.done : (!x.date && !x.done); });
     var overDue = (d.tasks || []).filter(function (x) { return !x.done && x.date && x.date < t; });
     var shown = todayTasks.slice(0, 3);
@@ -163,7 +151,6 @@
         }).join("") + "</div>";
     /* F1：完成率已在顶部 KPI 行显示，这里不再重复 */
     html += '<div class="card"><div class="home-action-head"><h3>今日行动</h3></div>' +
-      '<div class="home-goal">' + goalLine + "</div>" +
       tasksHtml +
       '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">' +
       '<button class="btn ghost small" data-action="add-task">新建任务</button>' +
@@ -463,8 +450,7 @@
     /* 区块1：今日学习（核心） */
     if (!td) {
       html += card(cardHead("今日学习", "还没生成今日学习包", "ai-today"),
-        empty("今日学习包未生成", "每天早上 7 点 Hermes 会根据你的学习数据（错题、答疑、进度）生成个性化学习包；也可以点下方按钮立即用内置模板生成。") +
-        '<button class="btn block" data-action="gen-ai-today">生成今日学习包</button>');
+        empty("今日学习包未生成", "每天早上 7 点 Hermes 会根据你的学习数据（错题、答疑、进度）自动生成个性化学习包，打开这个页面就能看到。"));
     } else {
       html += '<div class="card"><div class="card-head"><h3>今日学习</h3>' + (td.aiPush ? '<span class="tag">Hermes 个性化</span>' : '') + (td.done ? '<span class="tag state-done">已完成</span>' : '<span class="tag state-doing">进行中</span>') + '</div>' +
         '<div style="font-size:17px;font-weight:800;margin-bottom:10px;">' + esc(td.topic) + "</div>" +
@@ -477,8 +463,6 @@
         '<div class="field" style="margin-bottom:12px;"><label>我的学习笔记</label>' +
         '<textarea id="aiNote" placeholder="写几句今天的感悟…" style="min-height:70px;">' + esc(td.note || "") + "</textarea></div>" +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-        (td.done ? '<button class="btn plain" disabled style="opacity:0.5;cursor:not-allowed;">已完成后不可重新生成</button>'
-          : '<button class="btn plain" data-action="gen-ai-today">重新生成今日内容</button>') +
         '<button class="btn plain" data-action="ai-note-save">保存笔记</button>' +
         (td.done ? "" : '<button class="btn" data-action="ai-done">完成今日学习（记录 30 分钟）</button>') +
         "</div></div>";
@@ -653,9 +637,9 @@
       { id: "cet-listening", emoji: "play", name: "听力", desc: "真题听力、精听训练、听力素材" },
       { id: "cet-reading", emoji: "edit", name: "阅读", desc: "真题阅读、长难句、错题记录" },
       { id: "cet-writing", emoji: "edit", name: "写作", desc: "范文、模板、AI 批改、作文素材" },
-      { id: "cet-translation", emoji: "link", name: "翻译", desc: "真题翻译练习、句式积累" },
-      { id: "cet-speaking", emoji: "send", name: "口语", desc: "AI 口语对话练习" },
-      { id: "cet-grammar", emoji: "grid", name: "语法", desc: "语法检查器、知识点库" }
+      { id: "cet-translation", emoji: "link", name: "翻译", desc: "真题翻译练习、句式积累" }
+      /* B 组（2026-09-18）：口语（cet-speaking）、语法（cet-grammar）已删 ——
+         这两项在网页端只是「去微信问 Hermes」的说明页，直接问 Hermes 更准 */
     ];
     var low3 = zones.slice().sort(function (a, b) {
       var sa = examSubj(dm, a.name), sb = examSubj(dm, b.name);
@@ -695,20 +679,8 @@
       '<div class="en-entry" data-action="go-view" data-view="cet-exams">考试管理<br><b style="color:var(--accent);">' + examCount + '</b> 套考试</div>' +
       "</div>";
 
-    /* AI 英语工具箱（已切换微信直连） */
-    var tools = [
-      { id: "ai", emoji: "spark", name: "AI 答疑", desc: "发微信问 Hermes" },
-      { id: "cet-writing", emoji: "edit", name: "作文批改", desc: "微信发作文批改" },
-      { id: "cet-speaking", emoji: "help", name: "口语对话", desc: "微信练口语" },
-      { id: "cet-translation", emoji: "link", name: "翻译工具", desc: "微信发句翻译" }
-    ];
-    html += card(cardHead("AI 英语工具箱", "微信直连 Hermes", "ai-tools"),
-      '<div class="grid grid-4">' + tools.map(function (t) {
-        return '<div class="card" style="margin-bottom:0;"><div class="card-head"><h3 style="font-size:15px;">' + t.emoji + " " + esc(t.name) + '</h3></div>' +
-          '<div class="li-sub" style="margin-bottom:10px;">' + esc(t.desc) + "</div>" +
-          '<button class="btn small block plain" data-action="go-view" data-view="' + t.id + '">查看说明</button></div>';
-      }).join("") + "</div>" +
-      '<div class="li-sub" style="margin-top:10px;">以上功能已统一改为微信直连（见「AI 帮手」页说明）。网页不再内置 AI 对话。</div>');
+    /* B 组（2026-09-18）：原「AI 英语工具箱」4 张卡已删 ——
+       它们各自只是「去微信问 Hermes」的说明页，纯冗余；直接问 Hermes 即可。 */
 
     /* 关联资料 */
     var cetRes = (d.resources || []).filter(function (r) { return r.domainId === "cet"; });
@@ -1098,7 +1070,6 @@
       toolBtn("folder", "易错知识点", "自己记录易错点（可传文件）", "ky-points-modal", "") +
       toolBtn("help", "帽子题易错", "自己记录易错帽子题", "ky-hat-modal", "") +
       toolBtn("file", "主观题框架", "点-默-析 答题框架模板", "ky-frame-modal", "") +
-      toolBtn("file", "时政收藏夹", "本月时政词条 + 可联系考点", "ky-affair-modal", "") +
       "</div>");
     /* 易错知识点（自己记录，可上传文件）——customPoints 展平 */
     var cp = gen.customPoints || {};
@@ -1121,13 +1092,7 @@
         return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(h.q) + " → " + esc(h.a) + "</div>" +
           '<div class="li-sub">' + esc(h.date) + "</div></div></div>";
       }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">帽子题做错的，自己记录到这里，考前重点背</div>');
-    var af = gen.currentAffairs || [];
-    html += card(cardHead("时政收藏", af.length ? "共 " + af.length + " 条" : "暂无记录", "affairs") +
-      '<button class="btn small ghost" data-action="ky-affair-modal">＋ 收藏时政</button>',
-      af.length ? '<div class="list">' + af.slice().reverse().slice(0, 6).map(function (a) {
-        return '<div class="list-item"><div class="li-main"><div class="li-title" style="font-weight:400;">' + esc(a.title) + "</div>" +
-          '<div class="li-sub">' + esc(a.examPoint || "未标注考点") + " · " + esc(a.date) + "</div></div></div>";
-      }).join("") + "</div>" : '<div class="li-sub" style="padding:8px 0;">粘贴本月时政词条，标注可联系考点</div>');
+    /* B 组（2026-09-18）：时政收藏已删 —— 手动粘贴词条的场景交给 Hermes */
     return html;
   }
   function kyMajorPage(dm) {
@@ -1696,8 +1661,7 @@
           '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' +
           '<button class="btn small" data-action="sort-inbox" data-id="' + esc(x.id) + '">' + ic("check") + "确认去向</button>" +
           '<button class="btn small plain" data-action="del-inbox" data-id="' + esc(x.id) + '">' + ic("trash") + "丢弃</button></div></div>";
-      }).join("") + "</div>" +
-      (pending.length === 0 ? "" : '<button class="btn ghost small" data-action="ai-sort-all" style="margin-top:10px;">' + ic("spark") + "让 AI 批量建议去向</button>"));
+      }).join("") + "</div>");
 
     html += card(cardHead("已分拣", done.length + " 条", "inbox-done"),
       done.length === 0 ? empty("还没有已分拣的内容") :
@@ -2173,11 +2137,10 @@
       : '<button class="btn block" data-action="add-daily-review">' + ic("edit") + "开始今天的复盘（3 个问题）</button>" +
       '<div class="li-sub" style="margin-top:10px;">复盘是让进步发生的习惯：完成了什么 / 没完成什么及原因 / 明天怎么调整。每天 1 分钟，坚持比完美重要。</div>');
 
-    html += card(cardHead("每周复盘", "AI 汇总数据生成草稿，确认后保存", "weekly-review"),
+    html += card(cardHead("每周复盘", "Hermes 汇总数据生成草稿，确认后保存", "weekly-review"),
       thisWeek ? '<div class="ai-banner">' + ic("check") + "本周已复盘：" + esc(thisWeek.date) + "</div>" +
       '<button class="btn ghost small" data-action="edit-weekly-review">查看本周复盘</button>'
-      : '<button class="btn block" data-action="ai-draft-week">' + ic("spark") + "用本周数据生成复盘草稿</button>" +
-      '<div class="li-sub" style="margin-top:10px;">草稿会汇总：本周各领域学习时长、任务完成情况、打卡天数、健康情况。生成后你可以修改，确认才保存。</div>');
+      : '<div class="li-sub">本周还没复盘。让 Hermes 汇总本周数据（各领域学习时长、任务完成情况、打卡天数、健康情况）生成草稿，你确认后保存。</div>');
 
     /* 连续复盘天数 */
     (function () {

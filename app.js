@@ -561,12 +561,10 @@
        高频（每天）：错题本、专注；中频：学习记录、复盘；
        低频：资料库、收集箱、健康。 */
     items.push({ view: "mistakes", label: "错题本", icon: "alert" });
-    items.push({ view: "focus", label: "专注", icon: "timer" });
     items.push({ view: "activity", label: "学习记录", icon: "trending" });
     items.push({ view: "reviews", label: "复盘", icon: "refresh" });
     items.push({ view: "library", label: "资料库", icon: "folder" });
     items.push({ view: "inbox", label: "收集箱", icon: "inbox", badge: (data.inbox || []).filter(function (x) { return x.status === "待分拣"; }).length });
-    items.push({ view: "health", label: "健康", icon: "heart" });
     items.push({ group: "系统" });
     items.push({ view: "search", label: "搜索", icon: "search" });
     items.push({ view: "settings", label: "设置与数据", icon: "settings" });
@@ -590,17 +588,10 @@
       "mk-types": { e: "alert", t: "错题 · 考点类型", s: "专题下的考点" },
       "mk-list": { e: "alert", t: "错题 · 列表", s: "该考点下的错题" },
       "mk-detail": { e: "alert", t: "错题详情", s: "完整错题与解法" },
-      qa: { e: "help", t: "答疑库", s: "问过的题不再错" },
-      "qa-detail": { e: "help", t: "答疑详情", s: "完整问答" },
       reviews: { e: "refresh", t: "复盘", s: "让进步发生" },
       "review-detail": { e: "refresh", t: "复盘详情", s: "完整复盘记录" },
-      health: { e: "heart", t: "健康", s: "学习的第一步" },
-      focus: { e: "timer", t: "专注", s: "番茄钟计时" },
       activity: { e: "trending", t: "学习记录", s: "自动汇总你今天干了什么" },
-      calendar: { e: "calendar", t: "日历", s: "重要日期一目了然" },
-      accounts: { e: "👤", t: "账号", s: "管理我的平台账号" },
       search: { e: "search", t: "搜索", s: "一次搜遍全部内容" },
-      ai: { e: "spark", t: "AI 帮手", s: "辅助学习与整理" },
       settings: { e: "settings", t: "设置与数据", s: "说明、备份、更新日志" },
       "ky-subjects": { e: "target", t: "科目详情", s: "科目任务统计" },
       "ky-tasks": { e: "target", t: "全部领域任务", s: "三类任务管理" },
@@ -615,13 +606,10 @@
       "ky-mistake-files": { e: "target", t: "错题集", s: "批量上传材料与知识点" },
       "tasks-all": { e: "file", t: "任务管理专区", s: "全部任务" },
       "cet-vocab": { e: "book", t: "词汇专区", s: "生词本与记忆复习" },
-      "cet-grammar": { e: "grid", t: "语法专区", s: "语法检查器与知识点" },
-      "grammar-detail": { e: "grid", t: "语法知识点", s: "查看与复习" },
       "cet-listening": { e: "play", t: "听力专区", s: "真题听力与精听" },
       "cet-reading": { e: "book", t: "阅读专区", s: "真题阅读与长难句" },
       "cet-writing": { e: "edit", t: "写作专区", s: "范文模板与 AI 批改" },
       "cet-translation": { e: "link", t: "翻译专区", s: "翻译练习与句式积累" },
-      "cet-speaking": { e: "send", t: "口语专区", s: "AI 口语对话练习" },
       "cet-wordbook": { e: "book", t: "生词本", s: "完整生词管理" },
       "cet-exams": { e: "target", t: "考试管理", s: "新增/归档/删除考试" },
       "cet-stats": { e: "book", t: "英语统计", s: "学习数据" },
@@ -754,10 +742,9 @@
     else if (view === "inbox") html = Views.inbox();
     else if (view === "inbox-detail") html = Views.inboxDetail();
     else if (view === "search") html = Views.search();
-    else if (view === "ai") html = Views.ai();
-    else if (view === "accounts") html = Views.accounts();
-    else if (view === "health") html = Views.health();
-    else if (view === "focus") html = Views.focus();
+    /* A/B 组（2026-09-18）：以下视图已删除 —— focus（专注/番茄钟）、health（健康）、
+       accounts（账号管理）、ai（网页 AI 帮手，与 Hermes 重复）、calendar（日历）。
+       Views 函数体保留在 views.js（不再被调用），数据字段一律保留。 */
     else if (view === "activity") html = Views.activity();
     else if (view === "reviews") html = Views.reviews();
     else if (view === "review-detail") html = Views.reviewDetail();
@@ -766,9 +753,6 @@
     else if (view === "mk-types") html = Views.mkTypes();
     else if (view === "mk-list") html = Views.mkList();
     else if (view === "mk-detail") html = Views.mkDetail();
-    else if (view === "qa") html = Views.qa();
-    else if (view === "qa-detail") html = Views.qaDetail();
-    else if (view === "calendar") html = Views.calendar();
     else if (view === "settings") html = Views.settings();
     else if (view === "ky-subjects") html = Views.kySubjects(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
     else if (view === "ky-tasks") html = Views.kyTasks(data.domains.filter(function (x) { return x.id === "kaoyan"; })[0]);
@@ -784,13 +768,11 @@
     else if (view === "tasks-all") html = Views.tasksAll();
     else if (view === "cet-vocab") html = Views.cetVocab(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-wordbook") html = Views.cetWordbook(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
-    else if (view === "cet-grammar") html = Views.cetGrammar(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
-    else if (view === "grammar-detail") html = Views.grammarDetail(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-exams") html = Views.cetExams(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "cet-stats") html = Views.cetStats(data.domains.filter(function (x) { return x.id === "cet"; })[0]);
     else if (view === "ai-history") html = Views.aiHistory(data.domains.filter(function (x) { return x.id === "ai"; })[0]);
-    else if (view === "cet-listening" || view === "cet-reading" || view === "cet-writing" || view === "cet-translation" || view === "cet-speaking") {
-      var zm = { "cet-listening": "听力", "cet-reading": "阅读", "cet-writing": "写作", "cet-translation": "翻译", "cet-speaking": "口语" }[view];
+    else if (view === "cet-listening" || view === "cet-reading" || view === "cet-writing" || view === "cet-translation") {
+      var zm = { "cet-listening": "听力", "cet-reading": "阅读", "cet-writing": "写作", "cet-translation": "翻译" }[view];
       html = Views.englishZone(data.domains.filter(function (x) { return x.id === "cet"; })[0], zm);
     }
     else html = '<div class="card">' + esc("页面不存在") + "</div>";
