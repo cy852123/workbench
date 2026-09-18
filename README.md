@@ -58,17 +58,20 @@ curl -s -X PUT -H "X-Sync-Key: $KEY" --data-binary @feed.json "$BASE/api/store?k
 
 ---
 
-## 一、当前状态（2026-09-17）
+## 一、当前状态（2026-09-18 复核）
 
 | 项 | 内容 |
 |---|---|
 | 入口 | `index.html`（引 `views.js` + `app.js`，无框架、无打包） |
-| 核心逻辑 | `app.js` 4500 行 / 285 KB |
-| 视图渲染 | `views.js` 2816 行 / 216 KB |
-| 样式 | `styles.css` 740 行 / 42 KB |
-| 离线 | `service-worker.js`。缓存号当前是 **`wb-cache-v054`**（只此一处写死；改前端必须 +1，跑 `tools/deploy.py` 会**自动**加，别再手抄） |
+| 核心逻辑 | `app.js` 4646 行 / 288 KB |
+| 视图渲染 | `views.js` 2874 行 / 218 KB |
+| 样式 | `styles.css` 1262 行 / 70 KB。**0 处 hex 硬编码** —— 颜色全走 `:root` 的 OKLCH 纸感令牌 |
+| 离线 | `service-worker.js`。缓存号当前 **`wb-cache-v075`**（只此一处写死；改前端必须 +1，跑 `tools/deploy.py` 会自动加，别手抄） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
-| 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交的说明 + App 内「更新日志」（21 条）** |
+| 门禁 | `npm test` **45 项**：`tests/test.js`（桌面 + 手机三尺寸）、`tests/test_interact.js`（交互与防回归） |
+| 数字基线 | `tests/baseline.json` —— **所有随数据/界面变化的数字只在这里维护一处**，门禁脚本不写字面量 |
+| 脚本地图 | `tools/README.md` —— 哪个脚本是生产用的、哪个是一次性探针、每条命令怎么敲 |
+| 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交说明 + App 内「更新日志」（22 条）** |
 
 ## 二、目录结构
 
@@ -77,17 +80,25 @@ workbench/
 ├─ index.html · app.js · views.js · styles.css      前端四件套（**改功能只动这几个**）
 ├─ service-worker.js · manifest.webmanifest · icon-*.png    PWA（离线 + 装到桌面）
 ├─ functions/api/*.js       云端接口（随 Pages 一起部署）：data 同步 / ai 代理 / learnpack / tasks
-├─ cloudflare-worker.js + wrangler.toml   独立 Worker（名字也叫 workbench-sync，**当前线上没用它**）
-├─ gen_dict.py · download_dict.py         词典脚本（见第七节，目前没接进界面）
-├─ tools/deploy.py                        **一键部署**：同步暂存 + 缓存号+1 + 上传 + 线上自检（见第六节）
-├─ shot_preview.js                        截图脚本：截 previews/ 下某个设计原型页（桌面+手机两张，输出到 previews/）
-├─ tests/                  **不入库**：51 个测试脚本（45 个 .js + 6 个 .py）+ 13 个截图/数据文件，共 64 个（见第五节）
-├─ previews/               **不入库**：8/16 改版过程的设计预览图/原型页（留档，别删）
-├─ _attic/2026-09-17/      **不入库**：本次整理归档的垃圾（.bak 副本、一次性探针、云端快照）
-├─ downloads/              **不入库**：测试导出数据落地的地方（导出时会自动生成）
-├─ .pages-deploy/          **不入库**：部署暂存目录（上传给 Cloudflare 的就是这里的内容）
-├─ .wrangler/              **不入库**：wrangler 本机缓存
-├─ ecdict_full.csv · ecdict.zip            **不入库**：66 MB + 5 MB 词典原料
+├─ tools/
+│   ├─ deploy.py            **一键部署**：前置检查 + 缓存号+1 + 同步暂存 + 上传 + 18 项线上自检
+│   ├─ serve_lan.py         本地/局域网预览（`npm test` 连它；只服务白名单前端文件）
+│   ├─ 启动局域网访问.bat     同上，给 Windows 双击用
+│   └─ README.md            **脚本地图**（生产管线 / 验证 / 探针 / 安全网）
+├─ tests/                   **入库**（回归网必须跟着代码走）：
+│   ├─ test.js              桌面 + 手机三尺寸 UI 门禁
+│   ├─ test_interact.js     交互 + 防回归（已删入口 / 残留文案 / 遍历 23 视图 / 数据迁移）
+│   └─ baseline.json        **单一基线**：会漂的数字只在这里改
+├─ cloudflare-worker.js + wrangler.toml   **旧版** Workers 同步（当前线上没用它；保留着是因为
+│                                          wrangler.toml 里记着 KV 命名空间 ID）
+├─ _attic/                  **不入库**：归档（只挪不删）
+│   ├─ 2026-09-17/ · backup-*/ · removed-skills/   历史归档与改动前备份
+│   ├─ tests-archive/       71 个一次性探针与历史版本测试
+│   ├─ dict-source/         ecdict 原料 + 词典脚本（查词功能没接回界面，见第九节）
+│   ├─ design-previews/     8/16 改版过程的设计原型页
+│   └─ shots*/ · downloads-test/   截图与导出测试的落地目录（根目录不留测试垃圾）
+├─ downloads/               **不入库**：手动导出数据的落地目录
+├─ .pages-deploy/ · .wrangler/             **不入库**：部署暂存 / wrangler 缓存
 └─ .cf-env · .sync-key.txt                 **不入库、别删**：部署凭据与同步密钥
 ```
 
@@ -160,7 +171,7 @@ python tools/serve_lan.py           # 会打印 http://<本机IP>:8000/，手机
 >
 > **日常在手机上用，直接开 `https://workbench-sync-c9e.pages.dev` 最省事** —— 不需要电脑开机、不用管防火墙、还是 https（有 PWA/离线能力）。局域网地址只是 http、非 localhost，浏览器**不会**注册 Service Worker，没有离线能力。
 
-## 五、改完必须验证（三条）
+## 五、改完必须验证（两条命令）
 
 ```bash
 cd E:\Software\workbench
@@ -168,44 +179,62 @@ cd E:\Software\workbench
 # ① 语法：改完 app.js/views.js 立刻查
 node --check app.js && node --check views.js && node --check service-worker.js
 
-# ② UI 冒烟（40 项断言，需要先起 8000 服务；用 Edge/Chrome 无头跑）
-npm test                            # = node tests/test.js && node tests/test_interact.js
+# ② 门禁（45 项断言；需要先起 8000 服务）
+python tools/serve_lan.py 8000     # 起本地服务（另一个窗口；已在跑就不用再起）
+npm test
 ```
 
-`npm test` 会检查：桌面/手机 3 种宽度渲染、导航项数、卡片数、无横向滚动、触控区 ≥44px、无 JS 报错、任务增删/勾选、搜索、收集箱分拣、番茄钟、回收站……**改动前先跑一遍记下结果，改完再跑一遍对比**，这就是「零回归」的判据。
+`npm test` = `node --check views.js && node --check app.js && node tests/test.js && node tests/test_interact.js`
 
-单独跑某一块（都在 `tests/`，不入库）：
-
-| 脚本 | 看什么 |
+| 门禁 | 覆盖 |
 |---|---|
-| `tests/test.js` | 桌面 + 手机 360/375/390 渲染与布局（无头） |
-| `tests/test_interact.js` | 交互：任务/收集箱/搜索/导出/番茄钟/回收站 |
-| `tests/test_ky_minimal.js` · `test_ky_subjects.js` | 考研模块 |
-| `tests/test_cet_removed.js` · `test_cet_olduser.js` | 英语学习板块移除后的老用户兼容 |
-| `tests/test_live_pwa.js` · `test_pwa.js` | PWA / Service Worker |
-| `tests/live_desktop.png` · `live_mobile.png` | 最近一次实跑截图 |
-| `node shot_preview.js 02-today-A-calm.html` | 给指定的设计原型页截图（需要先起 8000 服务），输出 `previews/shot-02-today-A-calm-desktop.png` / `-mobile.png` |
+| `tests/test.js`（27 项） | 桌面 1440×900 ＋ 手机 360/375/390：导航、卡片数、横向滚动、内容不被底部导航遮挡、触控区 ≥44px、无 JS 错误 |
+| `tests/test_interact.js`（18 项） | 交互与防回归：录入入口已下线（按 action 名 ＋ 按可见文字遍历 23 个视图）、指向已下线功能的残留文案扫描、示例资料迁移、勾选/打卡/搜索/导出/回收站 |
+| `tests/baseline.json` | **单一基线** —— 会随数据/界面漂的数字（导航项数、底部导航入口数、已删板块表…）只在这里改 |
 
-> 根目录那 7 张 `shot_*.png` 是 **`tests/test.js` 每次跑 `npm test` 时自动重写的**（`tests/test.js` 第 45 行 `page.screenshot({path:"shot_desktop.png"})`）。所以它们是测试产物、不该入库，也**不用手动更新** —— 只要跑一次 `npm test` 就是最新的。
+**判据**：退出码 0，且两个门禁各打出一行 `DONE  N PASS / 0 FAIL`。
+⚠️ 退出码是 2026-09-18 才补上的 —— 之前断言全 FAIL 也退出 0，自动化根本看不出失败（变异测试抓到的）。
 
-### 补充门禁：`tests/_verify_filelist_crash_independent.js`（2026-09-17 新增）
+改之前跑一遍记下结果，改完再跑一遍对比 —— 这就是「零回归」的判据。
+截图自动落 `_attic/shots/`，导出测试落 `_attic/downloads-test/`（都不脏根目录）。
 
-`npm test` 的 40 项用的是**干净数据**，测不到「已经上传过文件」的路径 —— 而 2026-09-17 那 3 个崩溃恰好只在有上传文件时触发。这个探针专门补这个盲区：
+### 门禁自身也要验证（变异测试）
+
+「永远返回 PASS 的门禁等于没有门禁。」证明它有牙：
+
+```bash
+python _attic/mutation_probe.py     # 需先起 8000 服务
+```
+
+故意改坏 `app.js` 三处（把「专注」板块加回导航 / 清空录入入口白名单 / 让示例资料迁移失效），
+要求每次都 **非 0 退出 且 打出 FAIL 且 不含 Traceback**（排除"它只是崩了"），跑完按字节还原并校验 md5。
+2026-09-18 实测：3 个变异 3 个被抓到、app.js md5 与原件一致。
+
+### 一次性探针别往 `tests/` 里塞
+
+`tests/` 只放上面三个文件。历史版本测试与一次性探针已全部归档到 `_attic/tests-archive/`（71 个）；
+日常常用的几个探针（手机端体检、逐视图抓报错、并发撕裂读验证、录入入口对账）见 `tools/README.md` 第三节。
+
+### 补充门禁（已归档）：上传过文件的分支
+
+`npm test` 用**干净数据**跑，测不到「已经上传过文件」的路径 —— 而 2026-09-17 那 3 个崩溃恰好只在有上传文件时触发。
+这个探针专补这个盲区，现在归档在 `_attic/tests-archive/`（没并进 `npm test`，需要时手动跑）：
 
 ```bash
 cd E:\Software\workbench
-python -m http.server 8000 --bind 127.0.0.1    # 先起服务
-node tests/_verify_filelist_crash_independent.js http://127.0.0.1:8000/          # 本地
-node tests/_verify_filelist_crash_independent.js https://workbench-sync-c9e.pages.dev/   # 线上也行
+python -m http.server 8000 --bind 127.0.0.1                    # 先起服务
+node _attic/tests-archive/_verify_filelist_crash_independent.js http://127.0.0.1:8000/          # 本地
+node _attic/tests-archive/_verify_filelist_crash_independent.js https://workbench-sync-c9e.pages.dev/   # 线上也行
 ```
 
-它会往 localStorage 里种 3 个「上传过的文件」，然后依次走**政治页 / 专业课页 / 作文模板库弹窗**，13 项断言：不但要求无 JS 报错，还要求**种进去的文件名真的出现在页面上**（渲染中断时必然不出现）。
+它往 localStorage 里种 3 个「上传过的文件」，然后依次走**政治页 / 专业课页 / 作文模板库弹窗**，13 项断言：
+不但要求无 JS 报错，还要求**种进去的文件名真的出现在页面上**（渲染中断时必然不出现）。
 
-**怎么证明这个门禁不是「永远通过」的**：拿修复前的旧代码跑一遍必须挂 —— 那份已知会崩的副本留在 `_attic/2026-09-17/prefix-verify/`：
+**怎么证明它不是「永远通过」的**：拿修复前的旧代码跑必须挂 —— 那份已知会崩的副本留在 `_attic/2026-09-17/prefix-verify/`：
 
 ```bash
 cd E:\Software\workbench\_attic\2026-09-17\prefix-verify && python -m http.server 8001 --bind 127.0.0.1
-cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js http://127.0.0.1:8001/
+cd E:\Software\workbench && node _attic/tests-archive/_verify_filelist_crash_independent.js http://127.0.0.1:8001/
 # 预期：3/13 通过 + 打印 kyFileListHtml is not defined / fmtSize is not defined，退出码 1
 ```
 
@@ -403,18 +432,35 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - [x] ~~把线上更新到当前本地版本（含首次部署 `service-worker.js`）~~ ✅ 2026-09-17 完成，见第六节的部署记录与 md5 自查表
 - [ ] **以后每次改前端**必须走完整流程：`cp` 到 `.pages-deploy/` → **SW 缓存号 +1** → `wrangler pages deploy`。漏掉任何一步就会出「改了没生效」或「线上还是旧版」（已发生过一次）——所以下面那条「写 deploy 脚本」优先级很高
 - [x] ~~部署流程自动化~~ ✅ 2026-09-17 完成：`tools/deploy.py`（含 `--test/--dry-run/--no-bump/--commit`），已实测跑通
-- [ ] `app.js` 4500 行 / `views.js` 2816 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
-- [ ] 词典脚本 `gen_dict.py` 生成的 `dict.js` 目前**没有任何代码引用**（查词功能没接回界面），66 MB 原料因此白占地方
-- [ ] `tests/` 60+ 个脚本没入库：其中真正当回归门禁用的（`test.js`/`test_interact.js`）建议入库，其余 scratch 留在本地
+- [ ] `app.js` 4646 行 / `views.js` 2874 行：是否拆模块，见 `OPTIMIZE-PLAN.md`（等你拍板，不擅自大改）
+- [x] ~~词典脚本 `gen_dict.py` 生成的 `dict.js` 目前没有任何代码引用~~ ✅ 2026-09-18：确认全站无引用（`service-worker.js` 的资源清单里也没有），66 MB `ecdict_full.csv` + 5 MB `ecdict.zip` + 两个词典脚本已归档到 `_attic/dict-source/`。要恢复查词功能就从那里取回并按 `gen_dict.py` 头部的路径改回根目录
+- [x] ~~`tests/` 60+ 个脚本没入库~~ ✅ 2026-09-18：**tests/ 已入库**（只留 `test.js` + `test_interact.js` + `baseline.json`）；71 个一次性探针与历史版本测试归档到 `_attic/tests-archive/`（留档，别再往 tests/ 里塞）
+- [x] ~~数字散落在门禁脚本里~~ ✅ 2026-09-18：建 `tests/baseline.json` 单一基线，两个门禁的数字全部改成读它
+- [ ] **GitHub 推送未完成**：2026-09-18 多次失败（`Failed to connect to github.com port 443` / `Empty reply from server`），本机提交领先远端若干个。网络恢复后补推：`git push https://github.com/cy852123/workbench.git main:main`
+- [ ] **旧 Workers 可能还在 Cloudflare 上**：`wrangler.toml` 的 Worker 名也叫 `workbench-sync`（旧版同步实现）。现在线上走 Pages Functions，但那个 Worker 若不删可能让人困惑（`wrangler deployments list` 查、`wrangler delete` 删）。**没验证过，别盲删** —— 先确认 `/api/data` 走的是 Pages 不是 Worker
 - [ ] **要不要转 private —— 先别转**。2026-09-17 实测：转 private 会**关掉 GitHub Pages**（`https://cy852123.github.io/workbench` 变 404），改回 public 也不自动恢复（已手动重建）。现在状态是 **public**。真要转之前：先确认手机桌面图标用的是不是 Pages 地址，并准备好重建 Pages
 - [x] ~~确认 GitHub Pages 站点已恢复~~ ✅ 2026-09-17 完成：http_code **200**，Pages API `status: built`、source = `main` / `/`，且已自动重新部署到修复后的版本（v053）
 - [ ] **论文写作领域还是 `hidden:true`**（入口不显示）
 
-## 十、版本控制
+## 十、版本控制（2026-09-18 复核）
 
-- 本地 git 仓库（`main`），远端 `origin` = `git@github.com:cy852123/workbench.git`，提交身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
-- ✅ **2026-09-17 已 `git push origin main`**（`8003f2e..626b90a`），现在与 origin 同步。推送前审计过：**同步密钥与 Cloudflare 令牌在全部历史里出现 0 次**，当前 23 个跟踪文件也无明文——所以 push 是安全的
-- **只跟踪 23 个文件**：源码（4 件套 + SW + 图标 + PWA 配置） + `functions/api/` 4 个接口 + Worker + 2 个词典脚本 + `README.md` + `OPTIMIZE-PLAN.md`。产物/凭据/个人数据/测试/截图一律不入库（清单见 `.gitignore`）
+- 本地 git 仓库（`main`）。远端两个出口，**推送按下面的写法**：
+  - `origin` = `git@github.com:cy852123/workbench.git`（SSH 22 端口**常被 reset**，别直接用）
+  - 实测可靠：`git push https://github.com/cy852123/workbench.git main:main`（gh 凭据已配好）
+  - ⚠️ 用**显式 URL** 推送**不会更新 `origin/main` 跟踪引用** → `git status` 里的 `ahead N` 会虚报，
+    别据此判断"推上去了没有"；要确认就 `git ls-remote https://github.com/cy852123/workbench.git main`
+- 提交身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
+- **跟踪 30 个文件**：前端四件套 + `service-worker.js` + `manifest.webmanifest` + 3 个图标 +
+  `functions/api/` 4 个接口 + `tools/`（`deploy.py` / `serve_lan.py` / `启动局域网访问.bat` / `README.md`）+
+  `tests/`（`test.js` / `test_interact.js` / `baseline.json`）+ `README.md` + `OPTIMIZE-PLAN.md` +
+  旧 Workers 两件 + `package.json` / `package-lock.json`
+- **不入库**（见 `.gitignore`）：凭据（`.cf-env` / `.sync-key.txt`）、个人数据、
+  `.pages-deploy/` · `.wrangler/` · `node_modules/`、**`_attic/` 整目录**（含归档与改动前备份）、
+  `downloads/`、截图、`logs/`
+- 推送前审计过：**同步密钥与 Cloudflare 令牌在全部 git 历史里出现 0 次**
+- ⚠️ **push 即发布**：仓库 public + main 根目录自动发 GitHub Pages（`https://cy852123.github.io/workbench`）→
+  `index.html` 别挪位置、别改 `views.js`/`app.js` 的加载顺序
+- ⚠️ **别把仓库转 private**：实测会关掉 GitHub Pages，改回 public 也不自动恢复（2026-09-17 已踩）
 - 2026-09-17 做过一次「仓库瘦身」：把 73 个产物类文件（66 MB 词典、部署暂存、设计预览图、个人数据导出）从索引摘除，**磁盘文件一个没删**。要恢复跟踪，直接 `git add .pages-deploy previews ecdict_full.csv ecdict.zip downloads` 再加进 `.gitignore` 白名单即可（文件本来就在磁盘上，不会丢）
 - 回滚整棵树：`git reset --hard <提交号>`；只回滚某文件：`git checkout <提交号> -- <文件>`
 - 备份（都在 E 盘）：
