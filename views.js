@@ -2760,6 +2760,49 @@
     return cetGenericZone(dm, zones[zoneName]);
   }
 
+  /* D-2 / D-3（2026-09-18）：Hermes 板块 —— 展示电脑端 AI 给你准备的内容。
+     分工：网页端只读 + 勾「已掌握」；内容由 Hermes 通过 /api/store 写入云端。
+     数据：d.hermes = { feed: [...], report: [...], done: [已标记掌握的内容 id] } */
+  function hermes() {
+    var W = window.W, d = W.data;
+    var h = d.hermes || { feed: [], report: [], done: [] };
+    var doneIds = h.done || [];
+    var reports = h.report || [];
+    var feed = h.feed || [];
+    var html = "";
+    var wrapCss = ' style="font-size:13.5px;line-height:1.9;white-space:pre-wrap;margin-top:8px;color:var(--text);"';
+
+    /* 周报 / 月报（只读） */
+    html += card(cardHead("周报 / 月报", reports.length ? "共 " + reports.length + " 份" : "还没有报告", "report"),
+      reports.length === 0
+        ? empty("还没有报告", "Hermes 会定期汇总你的学习数据生成报告，生成后出现在这里。")
+        : '<div class="list">' + reports.slice().reverse().map(function (r) {
+            return '<div class="list-item" style="align-items:flex-start;"><div class="li-main">' +
+              '<div class="li-title">' + esc(r.title || r.date || "报告") + "</div>" +
+              '<div class="li-sub">' + esc(r.date || "") + (r.kind ? " · " + esc(r.kind) : "") + "</div>" +
+              "<div" + wrapCss + ">" + esc(r.body || "") + "</div>" +
+              "</div></div>";
+          }).join("") + "</div>");
+
+    /* 资料流（可勾「已掌握」） */
+    html += card(cardHead("Hermes 资料流", feed.length ? feed.length + " 条" : "还没有内容", "feed"),
+      feed.length === 0
+        ? empty("还没有内容", "你在 Hermes 里发来的题目、知识点、总结，整理后会出现在这里。")
+        : '<div class="list">' + feed.slice().reverse().map(function (f) {
+            var done = doneIds.indexOf(f.id) >= 0;
+            return '<div class="list-item" style="align-items:flex-start;"><div class="li-main">' +
+              '<div class="li-title"' + (done ? ' style="opacity:.5;"' : "") + ">" + esc(f.title || "(无标题)") + "</div>" +
+              '<div class="li-sub">' + esc(f.date || "") + (f.type ? " · " + esc(f.type) : "") + "</div>" +
+              "<div" + wrapCss + ">" + esc(f.body || "") + "</div>" +
+              "</div>" +
+              '<button class="btn small' + (done ? " plain" : "") + '" data-action="hermes-done" data-id="' + esc(f.id) + '">' +
+              (done ? "已掌握" : "标记掌握") + "</button>" +
+              "</div>";
+          }).join("") + "</div>");
+
+    return html;
+  }
+
   window.Views = {
     today: today,
     domainView: domainView,
@@ -2803,6 +2846,7 @@
     qa: qa,
     qaDetail: qaDetail,
     calendar: calendar,
-    settings: settings
+    settings: settings,
+    hermes: hermes
   };
 })();

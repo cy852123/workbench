@@ -551,6 +551,8 @@
     var items = [];
     items.push({ group: "开始" });
     items.push({ view: "today", label: "今日", icon: "sun" });
+    /* D-2/D-3（2026-09-18）：Hermes 板块 —— 展示电脑端 AI 整理好给你的内容 */
+    items.push({ view: "hermes", label: "Hermes", icon: "spark" });
     items.push({ group: "我的领域" });
     data.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (dm) {
       var ic = dm.id === "kaoyan" ? "target" : dm.id === "cet" ? "book" : dm.id === "ai" ? "spark" : dm.id === "courses" ? "grid" : "folder";
@@ -579,6 +581,7 @@
       return dm ? { e: e, t: dm.name, s: dm.type === "courses" ? "课程与作业" : dm.type === "paper" ? "论文进度" : "领域概览" } : { e: "folder", t: "领域", s: "" };
     }
     var map = {
+      hermes: { e: "spark", t: "Hermes", s: "我整理好给你的内容" },
       library: { e: "folder", t: "资料库", s: "分类、标签、链接识别" },
       "lib-detail": { e: "folder", t: "资料详情", s: "完整信息" },
       inbox: { e: "inbox", t: "收集箱", s: "先收着，稍后整理" },
@@ -678,6 +681,26 @@
       })
       .catch(function () { /* 拉取失败静默，不影响本地使用 */ });
   }
+  /* D-2/D-3（2026-09-18）：进入 Hermes 板块时拉取云端内容（feed / report）。
+     与 aiLearnPull 同构：只读、失败静默、内容变化才写回本地。 */
+  function hermesPull() {
+    var sc = data.settings.sync || {};
+    if (!sc.url || !sc.key) return;
+    var base = String(sc.url).replace(/\/+$/, "");
+    var h = data.hermes = data.hermes || { feed: [], report: [], done: [] };
+    ["feed", "report"].forEach(function (k) {
+      fetch(base + "/api/store?key=" + k, { headers: { "X-Sync-Key": sc.key } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var items = (j && j.items) || [];
+          if (JSON.stringify(h[k] || []) === JSON.stringify(items)) return;
+          h[k] = items;
+          save(true);
+          if (W.ui.view === "hermes") renderView();
+        })
+        .catch(function () { /* 拉取失败静默，不影响本地使用 */ });
+    });
+  }
   function renderAll() {
     ensureBrief();
     renderNav();
@@ -686,6 +709,7 @@
     applyBg();
     applyFont();
     if (W.ui.view === "today") aiTasksLoad();
+    if (W.ui.view === "hermes") hermesPull();
     if (W.ui.view === "today" || W.ui.view === "domain:ai") aiLearnPull();
   }
   function renderNav() {
@@ -762,6 +786,7 @@
 
     var html = "";
     if (view === "today") html = Views.today();
+    else if (view === "hermes") html = Views.hermes();
     else if (view.indexOf("domain:") === 0) html = Views.domainView(data.domains.filter(function (x) { return x.id === view.slice(7); })[0]);
     else if (view === "library") html = Views.library();
     else if (view === "lib-detail") html = Views.libraryDetail();
@@ -2760,6 +2785,16 @@
       case "ai-sort-all": aiSortAll(); break;
 
       /* 搜索 */
+      case "hermes-done":
+        (function () {
+          var h = data.hermes = data.hermes || { feed: [], report: [], done: [] };
+          h.done = h.done || [];
+          var i = h.done.indexOf(id);
+          if (i >= 0) h.done.splice(i, 1); else h.done.push(id);
+          save(); renderView();
+          toast(i >= 0 ? "已取消掌握标记" : "已标记掌握");
+        })();
+        break;
       case "do-search": W.ui.searchKw = (fval("searchInput") || "").trim(); renderView(); break;
 
       /* 错题 */
