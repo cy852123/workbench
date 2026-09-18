@@ -443,10 +443,14 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - [x] ~~`tests/` 60+ 个脚本没入库~~ ✅ 2026-09-18：**tests/ 已入库**（只留 `test.js` + `test_interact.js` + `baseline.json`）；71 个一次性探针与历史版本测试归档到 `_attic/tests-archive/`（留档，别再往 tests/ 里塞）
 - [x] ~~数字散落在门禁脚本里~~ ✅ 2026-09-18：建 `tests/baseline.json` 单一基线，两个门禁的数字全部改成读它
 - [x] ~~**GitHub 推送未完成**~~ ✅ **2026-09-18 补推成功**（`339875d..9fe309e main -> main`）。**判据别用 `git status` 的 ahead**（显式 URL 推送不更新 `origin/main` 引用）—— 用 `git ls-remote https://github.com/cy852123/workbench.git main` 跟 `git rev-parse HEAD` 对，两边相等才算推上去了
-- [ ] **旧 Workers 还活着（2026-09-18 查清，等你一句话决定删不删）**：`wrangler deployments list --name workbench-sync` → **确实还在**（最后一次部署 2026-08-15 21:10，`wrangler whoami` 账号 `2b1d0f8b5fb6631b6d9471ea98cb75f8`）。但它**不是线上**：线上 `/api/data` 走 Pages Functions（`workbench-sync-c9e.pages.dev` 这个主机名归 Pages 项目，Worker 路由挂不上 `*.pages.dev`；旧 Worker 只有 `workbench-sync.cy852123.workers.dev/data` 这个入口，本机实测连不上、外面也早就没人用）
-  - **风险不是"它抢了流量"，是"它读写同一个 KV 键 `wb_main`"**：万一哪台旧设备/旧书签还指着 workers.dev 那个地址，一按同步就会用**陈旧数据覆盖真数据**
-  - 要删（一条命令，源码在本仓库根目录，随时能 `wrangler deploy` 回来）：`npx wrangler delete --name workbench-sync`（会连 Worker 一起删掉绑定声明，**KV 里的数据不动** —— 删完先 `curl -H "X-Sync-Key: …" .../api/data` 复核数据还在）
-  - ⚠️ **2026-09-18 我没有自作主张删它**：删云上资源不可逆（虽然能重新部署），用户明确说过「不要乱删我没让你删的东西」
+- [x] ~~**旧 Workers 还活着**~~ ✅ **2026-09-18 已删（用户拍板）**。查清 + 删除 + 复核的完整过程：
+  - 查：`wrangler deployments list --name workbench-sync` → 还在（最后部署 2026-08-15 21:10，账号 `2b1d0f8b5fb6631b6d9471ea98cb75f8`）
+  - 定责：线上 `/api/data` 走的是 **Pages Functions**（`workbench-sync-c9e.pages.dev` 这个主机名归 Pages 项目，Worker 路由挂不上 `*.pages.dev`；旧 Worker 只有 `workbench-sync.cy852123.workers.dev/data` 一个入口）。
+    ⚠️ **两种实现的 401 响应长得一模一样**（body `unauthorized` + 同一套 CORS 头），**靠响应体区分不了**，只能按主机名归属判断
+  - 真实风险：旧 Worker 与 Pages **读写同一个 KV 键 `wb_main`** —— 旧设备/旧书签只要还指着 workers.dev，一同步就会用陈旧数据覆盖真数据
+  - 删：`npx wrangler delete --name workbench-sync`（非交互上下文会自动 `yes`；`--dry-run` 只打印一行就退出，不做预览）
+  - 复核（三条都实测过）：① `wrangler deployments list` → `This Worker does not exist on your account. [code: 10007]`；② 云端数据 **md5 前后完全一致**（`f347386f874b46e68237861cef34bf32`，8137 字节 —— KV 没被碰）；③ 站点首页仍 **HTTP 200**
+  - **要恢复**：源码还在仓库根（`cloudflare-worker.js` + `wrangler.toml`，后者记着 KV 命名空间 ID `0757e3d602e74b87aedb6ec791c0b34c`）→ `npx wrangler deploy` 即可重建
 - [ ] **要不要转 private —— 先别转**。2026-09-17 实测：转 private 会**关掉 GitHub Pages**（`https://cy852123.github.io/workbench` 变 404），改回 public 也不自动恢复（已手动重建）。现在状态是 **public**。真要转之前：先确认手机桌面图标用的是不是 Pages 地址，并准备好重建 Pages
 - [x] ~~确认 GitHub Pages 站点已恢复~~ ✅ 2026-09-17 完成：http_code **200**，Pages API `status: built`、source = `main` / `/`，且已自动重新部署到修复后的版本（v053）
 - [ ] **论文写作领域还是 `hidden:true`**（入口不显示）
