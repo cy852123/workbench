@@ -425,6 +425,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 **验证类（截图 / 测试为什么会"骗人"）**
 - **`tools/serve_lan.py` 原来是"启动那一刻的快照"**：它把前端白名单文件拷到 `_attic/lan-serve/` 再对外服务，`stage()` 只在 `main()` 里跑一次。改完代码不重启，8000 端口发出去的还是旧版本 —— 而 `npm test` 和截图脚本都跑在 8000 上，**等于测试和截图都在验证旧代码**（2026-09-18 因此白排查了一轮）。现改成「源文件签名（mtime_ns + size）变了才重新同步」。⚠️ **别改回"每个请求无脑 copy2"**：服务器是 `ThreadingTCPServer`，浏览器正在读 `views.js` 时另一个并发请求覆盖同一文件 → 读到半截 → `ReferenceError: Views is not defined` 整页白屏，表现是 `npm test` **间歇性失败**（同一份代码上一遍全绿、下一遍报错）。写盘必须走 `os.replace` 原子替换。验证脚本 `python _attic/probe-torn.py`（8 线程并发拉 + 另一线程反复改源文件，要求 0 撕裂）
 - **无头截图必须绕过 Service Worker**：`page.setBypassServiceWorker(true)` + `page.setCacheEnabled(false)`。不绕的话第二次加载命中 SW 缓存，截出来是旧样式，会得出"我的改动没生效"的错误结论。参考 `_attic/shoot-local-full.js`（自带一个小体检：数页面上还有多少个"描边+圆角"盒子，`boxy: []` 就说明细线化到位了）
+- **`deploy.py --dry-run` 原来有副作用**（2026-09-18 修）：它只跳过"上传"这一步，但 `bump_sw()` 照样把本地 `service-worker.js` / `index.html` 的版本号 +1 —— 于是干跑一次就变成「本地 v076 / 线上 v075」，本地与线上对不上。现在干跑只报告"真跑会变成什么"，一个字节都不写。**判据：干跑后 `git status` 不该多出 service-worker.js / index.html 的改动。**
+- **门禁的退出码要单独验证**：两个门禁原来断言全 FAIL 也 `exit(0)`（末尾只有 `console.log("DONE")`）。「永远返回 0 的门禁等于没有门禁」—— 是变异测试（`_attic/mutation_probe.py`）才抓出来的。改门禁后先确认它**能失败**再看它通过。
 
 ## 九、待办
 
@@ -450,7 +452,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
   - ⚠️ 用**显式 URL** 推送**不会更新 `origin/main` 跟踪引用** → `git status` 里的 `ahead N` 会虚报，
     别据此判断"推上去了没有"；要确认就 `git ls-remote https://github.com/cy852123/workbench.git main`
 - 提交身份是本仓库私有的 `cy852123 / cy852123@users.noreply.github.com`
-- **跟踪 30 个文件**：前端四件套 + `service-worker.js` + `manifest.webmanifest` + 3 个图标 +
+- **跟踪 28 个文件**：前端四件套 + `service-worker.js` + `manifest.webmanifest` + 3 个图标 +
   `functions/api/` 4 个接口 + `tools/`（`deploy.py` / `serve_lan.py` / `启动局域网访问.bat` / `README.md`）+
   `tests/`（`test.js` / `test_interact.js` / `baseline.json`）+ `README.md` + `OPTIMIZE-PLAN.md` +
   旧 Workers 两件 + `package.json` / `package-lock.json`

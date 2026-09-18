@@ -190,6 +190,13 @@ def bump_sw():
     if "--no-bump" in ARGS:
         note(True, "跳过 +1（--no-bump），仍为 v%s" % old_s)
         return True
+    # ★ 2026-09-18 修：--dry-run 原来照样改文件（只跳过上传），于是"干跑一次"就把本地
+    #   service-worker.js/index.html 顶到新版本号、又没上传，本地与线上版本号对不上。
+    #   干跑就该没有副作用 —— 只报告"会变成什么"，一个字节都不写。
+    if "--dry-run" in ARGS:
+        would = "%0*d" % (len(old_s), old + 1)
+        note(True, "（--dry-run 不写盘）缓存号本来是 v%s，真跑时会 +1 成 v%s" % (old_s, would))
+        return True
     # ★ 必须拿 m.group(0) 原文当"针"：文件里写的是 v053，若自己拼 "wb-cache-v%d" % 53
     #   会变成 v53（丢了前导零）→ replace 静默什么都不做。这个坑真踩过：脚本报 PASS 却没改。
     new_s = "%0*d" % (len(old_s), old + 1)
