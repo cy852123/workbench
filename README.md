@@ -66,7 +66,7 @@ curl -s -X PUT -H "X-Sync-Key: $KEY" --data-binary @feed.json "$BASE/api/store?k
 | 核心逻辑 | `app.js` 4657 行 / 289 KB |
 | 视图渲染 | `views.js` 2874 行 / 218 KB |
 | 样式 | `styles.css` 1262 行 / 70 KB。**0 处 hex 硬编码** —— 颜色全走 `:root` 的 OKLCH 纸感令牌 |
-| 离线 | `service-worker.js`。缓存号当前 **`wb-cache-v075`**（只此一处写死；改前端必须 +1，跑 `tools/deploy.py` 会自动加，别手抄） |
+| 离线 | `service-worker.js`。缓存号当前 **`wb-cache-v076`**（只此一处写死；改前端必须 +1，跑 `tools/deploy.py` 会自动加，别手抄） |
 | 同步 | Cloudflare Pages Functions `/api/data` + KV `WB_KV`（键 `wb_main`） |
 | 门禁 | `npm test` **46 项**：`tests/test.js`（桌面 + 手机三尺寸）、`tests/test_interact.js`（交互与防回归） |
 | 数字基线 | `tests/baseline.json` —— **所有随数据/界面变化的数字只在这里维护一处**，门禁脚本不写字面量 |
