@@ -378,6 +378,17 @@
       if (c.date === "2026-12-26" && c.title.indexOf("考研") >= 0) { c.date = "2027-12-25"; c.title = "2028 考研初试"; changed = true; }
       if (c.date === "2026-12-12" && c.title.indexOf("六级") >= 0) { c.date = "2027-12-12"; changed = true; }
     });
+    /* 2026-09-18：清掉预置的示例资料。
+       它们硬编码在 defaultData() 里，其中 2 条网址是假的（pan.baidu.com/s/example123、
+       zhuanlan.zhihu.com/p/example），点「打开」永远打不开（用户反馈「又打不开，要这个干什么」）。
+       ⚠️ 光删云端没用：设备上还留着本地副本，自动同步会把它推回云端（实测删完 5 分钟就回来了）。
+       所以走数据迁移 —— 任何设备一打开就把它们从本地清掉，自动同步再把干净数据推上去。
+       判据＝标题含「（示例）」；幂等，跑多少次结果一样。 */
+    var resBefore = (data.resources || []).length;
+    data.resources = (data.resources || []).filter(function (r) {
+      return (r.title || "").indexOf("（示例）") < 0;
+    });
+    if (data.resources.length !== resBefore) changed = true;
     return changed;
   }
   function load() {
