@@ -24,6 +24,7 @@ import shutil
 import socket
 import hashlib
 import functools
+import threading
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -58,7 +59,30 @@ def lan_ips():
     return ips
 
 
-def stage():
+def _sig():
+    """前端源文件的签名（mtime + size），用来判断"要不要重新同步"。"""
+    out = []
+    for f in FRONT:
+        try:
+            st = os.stat(os.path.join(ROOT, f))
+            out.append((f, st.st_mtime_ns, st.st_size))
+        except OSError:
+            out.append((f, 0, 0))
+    return tuple(out)
+
+
+_STAGE_LOCK = threading.Lock()
+_STAGE_SIG = [None]
+
+
+def stage(force=False):
+    """把前端白名单文件同步到服务目录。
+
+    ⚠️ 写盘必须是原子的（先写 .tmp 再 os.replace）。原实现直接 copy2 覆盖目标文件，
+    而服务器是 ThreadingTCPServer —— 浏览器正在读 views.js 时，另一个并发请求又触发
+    一次拷贝，就可能读到半截文件，浏览器报 `ReferenceError: Views is not defined`，
+    整页白屏。2026-09-18 加"每请求重新同步"后实测踩到（测试间歇性失败）。
+    """
     if not os.path.isdir(SERVE):
         os.makedirs(SERVE)
     bad = []
@@ -67,10 +91,27 @@ def stage():
         if not os.path.exists(src):
             bad.append(f)
             continue
-        shutil.copy2(src, dst)
+        if not force and os.path.exists(dst) and md5(src) == md5(dst):
+            continue                      # 内容没变，别碰目标文件
+        tmp = dst + ".tmp"
+        shutil.copy2(src, tmp)
+        os.replace(tmp, dst)              # 原子替换：读者要么看到旧版，要么看到新版
         if md5(src) != md5(dst):
             bad.append(f)
     return bad
+
+
+def stage_if_stale():
+    """每个请求前调一次：源文件真变了才重新同步，没变什么都不做。
+    这样既保证本地预览/测试永远看到最新代码，又不会每个请求都重写文件。"""
+    sig = _sig()
+    if sig == _STAGE_SIG[0]:
+        return
+    with _STAGE_LOCK:
+        if sig == _STAGE_SIG[0]:          # 双检：等锁期间别人已经同步过了
+            return
+        stage()
+        _STAGE_SIG[0] = _sig()
 
 
 def guard():
@@ -84,7 +125,8 @@ def guard():
 
 
 def main():
-    bad = stage()
+    bad = stage(force=True)
+    _STAGE_SIG[0] = _sig()
     print("== 同步前端白名单文件 → %s" % SERVE)
     for f in FRONT:
         print("   %s  %s" % ("OK  " if f not in bad else "FAIL", f))
@@ -123,16 +165,20 @@ def main():
             daemon_threads = True
 
         class LiveHandler(http.server.SimpleHTTPRequestHandler):
-            """每次请求前重新同步一次前端文件。
+            """每次请求前检查一次前端文件是否变了（变了才重新同步）。
 
             为什么：stage() 原来只在启动时跑一次 —— 改完 app.js / styles.css 后，
             本地预览（以及跑在 8000 端口的 npm test、截图脚本）看到的还是启动那一刻的
             旧代码。2026-09-18 被这个坑到两次（截图和门禁都在验证旧版）。
-            前端只有 9 个小文件，重拷 + md5 校验开销可忽略。"""
+
+            注意别改回"每个请求无脑 copy2"：本服务器是多线程的，浏览器在读
+            views.js 时被另一个请求覆盖，会读到半截文件 →
+            `ReferenceError: Views is not defined`，整页白屏。
+            现在只在签名（mtime+size）变化时同步，且写盘走 os.replace 原子替换。"""
 
             def send_head(self):
                 try:
-                    stage()
+                    stage_if_stale()
                 except Exception:
                     pass
                 return super().send_head()
