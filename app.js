@@ -758,12 +758,21 @@
      实现方式：渲染完成后按 data-action 统一移除录入类按钮。
      （比逐个改 HTML 模板安全 —— 模板里有大量动态拼接，正则删除会切坏 JS 字符串。）
      要恢复某个入口，把它从这个数组里删掉即可；数组为空则完全恢复原样。 */
+  /* ⚠️ 名字必须跟模板里 data-action 完全一致。2026-09-18 踩过坑：
+     原表里写的是 ky-task-add / ky-file-add / ky-point-add，而 views.js 里实际是
+     ky-add-task / ky-upload-files / ky-add-knowledge —— 对不上就等于没删。
+     改这里之后必须跑 _attic/check-input-actions.py 对账（或 npm test 的录入入口断言）。 */
   var MANUAL_INPUT_ACTIONS = [
     "add-mistake", "add-resource", "add-task", "add-word", "add-inbox",
     "add-weekly", "add-daily-review", "add-ref", "add-course", "add-assignment",
     "ky-word-add", "ky-point-add", "ky-hat-add", "ky-task-add", "ky-subject-add",
     "ky-file-add", "ky-paper-modal", "ky-major-paper-modal", "ky-careless-modal",
-    "add-calendar", "add-account", "add-qa", "grammar-add", "ky-pick"
+    "add-calendar", "add-account", "add-qa", "grammar-add", "ky-pick",
+    /* 2026-09-18 补漏：名字对不上导致没摘掉的三个入口 */
+    "ky-add-task", "ky-upload-files", "ky-add-knowledge",
+    "ky-upload-submit", "ky-import-template", "ky-import-template-ok",
+    /* 2026-09-18 二轮补漏：测试遍历全视图后抓出来的 */
+    "add-domain"
   ];
   function stripManualInput(root) {
     if (!root) return;

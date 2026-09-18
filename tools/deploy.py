@@ -334,9 +334,12 @@ def main():
         say("回滚：Cloudflare 控制台 → Pages → %s → Deployments → 选上一次 → Rollback" % PROJECT)
         return 1
     if "--no-bump" not in ARGS and "--dry-run" not in ARGS:
-        say('缓存号改了，建议提交：git add service-worker.js && git commit -m "SW 缓存号 +1（部署）"')
+        say('缓存号改了，建议提交：git add service-worker.js index.html && '
+            'git commit -m "SW 缓存号 +1（部署）"')
         if "--commit" in ARGS:
-            run(["git", "add", "service-worker.js"])
+            # 别忘了 index.html —— 资源版本号那 3 处也改了，只提交 service-worker.js
+            # 会留个脏工作区，下次部署的前置检查（要求干净）就会拦住你。
+            run(["git", "add", "service-worker.js", "index.html"])
             rc, out = run(["git", "commit", "-m", "SW 缓存号 +1（tools/deploy.py 自动提交）"])
             say("  已自动提交" if rc == 0 else "  自动提交失败：" + out.strip()[:120])
     say("提醒：改过 app.js/views.js/styles.css 之后跑本脚本，缓存号会自动 +1，手机下次打开即更新。")

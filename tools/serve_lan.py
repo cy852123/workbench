@@ -122,7 +122,22 @@ def main():
             allow_reuse_address = True
             daemon_threads = True
 
-        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=SERVE)
+        class LiveHandler(http.server.SimpleHTTPRequestHandler):
+            """每次请求前重新同步一次前端文件。
+
+            为什么：stage() 原来只在启动时跑一次 —— 改完 app.js / styles.css 后，
+            本地预览（以及跑在 8000 端口的 npm test、截图脚本）看到的还是启动那一刻的
+            旧代码。2026-09-18 被这个坑到两次（截图和门禁都在验证旧版）。
+            前端只有 9 个小文件，重拷 + md5 校验开销可忽略。"""
+
+            def send_head(self):
+                try:
+                    stage()
+                except Exception:
+                    pass
+                return super().send_head()
+
+        handler = functools.partial(LiveHandler, directory=SERVE)
         with Srv(("0.0.0.0", PORT), handler) as httpd:
             httpd.serve_forever()
     except KeyboardInterrupt:
