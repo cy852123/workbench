@@ -71,7 +71,7 @@ curl -s -X PUT -H "X-Sync-Key: $KEY" --data-binary @feed.json "$BASE/api/store?k
 | 门禁 | `npm test` **46 项**：`tests/test.js`（桌面 + 手机三尺寸）、`tests/test_interact.js`（交互与防回归） |
 | 数字基线 | `tests/baseline.json` —— **所有随数据/界面变化的数字只在这里维护一处**，门禁脚本不写字面量 |
 | 脚本地图 | `tools/README.md` —— 哪个脚本是生产用的、哪个是一次性探针、每条命令怎么敲 |
-| 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交说明 + App 内「更新日志」（22 条）** |
+| 版本 | 界面里显示 `v0.1.0`；**真实版本看每次提交说明 + App 内「更新日志」（23 条）** |
 
 ## 二、目录结构
 
