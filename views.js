@@ -158,6 +158,25 @@
       (overDue.length ? '<span class="ht-late" style="align-self:center;">另有 ' + overDue.length + " 条逾期</span>" : "") +
       "</div></div>";
 
+    /* D-1（2026-09-18）：今日复习队列 —— 把「今天该复习的错题 + 单词」提到首屏。
+       原来这两项分散在错题本和生词本里，得逐个点进去才知道今天到期多少；
+       参考同类产品（recallio / SR Studio / Qizen）都以「今日队列」为第一屏核心。 */
+    var dueMk = (d.mistakes || []).filter(function (m) { return !m.mastered && (!m.nextReview || m.nextReview <= t); });
+    var cetDm = (d.domains || []).filter(function (x) { return x.id === "cet" && !x.hidden; })[0];
+    var dueWord = cetDm ? examWordbook(cetDm).filter(function (w) { return !w.mastered; }) : [];
+    var dueTotal = dueMk.length + dueWord.length;
+    html += '<div class="card"><div class="card-head"><h3>今日复习</h3>' +
+      '<span class="c-sub">' + (dueTotal ? "共 " + dueTotal + " 项到期" : "今天没有到期项") + '</span></div>' +
+      (dueTotal
+        ? '<div class="rev-row">' +
+          '<div class="rev-item" data-action="go-view" data-view="mistakes"><div class="rev-num">' + dueMk.length +
+          '</div><div class="rev-label">错题待复习</div></div>' +
+          '<div class="rev-item" data-action="go-view" data-view="cet-wordbook"><div class="rev-num">' + dueWord.length +
+          '</div><div class="rev-label">单词待复习</div></div>' +
+          "</div>"
+        : '<div class="li-sub">按遗忘曲线，今天没有到期内容。</div>') +
+      "</div>";
+
     /* 学科入口（紧凑）—— F1：从第 5 张提到第 3 张，当「入口汇总」 */
     html += '<div class="card"><div class="card-head"><h3>学习领域</h3></div>' +
       '<div class="home-domains">' + d.domains.filter(function (x) { return !x.hidden; }).slice().sort(function (a, b) { return a.order - b.order; }).map(homeDomainCard).join("") + "</div></div>";
