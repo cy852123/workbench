@@ -727,6 +727,30 @@
     });
     db.innerHTML = dhtml;
   }
+  /* C 组（2026-09-18）：网页端不再提供「手动录入」入口 ——
+     用户定位：网页端只负责「看和勾」，一切录入交给 Hermes。
+     实现方式：渲染完成后按 data-action 统一移除录入类按钮。
+     （比逐个改 HTML 模板安全 —— 模板里有大量动态拼接，正则删除会切坏 JS 字符串。）
+     要恢复某个入口，把它从这个数组里删掉即可；数组为空则完全恢复原样。 */
+  var MANUAL_INPUT_ACTIONS = [
+    "add-mistake", "add-resource", "add-task", "add-word", "add-inbox",
+    "add-weekly", "add-daily-review", "add-ref", "add-course", "add-assignment",
+    "ky-word-add", "ky-point-add", "ky-hat-add", "ky-task-add", "ky-subject-add",
+    "ky-file-add", "ky-paper-modal", "ky-major-paper-modal", "ky-careless-modal",
+    "add-calendar", "add-account", "add-qa", "grammar-add", "ky-pick"
+  ];
+  function stripManualInput(root) {
+    if (!root) return;
+    MANUAL_INPUT_ACTIONS.forEach(function (a) {
+      var els = root.querySelectorAll('[data-action="' + a + '"]');
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].tagName === "BUTTON" && els[i].parentNode) {
+          els[i].parentNode.removeChild(els[i]);
+        }
+      }
+    });
+  }
+
   function renderView() {
     var wrap = $id("viewWrap");
     var view = W.ui.view;
@@ -777,6 +801,7 @@
     }
     else html = '<div class="card">' + esc("页面不存在") + "</div>";
     wrap.innerHTML = html;
+    stripManualInput(wrap);
     closeDrawer();
     window.scrollTo(0, 0);
   }
@@ -786,6 +811,7 @@
     $id("modalTitle").textContent = title;
     $id("modalBody").innerHTML = bodyHtml;
     $id("modalFoot").innerHTML = footHtml || "";
+    stripManualInput($id("modalBody"));
     $id("modalMask").className = "modal-mask open";
   }
   function modalClose() { $id("modalMask").className = "modal-mask"; }
