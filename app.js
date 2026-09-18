@@ -707,7 +707,9 @@
     var bottom = [
       { view: "today", label: "今日", icon: "sun" },
       { view: pv, label: (data.domains.filter(function (x) { return x.id === primary; })[0] || {}).name || "领域", icon: "target" },
-      { view: "__plus", label: "添加", icon: "plus" },
+      /* C 组（2026-09-18）：原「＋ 添加」按钮已换成「错题本」——
+         手动录入入口全部下线（录入交给 Hermes），而错题本是最该一键到达的板块。 */
+      { view: "mistakes", label: "错题本", icon: "alert" },
       { view: "__more", label: "更多", icon: "grid" }
     ];
     mn.innerHTML = bottom.map(function (b) {
@@ -3165,11 +3167,10 @@
 
   /* ---------- 各种模态 ---------- */
   function quickAdd() {
-    modalOpen("快速添加", '<div style="display:flex;flex-direction:column;gap:10px;">' +
-      '<button class="btn block" data-action="add-task">' + ICONS.check + "添加任务</button>" +
-      '<button class="btn block" data-action="add-inbox">' + ICONS.inbox + "收集内容 / 链接</button>" +
+    /* C 组（2026-09-18）：录入类按钮已删除 —— 手动录入统一交给 Hermes。
+       这里只保留「打卡学习」（属于网页端的现场操作「勾」，不是「录」）。 */
+    modalOpen("快速操作", '<div style="display:flex;flex-direction:column;gap:10px;">' +
       '<button class="btn block" data-action="punch" data-domain="">' + ICONS.flame + "打卡学习</button>" +
-      '<button class="btn block" data-action="add-resource">' + ICONS.folder + "记录资料</button>" +
       '<button class="btn block" data-action="modal-close" style="background:#EEF0ED;color:var(--text);">取消</button></div>');
   }
 
