@@ -1613,11 +1613,13 @@
       states.map(function (s) { return '<button class="btn ' + (filterState === (s === "全部状态" ? "" : s) ? "" : "plain") + ' small" data-action="lib-state" data-v="' + esc(s) + '">' + s + "</button>"; }).join("") + "</div>" +
       '<div class="filter-row" style="margin-top:8px;">' +
       '<button class="btn ' + (filterDom === "" ? "" : "plain") + ' small" data-action="lib-dom" data-v="">全部领域</button>' +
-      d.domains.filter(function (x) { return !x.hidden; }).map(function (dm) { return '<button class="btn ' + (filterDom === dm.id ? "" : "plain") + ' small" data-action="lib-dom" data-v="' + esc(dm.id) + '">' + esc(dm.name) + "</button>"; }).join("") + "</div>" +
-      '<button class="btn block" data-action="add-resource" style="margin-top:14px;">' + ic("plus") + "新建资料（粘贴链接自动识别平台）</button>");
+      d.domains.filter(function (x) { return !x.hidden; }).map(function (dm) { return '<button class="btn ' + (filterDom === dm.id ? "" : "plain") + ' small" data-action="lib-dom" data-v="' + esc(dm.id) + '">' + esc(dm.name) + "</button>"; }).join("") + "</div>");
+    /* 2026-09-18：这里原来还有「新建资料（粘贴链接自动识别平台）」按钮。
+       录入交给 Hermes 后它已被 C 组下线（白名单一直负责摘），这次把源码里的残留也删掉 ——
+       否则字符串留在产物里，后人会以为这个入口还在。下面的空态提示同步改。 */
 
     html += card(cardHead("全部资料", list.length + " 条", "resources"),
-      list.length === 0 ? empty("没有符合条件的资料", "点「新建资料」添加，支持粘贴 B站/网盘/小红书/抖音等链接") :
+      list.length === 0 ? empty("没有符合条件的资料", "在 Hermes 对话里发链接或文件，它整理好会同步到这里") :
       '<div class="list">' + list.map(function (r) {
         return '<div class="list-item" style="align-items:flex-start;">' +
           '<div class="li-main"><div class="li-title" data-action="lib-open" data-id="' + esc(r.id) + '" style="cursor:pointer;">' + esc(r.title) + "</div>" +
@@ -1669,9 +1671,11 @@
     var pending = (d.inbox || []).filter(function (x) { return x.status === "待分拣"; });
     var done = (d.inbox || []).filter(function (x) { return x.status === "已分拣"; });
     var html = "";
-    html += card("", '<button class="btn block" data-action="add-inbox">' + ic("plus") + "添加收集（文字 / 链接 / 任务 / 文件）</button>" +
-      '<div class="ai-banner" style="margin-top:14px;">' + ic("spark") +
-      '<span>粘贴 B站 / 网盘 / 小红书 / 抖音等链接会自动识别平台。AI 会给出去向建议，<b>确认后才会移动</b>，不会擅自搬走内容。</span></div>' +
+    /* 2026-09-18：原来这里是「＋ 添加收集（文字 / 链接 / 任务 / 文件）」按钮 ——
+       录入交给 Hermes 后已按 C 组下线（白名单负责摘按钮），源码残留一并清掉；
+       下面那句「粘贴链接会自动识别平台」也在描述已删掉的手动流程，改成实际情况。 */
+    html += card("", '<div class="ai-banner">' + ic("spark") +
+      '<span>Hermes 发来的内容先落在这里。点「确认去向」决定放哪，<b>不会擅自搬走内容</b>。</span></div>' +
       (pending.length ? '<div class="li-sub" style="margin-top:10px;">今日待整理 ' + pending.length + " 条，建议集中处理。</div>" : ""));
 
     html += card(cardHead("待分拣", pending.length + " 条，决定放哪", "inbox"),
@@ -2649,6 +2653,11 @@
       "部署：GitHub Pages / Cloudflare Pages 静态托管</div>");
 
     html += card(cardHead("更新日志", "每次更新都会记录在这里", "changelog"),
+      '<div class="log-item"><div class="log-date">2026-09-18 · 网页端改为「只看和勾」<span class="log-tag">定位调整</span></div>' +
+      '<p>定位变了：网页端只负责<b>看和勾</b>，所有录入交给 Hermes（在对话里发照片或文字，我整理好写进来）。因此下线了全部手动录入入口 —— 新建任务、加资料、加错题、加生词、上传文件、新建领域 / 考试 / 备考方案……一共 39 个。</p>' +
+      '<p>顺带清理了一批「入口没了、说明还在」的残留：分区块的悬浮问号（帮助统一收在右上角）、资料库与收集箱里描述「粘贴链接自动识别平台」的旧文案、「知识点总结」「添加自定义任务」这些已下线入口的空壳区块。</p>' +
+      '<p>手机端视觉与「六级精读」对齐：纸感配色（OKLCH）、标题改衬线、去掉卡片阴影与装饰图标、列表改细线分隔。</p>' +
+      '<p>影响范围：全站界面。数据：无影响，一个都没删。你需要的操作：无（手机上把 App 划掉重开一次即新版）。</p></div>' +
       '<div class="log-item"><div class="log-date">2026-09-17 · 修复保存与文件列表<span class="log-tag">修复</span></div>' +
       '<p>修了三个一点就崩的地方：①上传过作文模板后，「作文模板库」弹窗打不开（点进去没反应）；②政治学科页的「知识点资料」、专业课的「章节笔记」，只要传过文件就会让整页渲染中断（后面的卡片全不见）。根因是这几处调用的函数定义在另一个文件里、两个文件作用域互相看不见。</p>' +
       '<p>保存更安全：以前浏览器存储满时只弹一句提示、其实这次改动没存下来；现在保存前先量数据体积，快满时提前告警，真存不下就把「⚠️ 未保存」留在左下角不消失，并告诉你怎么处理。</p>' +
