@@ -218,7 +218,7 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 | 规则 | 说明 |
 |---|---|
 | 颜色只有 5 类 | 墨 `--ink/--ink-2` ｜ 次级 `--sub/--muted` ｜ 线 `--line/--line-soft` ｜ 底 `--bg/--card/--soft/--chip` ｜ 强调 `--accent`（**全站唯一交互色**）+ 语义 `--ok/--warn/--danger` |
-| 模块身份色 `--theme` | 17 个板块**同族低饱和** `hsl(H 45% 36-46%)`，只换色相；白字在各底色均 ≥4.5:1 |
+| 模块身份色 `--theme` | 17 个板块**同族低饱和** `oklch(45% .02-.10 H)`，只换色相；白字在各底色均 ≥4.5:1。**2026-09-18 从 `hsl()` 迁到 OKLCH**，并删掉已下线模块（health/calendar/accounts）的类 |
 | 字号 / 字重 | 字号走 `--t-display…--t-xs`；**字重只用 2 档**（400 正文 / 650 `--w-strong`）—— 层级靠字号，不靠加粗 |
 | 圆角 / 阴影 | 圆角只用 4 档 `--r-sm/md/lg/pill`；阴影只用 2 档 `--shadow-1/2` |
 | 层级靠底色分层 | 白 `.card` / `.ky-card` / `.course-card` = **主要内容**；`var(--soft)` 浅底 = 统计块 / 卡内小组件 / 空状态 |
@@ -231,6 +231,8 @@ cd E:\Software\workbench && node tests/_verify_filelist_crash_independent.js htt
 - `92f8d5d` 手机端「拥挤」专项（**数据驱动**）：先跑 `node tests/_crowd.js http://127.0.0.1:8000/` 在 390px 下量拥挤度，据此修两处病根 —— ① `views.js` 里 5 处**内联** `font-size:11px/12px`（内联优先级高于样式表，光在 CSS 里覆盖压不住）抬到 12.5px；② 资料库三行筛选加 `.filter-row`，手机端改一行横向滑动；另补手机端 12.5px 最小字号兜底 + 留白放宽。**复测：资料库 <13px 占比 74%→40%，全站再无 11px 文字**
 - `020ef08` **第四批 · 去图标**：装饰性图标全站不显示（CSS 隐藏图标位 + `cardHead()` 调用里的图标前缀整体去掉）。同时修掉 3 个真 bug：收集箱类型标签显示英文代码、首页问候语把 `moon` 当文字打出、**69 处卡片标题被 `esc()` 转义成字面 SVG 代码**（用户反馈「有些板块是英语」的就是这个）
 - `78ed7ce` + `060c025` **F2 + F1**：侧边栏「工具」按使用频率重排（错题本/专注提前）；首页减法 —— 「hero 卡 + 最底部状态条卡」合并成一张顶部概览卡（3 个 29px 大号 KPI 数字：今日完成率 / 连续打卡 / 本周有效时长），AI 下发任务收进 `<details>` 折叠区，学习领域改紧凑单行。**首屏平级卡 5 张 → 2 张**
+- `1846ac5` **第五批 · 向 english-trainer 对齐（色与字）**：颜色全改 OKLCH 纸感色阶（暖灰 hue 75 + 松绿 hue 158）；卡片零阴影（`--shadow-1: none`），层级改由 1px 描边 + 纸面色阶承担；标题改衬线（Georgia / 宋体 SC）；`--r-sm/md` 收到 6/10；`.card` 去盒（无背景/边框/内边距，靠 `margin-bottom: 26px` + 小标题分区）
+- `9a3c941` **第六批 · 令牌收敛 + 列表细线化**（手机端"不好看"的根治）：第一遍只换了 `:root`，规则体里还散落 **48 处 `#fff` 方盒 / 30+ 处旧 hex / 21 处 `hsl()` 高饱和主题色**，与新令牌混用 —— 这批把它们全部收敛（颜色映射 91 处 + 主题色 17 处），现在 `styles.css` **0 处 hex 硬编码**。同时把手机端的方盒拉成细线行（今日行动 / 领域入口 / 考研科目卡 / 课程卡 / 复习统计块），「进入 →」5 种颜色收敛成次级墨色。脚本：`_attic/patch_visual.py`、`_attic/patch_flat.py`、`_attic/patch_flat2.py`（都是"追加覆盖段"，整段删掉即回滚）
 
 **回滚**：`git checkout <上一版hash> -- styles.css`（只改这一个文件）；改完必须 `npm test` 40 项全过 + 人眼比对截图。
 
@@ -371,6 +373,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - 内联 HTML 拼字符串时，用户输入一律过 `esc()`（手机端尤其别漏）
 - **`cardHead(标题, ...)` 内部会对标题做 `esc()`，所以别把 HTML（图标、标签）拼进标题字符串**。2026-09-17 就把 `<svg viewBox=...>` 拼进了 69 处标题，结果被转义成字面文字显示在页面上，用户看到一串"英文乱码"反馈「有些板块是英语」。图标要么放标题外面，要么别放。泄漏探针 `tests/_iconleak.js` 现在会拦这类问题
 - 首页等页面用 `<details>` 折叠内容时注意：折叠区里的元素虽然还在 DOM 里，但**取坐标会得到隐藏元素的陈旧值**（`tests/test.js` 的"内容不被遮挡"就因此误报过）。量可见性要先排除「祖先里有未展开 details」的元素
+- **录入入口白名单靠"渲染后按 `data-action` 摘按钮"**（`app.js` 的 `MANUAL_INPUT_ACTIONS`，配 `stripManualInput()`）：名字必须跟 `views.js` 里真实的 `data-action` **一字不差**。2026-09-18 踩坑 —— 表里写 `ky-task-add`、模板里实际是 `ky-add-task`，对不上就等于没删，结果「＋ 上传 PDF/图片/压缩包」「＋ 添加知识点总结」「＋ 添加自定义任务」「新建领域」一直留在考研页和设置页，用户看到的还是旧那一套。对账脚本：`python _attic/check-input-actions.py`；`npm test` 现在有**双重断言**（按 action 名 + 遍历 12 个视图按可见文字找"＋/上传/添加/新建/导入"开头的按钮）
+- **CSS 里加颜色只走令牌**：`styles.css` 顶部 `:root` 就是设计规范，现在全文件 **0 处 hex 硬编码**。别写 `#fff` / `hsl(...)`，否则换主题/改色阶时那些地方会漏掉（第六批就是在收拾这个）
 
 **数据类**
 - 加载时 `load()` 会跑 `migrate()` 做结构升级（如 `cet.exams` 被写坏成字符串时自动转正、旧日期纠正），**改结构要走 migrate，不要直接改历史数据**
@@ -388,6 +392,10 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - `wrangler pages deploy` 报 **`fetch failed`** 时，先别怀疑 Cloudflare 或令牌 —— 本机 DNS 会解析出 `api.cloudflare.com` 的 IPv6 地址，这条 IPv6 不通时 **Node 的 fetch 直接失败**（curl 会自动回落 IPv4，所以手测 curl 完全正常，极具迷惑性）。解法：`export NODE_OPTIONS=--dns-result-order=ipv4first`。**`tools/deploy.py` 已内置这一行**，走脚本部署不会踩到
 - **「部署了但手机端不更新」的两个真因**（2026-09-17 修，用户反馈过）：① `styles.css/views.js/app.js` 走的是「缓存优先」，部署后**第一次打开必然先返回旧缓存**，要开第二次才变；② 浏览器**只在「导航」时**才检查 SW 有没有更新，而手机 PWA 切后台再切回来没有发生导航 → 永远不检查 → 一直挂旧版。解法：`index.html` 里的资源引用挂版本号（`styles.css?v=vNNN` 等），新 HTML 引用的 URL 在旧缓存里必然 miss → 直接走网络 → **一次打开就是新版**；`deploy.py` 会把这里和 SW 缓存号**同步改并读回校验**，两处不一致直接判失败。另外 SW 注册处加了主动 `update()` + 回到前台再查一次，`controllerchange` 刷新加了防重复锁
 - **排查「手机跑的是哪版」**：看左侧栏底部的版本号 —— 它是运行时从 Cache Storage 读出来的 `wb-cache-vNNN`（不是写死的字符串），显示什么就是本机实际在用的缓存。如果后面带「（有 N 份缓存）」，说明旧缓存没清干净
+
+**验证类（截图 / 测试为什么会"骗人"）**
+- **`tools/serve_lan.py` 原来是"启动那一刻的快照"**：它把前端白名单文件拷到 `_attic/lan-serve/` 再对外服务，`stage()` 只在 `main()` 里跑一次。改完代码不重启，8000 端口发出去的还是旧版本 —— 而 `npm test` 和截图脚本都跑在 8000 上，**等于测试和截图都在验证旧代码**（2026-09-18 因此白排查了一轮）。已改成**每次请求前重新 stage**（见 `LiveHandler.send_head`），改这块逻辑时务必保留这个行为
+- **无头截图必须绕过 Service Worker**：`page.setBypassServiceWorker(true)` + `page.setCacheEnabled(false)`。不绕的话第二次加载命中 SW 缓存，截出来是旧样式，会得出"我的改动没生效"的错误结论。参考 `_attic/shoot-local-full.js`（自带一个小体检：数页面上还有多少个"描边+圆角"盒子，`boxy: []` 就说明细线化到位了）
 
 ## 九、待办
 
