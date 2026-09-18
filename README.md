@@ -475,4 +475,5 @@ curl -s -o /dev/null -w "%{http_code}\n" https://workbench-sync-c9e.pages.dev/ap
 - 备份（都在 E 盘）：
   - `E:\backup\workbench\workbench-20260917.tar.gz`（搬迁前的整树，**含 66 MB `ecdict_full.csv` 与 .git** —— 词典已从项目里删掉，所以这份现在是词典原料的唯一磁盘副本）
   - `E:\backup\workbench\workbench-before-maintain-20260917.tar.gz`（本次整理前的整树）
+  - `E:\backup\workbench\workbench-20260918-after-dict-removal.tar.gz`（2026-09-18 删掉词典 + 修完 P1-6 之后的整树；**已校验：凭据 0 条、无 csv/zip 词典资产、关键文件 8/8 在内、含 .git**）
   - `E:\backup\workbench\uncommitted-tracked-20260917.diff`（本次整理前那批未提交改动的完整 diff）
